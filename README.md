@@ -235,3 +235,7 @@ https://mp.weixin.qq.com/s/szj3L6RdFhZYPgCcP_9YEw
 ---
 
 如果这个项目对你有帮助，欢迎点个⭐️支持一下！
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=yzfly/pocketpal-ai-zh&type=Date)](https://star-history.com/#yzfly/pocketpal-ai-zh&Date)
