@@ -1,7 +1,7 @@
-import {CompletionParams as LlamaRNCompletionParams} from 'llama.rn';
+import {CompletionParams as LlamaRNCompletionParams} from '../services/llm';
 
-export type {ToolCall} from 'llama.rn';
-import type {ToolCall} from 'llama.rn';
+export type {ToolCall} from '../services/llm';
+import type {ToolCall} from '../services/llm';
 
 /**
  * Reasoning intent carried internally on the completion params. Populated

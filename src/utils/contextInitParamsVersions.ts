@@ -7,7 +7,7 @@
  * 3. Add a migration step in migrateContextInitParams to handle the new parameter
  */
 
-import {ContextParams} from 'llama.rn';
+import {ContextParams} from '../services/llm';
 import {ContextInitParams, LegacyContextInitParams} from './types';
 import {Platform} from 'react-native';
 

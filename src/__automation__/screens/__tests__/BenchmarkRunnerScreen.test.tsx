@@ -55,7 +55,11 @@ const {
 
 // Re-grab the llama.rn mocks so tests can drive the native log stream and
 // assert the initLlama payload.
-const {initLlama, addNativeLogListener, toggleNativeLog} = require('llama.rn');
+const {
+  initLlama,
+  addNativeLogListener,
+  toggleNativeLog,
+} = require('../../../services/llm');
 
 import {
   BenchmarkRunnerScreen,

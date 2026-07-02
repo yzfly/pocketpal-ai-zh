@@ -1,7 +1,7 @@
 import React, {useRef} from 'react';
 
 import {toJS, runInAction} from 'mobx';
-import type {JinjaFormattedChatResult} from 'llama.rn';
+import type {JinjaFormattedChatResult} from '../services/llm';
 
 import {chatSessionRepository} from '../repositories/ChatSessionRepository';
 

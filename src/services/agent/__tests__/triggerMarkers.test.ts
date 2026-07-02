@@ -1,6 +1,6 @@
 import {createTriggerMarkerCache} from '../triggerMarkers';
 import type {ToolDefinition} from '../../talents/types';
-import type {JinjaFormattedChatResult} from 'llama.rn';
+import type {JinjaFormattedChatResult} from '../../llm';
 
 const tool = (name: string): ToolDefinition => ({
   type: 'function',

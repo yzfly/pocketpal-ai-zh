@@ -3,7 +3,7 @@
  */
 
 import {detectThinkingCapability} from '../thinkingCapabilityDetection';
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../services/llm';
 
 const createMockContext = (getFormattedChatResult: any) => {
   return {

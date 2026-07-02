@@ -1,5 +1,5 @@
 import {Platform} from 'react-native';
-import {loadLlamaModelInfo} from 'llama.rn';
+import {loadLlamaModelInfo} from '../services/llm';
 
 /**
  * Quantization types that are repackable and should use use_mmap=false

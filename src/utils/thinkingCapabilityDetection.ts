@@ -5,7 +5,7 @@
  * via llama.rn's getFormattedChat() API with enable_thinking support.
  */
 
-import {LlamaContext, JinjaFormattedChatResult} from 'llama.rn';
+import {LlamaContext, JinjaFormattedChatResult} from '../services/llm';
 
 export interface ThinkingDetectionResult {
   supported: boolean;

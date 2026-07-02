@@ -1,7 +1,7 @@
 import React from 'react';
 import {runInAction} from 'mobx';
 
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../../services/llm';
 import {
   render as baseRender,
   fireEvent,
@@ -31,7 +31,7 @@ describe('ChatScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    llamaRN = require('llama.rn');
+    llamaRN = require('../../../services/llm');
   });
 
   it('renders correctly when model is not loaded', () => {

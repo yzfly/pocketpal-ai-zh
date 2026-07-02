@@ -1,4 +1,4 @@
-import type {JinjaFormattedChatResult, ToolCall} from 'llama.rn';
+import type {JinjaFormattedChatResult, ToolCall} from '../llm';
 import type {ToolDefinition} from '../talents/types';
 
 /**

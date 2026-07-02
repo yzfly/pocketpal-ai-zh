@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {cloneDeep} from 'lodash';
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../../services/llm';
 
 import {submitBenchmark} from '../../../api/benchmark';
 

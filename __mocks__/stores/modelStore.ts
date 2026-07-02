@@ -5,7 +5,7 @@ import {modelsList} from '../../jest/fixtures/models';
 import {downloadManager} from '../services/downloads';
 
 import {Model, ContextInitParams} from '../../src/utils/types';
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../src/services/llm';
 import {CompletionEngine} from '../../src/utils/completionTypes';
 import {createDefaultContextInitParams} from '../../src/utils/contextInitParamsVersions';
 

@@ -1,4 +1,4 @@
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../services/llm';
 import {renderHook, act} from '@testing-library/react-native';
 
 import {textMessage} from '../../../jest/fixtures';

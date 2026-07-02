@@ -1,6 +1,6 @@
 jest.unmock('../../store');
 import {runInAction} from 'mobx';
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../services/llm';
 import {Alert, Platform} from 'react-native';
 
 import {
@@ -3386,7 +3386,7 @@ describe('ModelStore', () => {
       });
 
       // Get the mock function - use named export
-      const {initLlama} = require('llama.rn');
+      const {initLlama} = require('../../services/llm');
       initLlamaMock = initLlama;
     });
 
@@ -4167,7 +4167,7 @@ describe('ModelStore', () => {
   });
 
   describe('fetchAndPersistGGUFMetadata error handling', () => {
-    const {loadLlamaModelInfo} = require('llama.rn');
+    const {loadLlamaModelInfo} = require('../../services/llm');
 
     beforeEach(() => {
       (loadLlamaModelInfo as jest.Mock).mockReset();

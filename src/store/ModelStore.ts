@@ -7,7 +7,7 @@ import {makePersistable} from 'mobx-persist-store';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import {computed, makeAutoObservable, runInAction, toJS} from 'mobx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {ContextParams, LlamaContext, initLlama} from 'llama.rn';
+import {ContextParams, LlamaContext, initLlama} from '../services/llm';
 import {
   CompletionParams,
   CompletionEngine,
@@ -90,7 +90,7 @@ import {
 } from '../utils/contextInitParamsVersions';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
 import {getModelMemoryRequirement} from '../utils/memoryEstimator';
-import {loadLlamaModelInfo} from 'llama.rn';
+import {loadLlamaModelInfo} from '../services/llm';
 import {applyChinesePreferences} from './chineseModelPresets';
 
 /**

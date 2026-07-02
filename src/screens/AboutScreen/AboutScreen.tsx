@@ -12,7 +12,7 @@ import DeviceInfo from 'react-native-device-info';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {Text, Button, SegmentedButtons} from 'react-native-paper';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {BuildInfo} from 'llama.rn';
+import {BuildInfo} from '../../services/llm';
 
 import {submitFeedback} from '../../api/feedback';
 

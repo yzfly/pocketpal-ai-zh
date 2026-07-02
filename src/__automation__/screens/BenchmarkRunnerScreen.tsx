@@ -7,7 +7,7 @@ import {
   initLlama,
   toggleNativeLog,
   type LlamaContext,
-} from 'llama.rn';
+} from '../../services/llm';
 import {observer} from 'mobx-react';
 
 import {modelStore} from '../../store';

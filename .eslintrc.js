@@ -67,6 +67,11 @@ module.exports = {
                 message:
                   "DS replacement available: import 'Surface' from 'src/components/ui' instead. Locked thin Paper set: Text, Button, IconButton, Portal, Provider.",
               },
+              {
+                name: 'llama.rn',
+                message:
+                  'Direct llama.rn imports are banned outside the engine facade. Import from src/services/llm instead, registering new symbols there first. See docs/adr/0001-llm-engine-boundary.md.',
+              },
             ],
             patterns: [
               {
@@ -99,6 +104,15 @@ module.exports = {
     },
     {
       files: ['App.tsx', 'src/hooks/useDeepLinking.ts'],
+      rules: {
+        'no-restricted-imports': 'off',
+      },
+    },
+    {
+      // The LLM engine facade is the single sanctioned entry point for
+      // llama.rn (ADR-0001). Only this module may import it directly;
+      // everyone else goes through src/services/llm.
+      files: ['src/services/llm/**'],
       rules: {
         'no-restricted-imports': 'off',
       },

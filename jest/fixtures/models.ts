@@ -1,4 +1,4 @@
-import {NativeLlamaContext} from 'llama.rn';
+import {NativeLlamaContext} from '../../src/services/llm';
 
 import {deviceInfo} from './device-info';
 

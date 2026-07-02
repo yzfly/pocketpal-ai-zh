@@ -4,7 +4,7 @@
  */
 
 import {Platform} from 'react-native';
-import {getBackendDevicesInfo, NativeBackendDeviceInfo} from 'llama.rn';
+import {getBackendDevicesInfo, NativeBackendDeviceInfo} from '../services/llm';
 
 /**
  * Device option for UI selection

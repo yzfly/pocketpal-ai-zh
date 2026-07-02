@@ -10,7 +10,7 @@ import {
 import {VideoPalScreen} from '../VideoPalScreen';
 import {palStore, chatSessionStore, modelStore} from '../../../store';
 import type {Pal} from '../../../types/pal';
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../../services/llm';
 import {mockLlamaContextParams} from '../../../../jest/fixtures/models';
 
 const render = (ui: React.ReactElement, options: any = {}) =>

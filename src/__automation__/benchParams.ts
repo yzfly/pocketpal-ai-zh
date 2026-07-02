@@ -31,7 +31,7 @@
 
 import {Platform} from 'react-native';
 
-import type {ContextParams} from 'llama.rn';
+import type {ContextParams} from '../services/llm';
 
 import type {
   SettingsKnob,

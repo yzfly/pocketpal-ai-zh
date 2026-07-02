@@ -1,6 +1,6 @@
 import {Platform} from 'react-native';
 import {isRepackableQuantization, resolveUseMmap} from '../memorySettings';
-import {loadLlamaModelInfo} from 'llama.rn';
+import {loadLlamaModelInfo} from '../../services/llm';
 
 // Mock Platform
 jest.mock('react-native', () => ({

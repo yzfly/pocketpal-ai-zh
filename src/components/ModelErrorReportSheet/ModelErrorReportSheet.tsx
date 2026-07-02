@@ -1,7 +1,7 @@
 import {View, Alert, Platform} from 'react-native';
 import React, {useContext, useState, useEffect, useCallback} from 'react';
 
-import {ContextParams} from 'llama.rn';
+import {ContextParams} from '../../services/llm';
 import DeviceInfo from 'react-native-device-info';
 import {Text, Button, Checkbox, ActivityIndicator} from 'react-native-paper';
 

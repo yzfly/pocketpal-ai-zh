@@ -1,4 +1,4 @@
-import {LlamaContext} from 'llama.rn';
+import {LlamaContext} from '../../services/llm';
 
 import {
   LocalCompletionEngine,
