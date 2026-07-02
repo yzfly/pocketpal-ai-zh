@@ -92,6 +92,11 @@ import NativeHardwareInfo from '../specs/NativeHardwareInfo';
 import {getModelMemoryRequirement} from '../utils/memoryEstimator';
 import {loadLlamaModelInfo} from 'llama.rn';
 
+// 中文版：识别 Qwen 系列候选模型（按稳定标识和仓库名双重匹配），
+// 用于推荐列表的 Qwen 优先排序。
+const isQwenCandidate = (candidate: RuleCandidate): boolean =>
+  /qwen/i.test(candidate.model) || /qwen/i.test(candidate.hfRepo);
+
 /**
  * Factory function to create a Model object for a remote model from an OpenAI-compatible server.
  * Fills all required Model fields with sensible defaults.
@@ -650,7 +655,12 @@ class ModelStore {
       rules.classifier,
       Platform.OS as ClassifyPlatform,
     );
-    const flat = rules.tiers[tier].models.flatMap(candidate => {
+    // 中文版：Qwen 系列中文能力最强，稳定排序置顶推荐列表。放在这里
+    // （而不是只改打包的规则 JSON），远程规则更新后依然生效。
+    const candidates = [...rules.tiers[tier].models].sort(
+      (a, b) => Number(isQwenCandidate(b)) - Number(isQwenCandidate(a)),
+    );
+    const flat = candidates.flatMap(candidate => {
       const {hfModel, modelFile} = this.candidateToPair(candidate);
       const llm = hfAsModel(hfModel, modelFile);
       const named = candidate.displayName

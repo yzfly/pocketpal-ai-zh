@@ -287,6 +287,29 @@
           "size_bytes": 484220320
         },
         {
+          "model": "qwen3.5-0.8b",
+          "display_name": "Qwen3.5 0.8B",
+          "hf_repo": "unsloth/Qwen3.5-0.8B-GGUF",
+          "hf_filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
+          "params": 752393024,
+          "size_bytes": 532517120,
+          "multimodal": true,
+          "mmproj": {
+            "hf_repo": "unsloth/Qwen3.5-0.8B-GGUF",
+            "hf_filename": "mmproj-F16.gguf",
+            "size_bytes": 204987232,
+            "modalities": ["vision"]
+          }
+        },
+        {
+          "model": "minicpm5-1b",
+          "display_name": "MiniCPM5 1B",
+          "hf_repo": "openbmb/MiniCPM5-1B-GGUF",
+          "hf_filename": "MiniCPM5-1B-Q4_K_M.gguf",
+          "params": 1080632832,
+          "size_bytes": 688065920
+        },
+        {
           "model": "lfm2.5-350m",
           "display_name": "LFM2.5 350M",
           "hf_repo": "LiquidAI/LFM2.5-350M-GGUF",
@@ -344,6 +367,14 @@
             "size_bytes": 668227264,
             "modalities": ["vision"]
           }
+        },
+        {
+          "model": "minicpm5-1b",
+          "display_name": "MiniCPM5 1B",
+          "hf_repo": "openbmb/MiniCPM5-1B-GGUF",
+          "hf_filename": "MiniCPM5-1B-Q4_K_M.gguf",
+          "params": 1080632832,
+          "size_bytes": 688065920
         },
         {
           "model": "gemma-3-1b",
