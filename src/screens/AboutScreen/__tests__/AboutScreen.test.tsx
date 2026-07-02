@@ -42,7 +42,8 @@ describe('AboutScreen', () => {
   it('renders correctly', () => {
     const {getByText} = render(<AboutScreen />);
 
-    expect(getByText('PocketPal AI')).toBeTruthy();
+    // 中文版：关于页标题为应用品牌名「口袋AI」
+    expect(getByText('口袋AI')).toBeTruthy();
     expect(getByText('v1.0.0 (100)')).toBeTruthy();
     expect(getByText(l10n.en.about.supportProject)).toBeTruthy();
     expect(getByText(l10n.en.about.githubButton)).toBeTruthy();

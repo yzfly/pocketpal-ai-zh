@@ -27,7 +27,10 @@ import {TokenColors} from './types';
 // Light base colors (verbatim from src/utils/theme.ts:111-147).
 const LIGHT_PRIMARY = '#333333';
 const LIGHT_SECONDARY = '#1E4DF6';
-const LIGHT_TERTIARY = '#7880FF';
+// 中文版：亮色 tertiary 原为 #7880FF（紫），与暗色 #80E6E4（青瓷）色相
+// 不一致，且"AI 紫"点缀是通用 AI 应用的默认观感。对齐为青瓷色系，
+// 亮暗一致；对白底对比度 4.66:1（过 WCAG AA）。
+const LIGHT_TERTIARY = '#14827E';
 const LIGHT_ERROR = '#FF653F';
 const LIGHT_BACKGROUND = '#ffffff';
 const LIGHT_ON_BACKGROUND = '#111111';
@@ -47,7 +50,9 @@ export const lightColors: TokenColors = {
   onSecondaryContainer: '#424242',
   tertiary: LIGHT_TERTIARY,
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#F1F3FF',
+  // 中文版：容器色随 tertiary 从淡紫对齐为淡青瓷，onTertiaryContainer
+  // 本就是深青（#013332），无需改动。
+  tertiaryContainer: '#E4F3F1',
   onTertiaryContainer: '#013332',
   error: LIGHT_ERROR,
   onError: '#FFFFFF',
