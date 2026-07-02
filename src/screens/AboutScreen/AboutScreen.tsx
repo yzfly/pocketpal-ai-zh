@@ -177,6 +177,35 @@ export const AboutScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{l10n.about.chineseEdition}</Text>
+            <Text variant="bodyMedium" style={styles.description}>
+              {l10n.about.chineseEditionDescription}
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() =>
+                Linking.openURL('https://github.com/yzfly/pocketpal-ai-zh')
+              }
+              style={styles.actionButton}
+              icon={GithubButtonIcon}>
+              {l10n.about.chineseEditionGithubButton}
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                Clipboard.setString('云中江树');
+                Alert.alert(
+                  l10n.about.chineseEditionWechatCopiedTitle,
+                  l10n.about.chineseEditionWechatCopiedDescription,
+                );
+              }}
+              style={styles.actionButton}
+              icon={ChevronRightButtonIcon}>
+              {l10n.about.chineseEditionWechatButton}
+            </Button>
+          </View>
+
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>{l10n.about.tour}</Text>
             <Text variant="bodyMedium" style={styles.description}>
               {l10n.about.tourDescription}
