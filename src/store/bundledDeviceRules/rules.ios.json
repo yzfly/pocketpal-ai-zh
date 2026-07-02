@@ -516,6 +516,29 @@
           }
         },
         {
+          "model": "qwen3.5-9b",
+          "display_name": "Qwen3.5 9B",
+          "hf_repo": "unsloth/Qwen3.5-9B-GGUF",
+          "hf_filename": "Qwen3.5-9B-Q4_K_M.gguf",
+          "params": 8953803264,
+          "size_bytes": 5680522464,
+          "multimodal": true,
+          "mmproj": {
+            "hf_repo": "unsloth/Qwen3.5-9B-GGUF",
+            "hf_filename": "mmproj-F16.gguf",
+            "size_bytes": 918166080,
+            "modalities": ["vision"]
+          }
+        },
+        {
+          "model": "deepseek-r1-qwen3-8b",
+          "display_name": "DeepSeek R1 8B",
+          "hf_repo": "unsloth/DeepSeek-R1-0528-Qwen3-8B-GGUF",
+          "hf_filename": "DeepSeek-R1-0528-Qwen3-8B-Q4_K_M.gguf",
+          "params": 8190735360,
+          "size_bytes": 5027785216
+        },
+        {
           "model": "gemma-3-1b",
           "display_name": "Gemma 3 1B",
           "hf_repo": "ggml-org/gemma-3-1b-it-GGUF",
