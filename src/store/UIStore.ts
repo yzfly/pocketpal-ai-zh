@@ -9,6 +9,7 @@ import {
   type AvailableLanguage,
 } from '../locales';
 import {ErrorState} from '../utils/errors';
+import {setHfMirrorEnabled} from '../config';
 import {
   INITIAL_ONBOARDING_STATE,
   type OnboardingState,
@@ -38,8 +39,12 @@ export class UIStore {
   colorScheme: 'light' | 'dark' =
     Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 
-  // Current selected language (default to English)
-  _language: AvailableLanguage = 'en';
+  // 中文版默认语言为简体中文
+  _language: AvailableLanguage = 'zh';
+
+  // HF 镜像开关（hf-mirror.com），中国大陆网络默认开启；
+  // 运行时状态经 setHfMirrorEnabled 同步到 config 层。
+  useHfMirror = true;
 
   // List of supported languages (derived from locales registry)
   get supportedLanguages(): readonly AvailableLanguage[] {
@@ -119,12 +124,20 @@ export class UIStore {
         'displayMemUsage',
         'benchmarkShareDialog',
         '_language',
+        'useHfMirror',
         'toolCompatWarnedModels',
         'hasCompletedOnboarding',
         'onboardingTopicsSnapshot',
       ],
       storage: AsyncStorage,
+      // makePersistable 在测试环境的 mock 下可能不返回 Promise
+    })?.then?.(() => {
+      // 持久化状态恢复后，把镜像开关同步到 config 层
+      setHfMirrorEnabled(this.useHfMirror);
     });
+
+    // 恢复完成前按默认值生效
+    setHfMirrorEnabled(this.useHfMirror);
 
     // backwards compatibility. Removed this from the ui settings screen.
     this.iOSBackgroundDownloading = true;
@@ -163,6 +176,13 @@ export class UIStore {
 
   get l10n() {
     return l10n[this.language];
+  }
+
+  setUseHfMirror(value: boolean) {
+    runInAction(() => {
+      this.useHfMirror = value;
+    });
+    setHfMirrorEnabled(value);
   }
 
   setAutoNavigateToChat(value: boolean) {

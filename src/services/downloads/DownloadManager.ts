@@ -10,6 +10,7 @@ import {
 } from './types';
 
 import {Model} from '../../utils/types';
+import {applyHfMirror, canonicalizeHfUrl} from '../../config';
 import {formatBytes, hasEnoughSpace, hfUserAgent} from '../../utils';
 import {uiStore} from '../../store';
 import NativeDownloadModule from '../../specs/NativeDownloadModule';
@@ -330,7 +331,8 @@ export class DownloadManager {
 
       // Create the download task
       const downloadResult = RNFS.downloadFile({
-        fromUrl: model.downloadUrl!,
+        // 带 token 时保持直连 huggingface.co，公开模型走镜像加速
+        fromUrl: applyHfMirror(model.downloadUrl!, !!authToken),
         toFile: destinationPath,
         background: uiStore.iOSBackgroundDownloading,
         discretionary: false,
@@ -496,7 +498,11 @@ export class DownloadManager {
         ...(authToken ? {authToken} : {}),
       };
       const response: DownloadResponse =
-        await NativeDownloadModule.startDownload(model.downloadUrl!, config);
+        await NativeDownloadModule.startDownload(
+          // 带 token 时保持直连 huggingface.co，公开模型走镜像加速
+          applyHfMirror(model.downloadUrl!, !!authToken),
+          config,
+        );
 
       // Store the download ID
       downloadJob.downloadId = response.downloadId;
@@ -642,7 +648,9 @@ export class DownloadManager {
       // For each active download, find the corresponding model and create a download job
       for (const download of activeDownloads) {
         const model = models.find(m => {
-          return m.downloadUrl && download.url === m.downloadUrl;
+          return (
+            m.downloadUrl && canonicalizeHfUrl(download.url) === m.downloadUrl
+          );
         });
 
         if (!model) {

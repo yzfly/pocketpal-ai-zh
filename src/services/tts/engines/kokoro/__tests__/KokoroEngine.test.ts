@@ -4,6 +4,7 @@
  */
 
 import {Platform} from 'react-native';
+import {applyHfMirror} from '../../../../../config';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
@@ -121,14 +122,14 @@ describe('KokoroEngine', () => {
       for (const file of KOKORO_MODEL_FILES) {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fromUrl: `${KOKORO_MODEL_BASE_URL}/${file.urlPath}`,
+            fromUrl: applyHfMirror(`${KOKORO_MODEL_BASE_URL}/${file.urlPath}`),
             toFile: expect.stringContaining(`/tts/kokoro/${file.name}`),
           }),
         );
       }
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: TTS_DICT_URL,
+          fromUrl: applyHfMirror(TTS_DICT_URL),
           toFile: expect.stringContaining(`/tts/kokoro/${TTS_DICT_FILENAME}`),
         }),
       );
@@ -137,7 +138,7 @@ describe('KokoroEngine', () => {
       for (const voice of KOKORO_VOICES) {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fromUrl: `${KOKORO_VOICES_BASE_URL}/${voice.id}.bin`,
+            fromUrl: applyHfMirror(`${KOKORO_VOICES_BASE_URL}/${voice.id}.bin`),
             toFile: expect.stringContaining(`/voices/${voice.id}.bin`),
           }),
         );

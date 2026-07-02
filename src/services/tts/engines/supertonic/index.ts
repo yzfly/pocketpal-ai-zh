@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 
 import * as RNFS from '@dr.pogodin/react-native-fs';
+import {applyHfMirror} from '../../../../config';
 import Speech, {
   TTSEngine,
   type SupertonicLanguage,
@@ -190,7 +191,9 @@ export class SupertonicEngine implements Engine {
         const file = SUPERTONIC_MODEL_FILES[i]!;
         const target = this.getFilePath(file.name);
         const result = await RNFS.downloadFile({
-          fromUrl: `${SUPERTONIC_MODEL_BASE_URL}/${file.urlPath}`,
+          fromUrl: applyHfMirror(
+            `${SUPERTONIC_MODEL_BASE_URL}/${file.urlPath}`,
+          ),
           toFile: target,
           background: false,
           discretionary: false,
@@ -222,7 +225,9 @@ export class SupertonicEngine implements Engine {
         const target = this.getFilePath(`${voice.id}.json`);
         try {
           const result = await RNFS.downloadFile({
-            fromUrl: `${SUPERTONIC_VOICES_BASE_URL}/${voice.id}.json`,
+            fromUrl: applyHfMirror(
+              `${SUPERTONIC_VOICES_BASE_URL}/${voice.id}.json`,
+            ),
             toFile: target,
             background: false,
             discretionary: false,

@@ -4,6 +4,7 @@ import * as RNFS from '@dr.pogodin/react-native-fs';
 
 import {basicModel} from '../../../../jest/fixtures/models';
 
+import {applyHfMirror} from '../../../config';
 import {DownloadManager, DownloadCancelledError} from '../DownloadManager';
 
 jest.mock('react-native', () => {
@@ -98,7 +99,8 @@ describe('DownloadManager', () => {
 
     expect(RNFS.mkdir).toHaveBeenCalledWith('/path/to');
     expect(NativeModules.DownloadModule.startDownload).toHaveBeenCalledWith(
-      basicModel.downloadUrl,
+      // 中文版：无 token 的公开模型下载走 HF 镜像
+      applyHfMirror(basicModel.downloadUrl!),
       expect.objectContaining({
         destination: '/path/to/model.bin',
       }),
@@ -131,7 +133,7 @@ describe('DownloadManager', () => {
     expect(RNFS.mkdir).toHaveBeenCalledWith('/path/to');
     expect(RNFS.downloadFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        fromUrl: basicModel.downloadUrl,
+        fromUrl: applyHfMirror(basicModel.downloadUrl!),
         toFile: '/path/to/model.bin',
       }),
     );
@@ -270,7 +272,7 @@ describe('DownloadManager', () => {
 
     expect(RNFS.downloadFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        fromUrl: basicModel.downloadUrl,
+        fromUrl: applyHfMirror(basicModel.downloadUrl!),
         toFile: '/path/to/model.bin',
         discretionary: false,
       }),

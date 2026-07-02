@@ -927,6 +927,24 @@ export const SettingsScreen: React.FC = observer(() => {
                 </View>
                 <Divider />
 
+                {/* HF 镜像加速 */}
+                <View style={styles.switchContainer}>
+                  <View style={styles.textContainer}>
+                    <Text variant="titleMedium" style={styles.textLabel}>
+                      {l10n.settings.useHfMirror}
+                    </Text>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {l10n.settings.useHfMirrorDescription}
+                    </Text>
+                  </View>
+                  <Switch
+                    testID="hf-mirror-switch"
+                    value={uiStore.useHfMirror}
+                    onValueChange={value => uiStore.setUseHfMirror(value)}
+                  />
+                </View>
+                <Divider />
+
                 {/* Dark Mode */}
                 <View style={styles.switchContainer}>
                   <View style={styles.textContainer}>

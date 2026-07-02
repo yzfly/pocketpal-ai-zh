@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 
 import * as RNFS from '@dr.pogodin/react-native-fs';
+import {applyHfMirror} from '../../../../config';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
 import {
@@ -128,7 +129,7 @@ export class KokoroEngine implements Engine {
         const fromUrl =
           'url' in file ? file.url : `${KOKORO_MODEL_BASE_URL}/${file.urlPath}`;
         const result = await RNFS.downloadFile({
-          fromUrl,
+          fromUrl: applyHfMirror(fromUrl),
           toFile: target,
           background: false,
           discretionary: false,
@@ -171,7 +172,7 @@ export class KokoroEngine implements Engine {
       const target = `${voicesDir}/${voice.id}.bin`;
       try {
         const result = await RNFS.downloadFile({
-          fromUrl: `${KOKORO_VOICES_BASE_URL}/${voice.id}.bin`,
+          fromUrl: applyHfMirror(`${KOKORO_VOICES_BASE_URL}/${voice.id}.bin`),
           toFile: target,
           background: false,
           discretionary: false,

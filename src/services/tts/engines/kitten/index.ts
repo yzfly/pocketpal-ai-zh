@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 
 import * as RNFS from '@dr.pogodin/react-native-fs';
+import {applyHfMirror} from '../../../../config';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
 import {
@@ -96,7 +97,7 @@ export class KittenEngine implements Engine {
         const file = allFiles[i]!;
         const target = this.getFilePath(file.name);
         const result = await RNFS.downloadFile({
-          fromUrl: file.url,
+          fromUrl: applyHfMirror(file.url),
           toFile: target,
           background: false,
           discretionary: false,

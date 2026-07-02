@@ -5,11 +5,17 @@ import {ErrorSnackbar} from '../ErrorSnackbar';
 import {ErrorState, NetworkError, ServerError} from '../../../utils/errors';
 import {createErrorState} from '../../../utils/errors';
 import {l10n} from '../../../locales';
+import {uiStore} from '../../../store/UIStore';
 
 describe('ErrorSnackbar', () => {
   const mockDismiss = jest.fn();
   const mockRetry = jest.fn();
   const mockSettings = jest.fn();
+
+  // 中文版默认语言为 zh；本套件断言英文文案，显式切回 en
+  beforeAll(() => {
+    uiStore.setLanguage('en');
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();

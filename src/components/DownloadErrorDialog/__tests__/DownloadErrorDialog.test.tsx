@@ -4,6 +4,7 @@ import {render} from '../../../../jest/test-utils';
 import {DownloadErrorDialog} from '../DownloadErrorDialog';
 import {Linking} from 'react-native';
 import {hfStore} from '../../../store';
+import {uiStore} from '../../../store/UIStore';
 import {createModel} from '../../../../jest/fixtures/models';
 import {l10n} from '../../../locales';
 import {createErrorState, ErrorState} from '../../../utils/errors';
@@ -34,6 +35,11 @@ describe('DownloadErrorDialog', () => {
     id: 'test-model',
     name: 'Test Model',
     hfUrl: 'https://huggingface.co/test/test-model',
+  });
+
+  // 中文版默认语言为 zh；本套件断言英文文案，显式切回 en
+  beforeAll(() => {
+    uiStore.setLanguage('en');
   });
 
   beforeEach(() => {

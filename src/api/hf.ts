@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import {urls} from '../config';
+import {applyHfMirror, urls} from '../config';
 
 import {hfUserAgent} from '../utils/hfUserAgent';
 import {
@@ -55,19 +55,22 @@ export async function fetchModels({
       headers.Authorization = `Bearer ${authToken}`;
     }
 
-    const response = await axios.get(nextPageUrl || urls.modelsList(), {
-      params: {
-        search,
-        author,
-        filter,
-        sort,
-        direction,
-        limit,
-        full,
-        config,
+    const response = await axios.get(
+      applyHfMirror(nextPageUrl || urls.modelsList(), !!authToken),
+      {
+        params: {
+          search,
+          author,
+          filter,
+          sort,
+          direction,
+          limit,
+          full,
+          config,
+        },
+        headers,
       },
-      headers,
-    });
+    );
 
     const linkHeader = response.headers.link;
     let nextLink = null;
@@ -107,7 +110,7 @@ export const fetchModelFilesDetails = async (
       headers.Authorization = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(url, {headers});
+    const response = await fetch(applyHfMirror(url, !!authToken), {headers});
 
     if (!response.ok) {
       throw new Error(`Error fetching model files: ${response.statusText}`);
@@ -139,7 +142,7 @@ export const fetchGGUFSpecs = async (
       headers.Authorization = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(url, {headers});
+    const response = await fetch(applyHfMirror(url, !!authToken), {headers});
 
     if (!response.ok) {
       throw new Error(`Error fetching GGUF specs: ${response.statusText}`);
@@ -185,7 +188,7 @@ export async function fetchModelInfo({
     : urls.modelSpecs(repoId);
 
   try {
-    const response = await axios.get<any>(base, {
+    const response = await axios.get<any>(applyHfMirror(base, !!authToken), {
       params: {
         full,
       },

@@ -3,6 +3,7 @@
  */
 
 import {Platform} from 'react-native';
+import {applyHfMirror} from '../../../../../config';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
@@ -89,14 +90,14 @@ describe('KittenEngine', () => {
       for (const file of KITTEN_MODEL_FILES) {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fromUrl: `${KITTEN_MODEL_BASE_URL}/${file.urlPath}`,
+            fromUrl: applyHfMirror(`${KITTEN_MODEL_BASE_URL}/${file.urlPath}`),
             toFile: expect.stringContaining(`/tts/kitten/${file.name}`),
           }),
         );
       }
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: TTS_DICT_URL,
+          fromUrl: applyHfMirror(TTS_DICT_URL),
           toFile: expect.stringContaining(`/tts/kitten/${TTS_DICT_FILENAME}`),
         }),
       );

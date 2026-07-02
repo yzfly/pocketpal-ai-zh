@@ -7,6 +7,7 @@
  */
 
 import {Platform} from 'react-native';
+import {applyHfMirror} from '../../../../../config';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
@@ -149,7 +150,9 @@ describe('SupertonicEngine', () => {
       for (const file of SUPERTONIC_MODEL_FILES) {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fromUrl: `${SUPERTONIC_MODEL_BASE_URL}/${file.urlPath}`,
+            fromUrl: applyHfMirror(
+              `${SUPERTONIC_MODEL_BASE_URL}/${file.urlPath}`,
+            ),
             toFile: expect.stringContaining(`/tts/supertonic/${file.name}`),
           }),
         );

@@ -82,7 +82,11 @@ export function createErrorState(
     // Check URL to determine service if not explicitly provided
     if (!errorService) {
       const url = error.config?.url || '';
-      if (url.includes('huggingface.co') || url.includes('hf.co')) {
+      if (
+        url.includes('huggingface.co') ||
+        url.includes('hf.co') ||
+        url.includes('hf-mirror.com')
+      ) {
         errorService = 'huggingface';
       }
     }
