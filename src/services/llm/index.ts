@@ -4,14 +4,19 @@
  * 边界由 .eslintrc.js 的 no-restricted-imports 强制（仅本目录豁免），
  * 决策与三阶段路线图见 docs/adr/0001-llm-engine-boundary.md。
  *
- * 阶段一（当前）：1:1 透传重导出，不改任何行为。
- * 阶段二：原生 context 生命周期（单例 + 串行队列 + 前后台释放）从
- *         ModelStore 迁入本模块。
- * 阶段三：抽出 LlmBackend 接口，llama.cpp 成为第一个实现。
+ * 阶段一（已落地）：1:1 透传重导出，不改任何行为。
+ * 阶段二（已落地）：LlmEngine（engine.ts）持有原生 context 的所有权
+ *         与生命周期机制；策略仍在 ModelStore。见 ADR-0002。
+ * 阶段三（已落地）：LlmBackend 接缝（backend.ts），llama.cpp 为首个实现。
  *
  * 新增对 llama.rn 符号的依赖时，先在此登记导出，再从 'services/llm'
  * 导入——这是有意设计的摩擦，用来保持引用面清单可审计。
  */
+
+// ─── 引擎与后端 ──────────────────────────────────────────────
+export {LlmEngine, llmEngine} from './engine';
+export {llamaCppBackend} from './backend';
+export type {LlmBackend, LlmSession} from './backend';
 
 // ─── 运行时符号 ───────────────────────────────────────────────
 // 原生模块的完整可执行面。除本文件外，任何代码不得直接触碰。

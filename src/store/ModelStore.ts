@@ -7,7 +7,7 @@ import {makePersistable} from 'mobx-persist-store';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import {computed, makeAutoObservable, runInAction, toJS} from 'mobx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {ContextParams, LlamaContext, initLlama} from '../services/llm';
+import {ContextParams, LlamaContext, llmEngine} from '../services/llm';
 import {
   CompletionParams,
   CompletionEngine,
@@ -90,7 +90,6 @@ import {
 } from '../utils/contextInitParamsVersions';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
 import {getModelMemoryRequirement} from '../utils/memoryEstimator';
-import {loadLlamaModelInfo} from '../services/llm';
 import {applyChinesePreferences} from './chineseModelPresets';
 
 /**
@@ -170,7 +169,15 @@ class ModelStore {
   // Track initialization settings for the active context
   activeContextSettings: ContextInitParams | undefined = undefined;
 
-  context: LlamaContext | undefined = undefined;
+  // 原生 context 的所有权在 LlmEngine（ADR-0002）；这里保留同名
+  // 访问器对，读写都转发引擎，对外 API 与响应式行为不变
+  get context(): LlamaContext | undefined {
+    return llmEngine.context;
+  }
+
+  set context(ctx: LlamaContext | undefined) {
+    llmEngine.setContext(ctx);
+  }
 
   engine: CompletionEngine | undefined = undefined;
 
@@ -185,15 +192,23 @@ class ModelStore {
 
   MIN_CONTEXT_SIZE = 200;
 
-  inferencing: boolean = false;
-  isStreaming: boolean = false;
+  // 推理标志位与活跃补全 promise 由 LlmEngine 持有（释放时的
+  // stop-await-release 判定需要它们）；访问器对保持对外 API 不变
+  get inferencing(): boolean {
+    return llmEngine.inferencing;
+  }
 
-  // Track active completion promise for safe context release
-  // This prevents race condition where context is freed while completion is still running
-  private activeCompletionPromise: Promise<any> | null = null;
+  set inferencing(value: boolean) {
+    llmEngine.setInferencing(value);
+  }
 
-  // Mutex to serialize model load/release operations to prevent memory leaks
-  private contextOperationMutex: Promise<void> = Promise.resolve();
+  get isStreaming(): boolean {
+    return llmEngine.isStreaming;
+  }
+
+  set isStreaming(value: boolean) {
+    llmEngine.setIsStreaming(value);
+  }
 
   // Last requested model ID - enables "last one wins" during rapid switching
   private pendingModelId: string | null = null;
@@ -1404,7 +1419,7 @@ class ModelStore {
         return;
       }
 
-      const modelInfo = await loadLlamaModelInfo(filePath);
+      const modelInfo = await llmEngine.backend.readModelInfo(filePath);
       if (!modelInfo || typeof modelInfo !== 'object') {
         console.warn('[ModelStore] Invalid model info returned');
         return;
@@ -1663,14 +1678,12 @@ class ModelStore {
       this.benchmarkActive = true;
     });
 
-    const op = this.contextOperationMutex.then(async () => {
+    await llmEngine.runExclusive(async () => {
       // Release any context the rest of the app loaded (e.g. ChatView's
       // auto-load on cold launch). clearActiveModel:true so the queued
       // post-mutex callers see a clean slate if they ever run.
       await this._releaseContextInternal(true);
     });
-    this.contextOperationMutex = op.then(() => {}).catch(() => {});
-    await op;
   };
 
   /**
@@ -1750,7 +1763,7 @@ class ModelStore {
 
       // === Phase 2: Execute context operations WITH mutex ===
 
-      const operationPromise = this.contextOperationMutex.then(async () => {
+      const operationPromise = llmEngine.runExclusive(async () => {
         // A benchmark may have started while this load sat in the mutex
         // queue (cold-launch deep-link race). Bail before doing native work
         // — enterBenchmarkMode will release any context we leave behind.
@@ -1793,11 +1806,6 @@ class ModelStore {
         );
       });
 
-      // Keep mutex chain intact by swallowing errors
-      this.contextOperationMutex = operationPromise
-        .then(() => {})
-        .catch(() => {});
-
       return await operationPromise;
     } finally {
       runInAction(() => {
@@ -1836,7 +1844,7 @@ class ModelStore {
       const contextInitParams = createContextInitParams(effectiveSettings);
 
       const t0 = Date.now();
-      const ctx = await initLlama(
+      const ctx = await llmEngine.loadModel(
         {
           model: filePath,
           ...effectiveSettings, // Use effectiveSettings without version for llama.rn
@@ -1982,69 +1990,12 @@ class ModelStore {
     }
 
     try {
-      // IMPORTANT: Stop-Await-Release Pattern
-      // This prevents race condition where completion callback fires after context is freed
-      // which causes SIGSEGV in isMultimodalEnabled/createCompletionResult
-      if (
-        this.inferencing ||
-        this.isStreaming ||
-        this.activeCompletionPromise
-      ) {
-        console.log('Stopping active completion before context release');
-
-        // Step 1: Signal the completion to stop
-        try {
-          await this.context.stopCompletion();
-        } catch (stopError) {
-          console.warn('Error stopping completion:', stopError);
-          // Continue with release even if stop fails
-        }
-
-        // Step 2: Wait for the completion promise to actually finish
-        // This is critical - stopCompletion() only signals, it doesn't wait
-        if (this.activeCompletionPromise) {
-          console.log('Waiting for completion promise to finish...');
-          try {
-            // Wait for promise to settle (ignore errors, just wait for it to complete)
-            await this.activeCompletionPromise.catch(() => {});
-          } catch {
-            // Ignore any errors, we just need to wait
-          }
-          this.activeCompletionPromise = null;
-        }
-
-        // Clear inference flags
-        runInAction(() => {
-          this.inferencing = false;
-          this.isStreaming = false;
-        });
-      }
-
-      // Step 3: Now safe to release - First check if multimodal is enabled and release it if needed
-      const isMultimodalEnabled = await this.isMultimodalEnabled();
-      if (isMultimodalEnabled) {
-        console.log('Releasing multimodal context first');
-        try {
-          await this.context.releaseMultimodal();
-          // Immediately clear multimodal state after successful release
-          runInAction(() => {
-            this.isMultimodalActive = false;
-            this.activeProjectionModelId = undefined;
-          });
-          console.log('Multimodal context released and state cleared');
-        } catch (error) {
-          console.error('Error releasing multimodal context:', error);
-          // Even if release fails, clear the state to prevent blocking deletion
-          runInAction(() => {
-            this.isMultimodalActive = false;
-            this.activeProjectionModelId = undefined;
-          });
-        }
-      }
-
-      // Then release the main context
-      await this.context.release();
-      console.log('released');
+      // 机制（stop-await-release、multimodal 子 context、原生释放）
+      // 在引擎内执行；multimodal 判定是策略（缓存标志 + isContextLoading
+      // 防护），以回调传入，引擎在停止补全之后才评估——时序与收口前一致
+      await llmEngine.releaseUnsafe({
+        shouldReleaseMultimodal: () => this.isMultimodalEnabled(),
+      });
     } catch (error) {
       console.error('Error during context release:', error);
     } finally {
@@ -2084,16 +2035,9 @@ class ModelStore {
 
   /** Acquires mutex before releasing context. */
   releaseContext = async (clearActiveModel: boolean = false) => {
-    const operationPromise = this.contextOperationMutex.then(async () => {
-      return this._releaseContextInternal(clearActiveModel);
-    });
-
-    // Swallow errors to keep mutex chain intact
-    this.contextOperationMutex = operationPromise
-      .then(() => {})
-      .catch(() => {});
-
-    return operationPromise;
+    return llmEngine.runExclusive(() =>
+      this._releaseContextInternal(clearActiveModel),
+    );
   };
 
   manualReleaseContext = async () => {
@@ -2860,7 +2804,7 @@ class ModelStore {
    * @param promise The completion promise to track
    */
   registerCompletionPromise(promise: Promise<any>) {
-    this.activeCompletionPromise = promise;
+    llmEngine.registerCompletionPromise(promise);
   }
 
   /**
@@ -2868,7 +2812,7 @@ class ModelStore {
    * This should be called when the completion finishes (success or error).
    */
   clearCompletionPromise() {
-    this.activeCompletionPromise = null;
+    llmEngine.clearCompletionPromise();
   }
 
   /**
