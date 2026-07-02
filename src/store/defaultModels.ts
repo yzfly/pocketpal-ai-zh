@@ -231,7 +231,7 @@ const crossPlatformModels: Model[] = [
       }
     },
   {
-    id: 'qwen/qwen2.5-0.5b-instruct-GGUF/qwen2.5-1.5b-instruct-q2_k.gguf',
+    id: 'qwen/qwen2.5-0.5b-instruct-GGUF/qwen2.5-0.5b-instruct-q2_k.gguf',
     author: 'qwen',
     name: "口袋助手 mini",
     type: 'LangGPT 优选模型',
