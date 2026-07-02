@@ -545,7 +545,7 @@ exports[`CategoryBadge — snapshot matrix baseline (variant x size x {default,d
       [
         {
           "alignSelf": "flex-start",
-          "backgroundColor": "#F1F3FF",
+          "backgroundColor": "#E4F3F1",
           "borderRadius": 2,
           "paddingHorizontal": 8,
           "paddingVertical": 2,
@@ -589,7 +589,7 @@ exports[`CategoryBadge — snapshot matrix baseline (variant x size x {default,d
       [
         {
           "alignSelf": "flex-start",
-          "backgroundColor": "#F1F3FF",
+          "backgroundColor": "#E4F3F1",
           "borderRadius": 2,
           "paddingHorizontal": 8,
           "paddingVertical": 2,
@@ -633,7 +633,7 @@ exports[`CategoryBadge — snapshot matrix baseline (variant x size x {default,d
       [
         {
           "alignSelf": "flex-start",
-          "backgroundColor": "#F1F3FF",
+          "backgroundColor": "#E4F3F1",
           "borderRadius": 2,
           "paddingHorizontal": 4,
           "paddingVertical": 2,
@@ -677,7 +677,7 @@ exports[`CategoryBadge — snapshot matrix baseline (variant x size x {default,d
       [
         {
           "alignSelf": "flex-start",
-          "backgroundColor": "#F1F3FF",
+          "backgroundColor": "#E4F3F1",
           "borderRadius": 2,
           "paddingHorizontal": 4,
           "paddingVertical": 2,
