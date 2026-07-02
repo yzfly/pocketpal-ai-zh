@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import {applyHfMirror, urls} from '../config';
+import {resolveHfRequest, urls} from '../config';
 
 import {hfUserAgent} from '../utils/hfUserAgent';
 import {
@@ -49,28 +49,27 @@ export async function fetchModels({
   authToken?: string | null;
 }): Promise<HuggingFaceModelsResponse> {
   try {
+    // 统一收口：镜像开启时改写域名并剥离 token（token 绝不发给镜像）
+    const req = resolveHfRequest(nextPageUrl || urls.modelsList(), authToken);
     const headers: Record<string, string> = {'User-Agent': hfUserAgent()};
 
-    if (authToken) {
-      headers.Authorization = `Bearer ${authToken}`;
+    if (req.authToken) {
+      headers.Authorization = `Bearer ${req.authToken}`;
     }
 
-    const response = await axios.get(
-      applyHfMirror(nextPageUrl || urls.modelsList(), !!authToken),
-      {
-        params: {
-          search,
-          author,
-          filter,
-          sort,
-          direction,
-          limit,
-          full,
-          config,
-        },
-        headers,
+    const response = await axios.get(req.url, {
+      params: {
+        search,
+        author,
+        filter,
+        sort,
+        direction,
+        limit,
+        full,
+        config,
       },
-    );
+      headers,
+    });
 
     const linkHeader = response.headers.link;
     let nextLink = null;
@@ -102,15 +101,18 @@ export const fetchModelFilesDetails = async (
   modelId: string,
   authToken?: string | null,
 ): Promise<ModelFileDetails[]> => {
-  const url = `${urls.modelTree(modelId)}?recursive=true`;
+  const req = resolveHfRequest(
+    `${urls.modelTree(modelId)}?recursive=true`,
+    authToken,
+  );
 
   try {
     const headers: Record<string, string> = {'User-Agent': hfUserAgent()};
-    if (authToken) {
-      headers.Authorization = `Bearer ${authToken}`;
+    if (req.authToken) {
+      headers.Authorization = `Bearer ${req.authToken}`;
     }
 
-    const response = await fetch(applyHfMirror(url, !!authToken), {headers});
+    const response = await fetch(req.url, {headers});
 
     if (!response.ok) {
       throw new Error(`Error fetching model files: ${response.statusText}`);
@@ -134,15 +136,18 @@ export const fetchGGUFSpecs = async (
   modelId: string,
   authToken?: string | null,
 ): Promise<GGUFSpecs> => {
-  const url = `${urls.modelSpecs(modelId)}?expand[]=gguf`;
+  const req = resolveHfRequest(
+    `${urls.modelSpecs(modelId)}?expand[]=gguf`,
+    authToken,
+  );
 
   try {
     const headers: Record<string, string> = {'User-Agent': hfUserAgent()};
-    if (authToken) {
-      headers.Authorization = `Bearer ${authToken}`;
+    if (req.authToken) {
+      headers.Authorization = `Bearer ${req.authToken}`;
     }
 
-    const response = await fetch(applyHfMirror(url, !!authToken), {headers});
+    const response = await fetch(req.url, {headers});
 
     if (!response.ok) {
       throw new Error(`Error fetching GGUF specs: ${response.statusText}`);
@@ -178,17 +183,20 @@ export async function fetchModelInfo({
   authToken?: string | null;
   stripFields?: string[];
 }): Promise<Partial<HuggingFaceModel>> {
+  const req = resolveHfRequest(
+    revision
+      ? `${urls.modelSpecs(repoId)}/revision/${revision}`
+      : urls.modelSpecs(repoId),
+    authToken,
+  );
+
   const headers: Record<string, string> = {'User-Agent': hfUserAgent()};
-  if (authToken) {
-    headers.Authorization = `Bearer ${authToken}`;
+  if (req.authToken) {
+    headers.Authorization = `Bearer ${req.authToken}`;
   }
 
-  const base = revision
-    ? `${urls.modelSpecs(repoId)}/revision/${revision}`
-    : urls.modelSpecs(repoId);
-
   try {
-    const response = await axios.get<any>(applyHfMirror(base, !!authToken), {
+    const response = await axios.get<any>(req.url, {
       params: {
         full,
       },

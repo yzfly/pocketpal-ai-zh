@@ -10,7 +10,7 @@ import {
 } from './types';
 
 import {Model} from '../../utils/types';
-import {applyHfMirror, canonicalizeHfUrl} from '../../config';
+import {canonicalizeHfUrl, resolveHfRequest} from '../../config';
 import {formatBytes, hasEnoughSpace, hfUserAgent} from '../../utils';
 import {uiStore} from '../../store';
 import NativeDownloadModule from '../../specs/NativeDownloadModule';
@@ -264,15 +264,17 @@ export class DownloadManager {
       return;
     }
 
-    // Only send the HF auth token to huggingface.co.
-    const effectiveAuthToken = isHuggingFaceUrl(model.downloadUrl)
-      ? authToken
-      : null;
-
     if (!model.downloadUrl) {
       console.error(`${TAG}: Model has no download URL`);
       throw new Error('Model has no download URL');
     }
+
+    // 统一收口：镜像开启时改写下载域名并剥离 token（token 绝不发给镜像）。
+    // isHuggingFaceUrl 作为纵深防御保留：token 只跟随规范 HF 域名。
+    const req = resolveHfRequest(
+      model.downloadUrl,
+      isHuggingFaceUrl(model.downloadUrl) ? authToken : null,
+    );
 
     const isEnoughSpace = await hasEnoughSpace(model);
     if (!isEnoughSpace) {
@@ -296,12 +298,18 @@ export class DownloadManager {
     }
 
     if (Platform.OS === 'ios') {
-      await this.startIOSDownload(model, destinationPath, effectiveAuthToken);
+      await this.startIOSDownload(
+        model,
+        destinationPath,
+        req.url,
+        req.authToken,
+      );
     } else {
       await this.startAndroidDownload(
         model,
         destinationPath,
-        effectiveAuthToken,
+        req.url,
+        req.authToken,
       );
     }
   }
@@ -309,6 +317,7 @@ export class DownloadManager {
   private async startIOSDownload(
     model: Model,
     destinationPath: string,
+    requestUrl: string,
     authToken?: string | null,
   ): Promise<void> {
     try {
@@ -331,8 +340,7 @@ export class DownloadManager {
 
       // Create the download task
       const downloadResult = RNFS.downloadFile({
-        // 带 token 时保持直连 huggingface.co，公开模型走镜像加速
-        fromUrl: applyHfMirror(model.downloadUrl!, !!authToken),
+        fromUrl: requestUrl,
         toFile: destinationPath,
         background: uiStore.iOSBackgroundDownloading,
         discretionary: false,
@@ -469,6 +477,7 @@ export class DownloadManager {
   private async startAndroidDownload(
     model: Model,
     destinationPath: string,
+    requestUrl: string,
     authToken?: string | null,
   ): Promise<void> {
     try {
@@ -498,11 +507,7 @@ export class DownloadManager {
         ...(authToken ? {authToken} : {}),
       };
       const response: DownloadResponse =
-        await NativeDownloadModule.startDownload(
-          // 带 token 时保持直连 huggingface.co，公开模型走镜像加速
-          applyHfMirror(model.downloadUrl!, !!authToken),
-          config,
-        );
+        await NativeDownloadModule.startDownload(requestUrl, config);
 
       // Store the download ID
       downloadJob.downloadId = response.downloadId;

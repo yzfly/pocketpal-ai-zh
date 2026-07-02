@@ -1,4 +1,5 @@
 import React from 'react';
+import {applyHfMirror} from '../../config';
 import {View, Linking} from 'react-native';
 import {Text, Portal} from 'react-native-paper';
 
@@ -151,7 +152,8 @@ export const DownloadErrorDialog: React.FC<DownloadErrorDialogProps> = ({
       actions.push({
         label: alerts.viewOnHuggingFace,
         onPress: () => {
-          Linking.openURL(model.hfUrl);
+          // 镜像开启时打开镜像站页面（官方站在目标网络不可达）
+          Linking.openURL(applyHfMirror(model.hfUrl));
         },
         mode: 'text' as const,
       });

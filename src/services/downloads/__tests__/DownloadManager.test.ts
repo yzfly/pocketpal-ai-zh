@@ -4,7 +4,7 @@ import * as RNFS from '@dr.pogodin/react-native-fs';
 
 import {basicModel} from '../../../../jest/fixtures/models';
 
-import {applyHfMirror} from '../../../config';
+import {setHfMirrorEnabled} from '../../../config';
 import {DownloadManager, DownloadCancelledError} from '../DownloadManager';
 
 jest.mock('react-native', () => {
@@ -99,8 +99,11 @@ describe('DownloadManager', () => {
 
     expect(RNFS.mkdir).toHaveBeenCalledWith('/path/to');
     expect(NativeModules.DownloadModule.startDownload).toHaveBeenCalledWith(
-      // 中文版：无 token 的公开模型下载走 HF 镜像
-      applyHfMirror(basicModel.downloadUrl!),
+      // 中文版：无 token 的公开模型下载走 HF 镜像（期望值独立构造，勿用 applyHfMirror）
+      basicModel.downloadUrl!.replace(
+        'https://huggingface.co',
+        'https://hf-mirror.com',
+      ),
       expect.objectContaining({
         destination: '/path/to/model.bin',
       }),
@@ -133,7 +136,10 @@ describe('DownloadManager', () => {
     expect(RNFS.mkdir).toHaveBeenCalledWith('/path/to');
     expect(RNFS.downloadFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        fromUrl: applyHfMirror(basicModel.downloadUrl!),
+        fromUrl: basicModel.downloadUrl!.replace(
+          'https://huggingface.co',
+          'https://hf-mirror.com',
+        ),
         toFile: '/path/to/model.bin',
       }),
     );
@@ -272,7 +278,10 @@ describe('DownloadManager', () => {
 
     expect(RNFS.downloadFile).toHaveBeenCalledWith(
       expect.objectContaining({
-        fromUrl: applyHfMirror(basicModel.downloadUrl!),
+        fromUrl: basicModel.downloadUrl!.replace(
+          'https://huggingface.co',
+          'https://hf-mirror.com',
+        ),
         toFile: '/path/to/model.bin',
         discretionary: false,
       }),
@@ -514,6 +523,9 @@ describe('DownloadManager', () => {
 
   it('attaches the HF auth token only for a huggingface.co download URL (iOS)', async () => {
     (Platform as any).OS = 'ios';
+    // 中文版策略：镜像开启时剥离 token（token 绝不发给镜像）。
+    // 断言"直连携带 token"需在镜像关闭的前提下进行。
+    setHfMirrorEnabled(false);
 
     const iosDownloadManager = new DownloadManager();
     iosDownloadManager.setCallbacks({
@@ -536,11 +548,45 @@ describe('DownloadManager', () => {
 
     expect(RNFS.downloadFile).toHaveBeenCalledWith(
       expect.objectContaining({
+        fromUrl: basicModel.downloadUrl,
         headers: expect.objectContaining({
           Authorization: 'Bearer secret-token',
         }),
       }),
     );
+    setHfMirrorEnabled(true);
+  });
+
+  it('strips the HF auth token when the mirror is enabled (iOS)', async () => {
+    (Platform as any).OS = 'ios';
+
+    const iosDownloadManager = new DownloadManager();
+    iosDownloadManager.setCallbacks({
+      onStart: jest.fn(),
+      onProgress: jest.fn(),
+      onComplete: jest.fn(),
+      onError: jest.fn(),
+    });
+
+    (RNFS.downloadFile as jest.Mock).mockReturnValue({
+      jobId: 1002,
+      promise: Promise.resolve({statusCode: 200}),
+    });
+
+    await iosDownloadManager.startDownload(
+      basicModel,
+      '/path/to/model.bin',
+      'secret-token',
+    );
+
+    const call = (RNFS.downloadFile as jest.Mock).mock.calls.at(-1)![0];
+    expect(call.fromUrl).toBe(
+      basicModel.downloadUrl!.replace(
+        'https://huggingface.co',
+        'https://hf-mirror.com',
+      ),
+    );
+    expect(call.headers.Authorization).toBeUndefined();
   });
 
   it('does not attach the HF auth token for a non-huggingface.co URL (iOS)', async () => {

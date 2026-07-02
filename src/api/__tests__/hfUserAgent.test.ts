@@ -18,6 +18,7 @@ import {
   fetchGGUFSpecs,
 } from '../hf';
 import {hfUserAgent} from '../../utils/hfUserAgent';
+import {setHfMirrorEnabled} from '../../config';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -96,7 +97,10 @@ describe('hf.ts attribution User-Agent', () => {
   it('keeps Authorization alongside the UA when a token is supplied', async () => {
     mockedAxios.get.mockResolvedValueOnce({data: [], headers: {}});
 
+    // 中文版策略：镜像开启时剥离 token，断言携带 token 需关闭镜像
+    setHfMirrorEnabled(false);
     await fetchModels({search: 'x', authToken: 'hf_abc'});
+    setHfMirrorEnabled(true);
 
     expect(mockedAxios.get).toHaveBeenCalledWith(
       expect.any(String),

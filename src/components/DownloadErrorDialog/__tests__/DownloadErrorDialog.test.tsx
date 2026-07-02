@@ -98,7 +98,8 @@ describe('DownloadErrorDialog', () => {
     );
     fireEvent.press(hfButton);
     expect(Linking.openURL).toHaveBeenCalledWith(
-      'https://huggingface.co/test/test-model',
+      // 中文版：镜像开启时打开镜像站页面
+      'https://hf-mirror.com/test/test-model',
     );
 
     // Check retry button works

@@ -1,4 +1,5 @@
 import React, {useCallback, useState, useEffect, useMemo} from 'react';
+import {applyHfMirror} from '../../../config';
 import {
   Alert,
   Linking,
@@ -223,7 +224,8 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
     const openHuggingFaceUrl = useCallback(() => {
       if (model.hfUrl) {
-        Linking.openURL(model.hfUrl).catch(err => {
+        // 镜像开启时打开镜像站页面（官方站在目标网络不可达）
+        Linking.openURL(applyHfMirror(model.hfUrl)).catch(err => {
           console.error('Failed to open URL:', err);
           setSnackbarVisible(true);
         });

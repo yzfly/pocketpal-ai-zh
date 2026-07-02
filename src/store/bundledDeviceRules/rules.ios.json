@@ -287,29 +287,6 @@
           "size_bytes": 484220320
         },
         {
-          "model": "qwen3.5-0.8b",
-          "display_name": "Qwen3.5 0.8B",
-          "hf_repo": "unsloth/Qwen3.5-0.8B-GGUF",
-          "hf_filename": "Qwen3.5-0.8B-Q4_K_M.gguf",
-          "params": 752393024,
-          "size_bytes": 532517120,
-          "multimodal": true,
-          "mmproj": {
-            "hf_repo": "unsloth/Qwen3.5-0.8B-GGUF",
-            "hf_filename": "mmproj-F16.gguf",
-            "size_bytes": 204987232,
-            "modalities": ["vision"]
-          }
-        },
-        {
-          "model": "minicpm5-1b",
-          "display_name": "MiniCPM5 1B",
-          "hf_repo": "openbmb/MiniCPM5-1B-GGUF",
-          "hf_filename": "MiniCPM5-1B-Q4_K_M.gguf",
-          "params": 1080632832,
-          "size_bytes": 688065920
-        },
-        {
           "model": "lfm2.5-350m",
           "display_name": "LFM2.5 350M",
           "hf_repo": "LiquidAI/LFM2.5-350M-GGUF",
@@ -367,14 +344,6 @@
             "size_bytes": 668227264,
             "modalities": ["vision"]
           }
-        },
-        {
-          "model": "minicpm5-1b",
-          "display_name": "MiniCPM5 1B",
-          "hf_repo": "openbmb/MiniCPM5-1B-GGUF",
-          "hf_filename": "MiniCPM5-1B-Q4_K_M.gguf",
-          "params": 1080632832,
-          "size_bytes": 688065920
         },
         {
           "model": "gemma-3-1b",
@@ -514,29 +483,6 @@
             "size_bytes": 672423616,
             "modalities": ["vision"]
           }
-        },
-        {
-          "model": "qwen3.5-9b",
-          "display_name": "Qwen3.5 9B",
-          "hf_repo": "unsloth/Qwen3.5-9B-GGUF",
-          "hf_filename": "Qwen3.5-9B-Q4_K_M.gguf",
-          "params": 8953803264,
-          "size_bytes": 5680522464,
-          "multimodal": true,
-          "mmproj": {
-            "hf_repo": "unsloth/Qwen3.5-9B-GGUF",
-            "hf_filename": "mmproj-F16.gguf",
-            "size_bytes": 918166080,
-            "modalities": ["vision"]
-          }
-        },
-        {
-          "model": "deepseek-r1-qwen3-8b",
-          "display_name": "DeepSeek R1 8B",
-          "hf_repo": "unsloth/DeepSeek-R1-0528-Qwen3-8B-GGUF",
-          "hf_filename": "DeepSeek-R1-0528-Qwen3-8B-Q4_K_M.gguf",
-          "params": 8190735360,
-          "size_bytes": 5027785216
         },
         {
           "model": "gemma-3-1b",

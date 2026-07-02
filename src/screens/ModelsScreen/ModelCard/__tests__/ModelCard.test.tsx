@@ -148,7 +148,13 @@ describe('ModelCard', () => {
       fireEvent.press(openButton);
     });
 
-    expect(Linking.openURL).toHaveBeenCalledWith(basicModel.hfUrl);
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      // 中文版：镜像开启时打开镜像站页面（期望值独立构造）
+      basicModel.hfUrl.replace(
+        'https://huggingface.co',
+        'https://hf-mirror.com',
+      ),
+    );
   });
 
   it('handles model load correctly', async () => {

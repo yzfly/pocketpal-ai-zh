@@ -91,11 +91,7 @@ import {
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
 import {getModelMemoryRequirement} from '../utils/memoryEstimator';
 import {loadLlamaModelInfo} from 'llama.rn';
-
-// 中文版：识别 Qwen 系列候选模型（按稳定标识和仓库名双重匹配），
-// 用于推荐列表的 Qwen 优先排序。
-const isQwenCandidate = (candidate: RuleCandidate): boolean =>
-  /qwen/i.test(candidate.model) || /qwen/i.test(candidate.hfRepo);
+import {applyChinesePreferences} from './chineseModelPresets';
 
 /**
  * Factory function to create a Model object for a remote model from an OpenAI-compatible server.
@@ -655,12 +651,7 @@ class ModelStore {
       rules.classifier,
       Platform.OS as ClassifyPlatform,
     );
-    // 中文版：Qwen 系列中文能力最强，稳定排序置顶推荐列表。放在这里
-    // （而不是只改打包的规则 JSON），远程规则更新后依然生效。
-    const candidates = [...rules.tiers[tier].models].sort(
-      (a, b) => Number(isQwenCandidate(b)) - Number(isQwenCandidate(a)),
-    );
-    const flat = candidates.flatMap(candidate => {
+    const flat = rules.tiers[tier].models.flatMap(candidate => {
       const {hfModel, modelFile} = this.candidateToPair(candidate);
       const llm = hfAsModel(hfModel, modelFile);
       const named = candidate.displayName
@@ -698,7 +689,10 @@ class ModelStore {
     try {
       const signals = await readDeviceSignals();
       const bundledRaw = Platform.OS === 'ios' ? iosRulesRaw : androidRulesRaw;
-      const rules = parseDeviceRules(bundledRaw);
+      // 中文版：在规则获取处统一注入增补模型并做 Qwen 置顶。必须同时覆盖
+      // 打包与远程两条路径：远程规则不含中文版条目，若只改打包 JSON，
+      // 拉取成功后 reconcilePresets 会把它们清掉。
+      const rules = applyChinesePreferences(parseDeviceRules(bundledRaw));
       const tier = classify(
         signals,
         rules.classifier,
@@ -721,10 +715,12 @@ class ModelStore {
   // already-applied bundled presets in place.
   private upgradeToFetchedRules = async (): Promise<void> => {
     try {
-      const fetched = await fetchRules();
-      if (!fetched) {
+      const fetchedRaw = await fetchRules();
+      if (!fetchedRaw) {
         return;
       }
+      // 中文版：远程规则同样注入增补模型（见 resolvePresets 处说明）
+      const fetched = applyChinesePreferences(fetchedRaw);
       const signals = await readDeviceSignals();
       const tier = classify(
         signals,
@@ -761,11 +757,31 @@ class ModelStore {
     );
     const existing = new Set(kept.map(m => m.id));
     const toAdd = presets.filter(p => !existing.has(p.id));
-    if (kept.length === this.models.length && toAdd.length === 0) {
+
+    // 中文版：老列表里未下载的规则预设按 presets 的新顺序（Qwen 置顶）
+    // 就地重排——只在这些卡片占用的位置之间交换，已下载模型与用户自加
+    // 模型的位置不动。否则 kept 保留旧顺序、新条目只会追加在尾部，
+    // Qwen 置顶对已有用户永远不生效。
+    const rank = new Map(presets.map((p, i) => [p.id, i]));
+    const merged = [...kept, ...toAdd];
+    const isReorderable = (m: Model) =>
+      m.isRulePreset && !m.isDownloaded && rank.has(m.id);
+    const reorderable = merged
+      .filter(isReorderable)
+      .sort((a, b) => rank.get(a.id)! - rank.get(b.id)!);
+    let cursor = 0;
+    const next = merged.map(m =>
+      isReorderable(m) ? reorderable[cursor++] : m,
+    );
+
+    if (
+      next.length === this.models.length &&
+      next.every((m, i) => m.id === this.models[i].id)
+    ) {
       return;
     }
     runInAction(() => {
-      this.models = [...kept, ...toAdd];
+      this.models = next;
     });
   };
 

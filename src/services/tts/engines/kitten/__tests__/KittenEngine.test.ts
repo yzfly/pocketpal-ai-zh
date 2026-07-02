@@ -3,7 +3,6 @@
  */
 
 import {Platform} from 'react-native';
-import {applyHfMirror} from '../../../../../config';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
 
@@ -15,6 +14,10 @@ import {
   TTS_DICT_URL,
 } from '../../../constants';
 import {KITTEN_VOICES} from '../voices';
+
+// 中文版镜像期望值：独立于 applyHfMirror 实现构造，避免同义反复断言
+const toMirror = (url: string) =>
+  url.replace('https://huggingface.co', 'https://hf-mirror.com');
 
 const setPlatform = (os: 'ios' | 'android') => {
   Object.defineProperty(Platform, 'OS', {
@@ -90,14 +93,14 @@ describe('KittenEngine', () => {
       for (const file of KITTEN_MODEL_FILES) {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fromUrl: applyHfMirror(`${KITTEN_MODEL_BASE_URL}/${file.urlPath}`),
+            fromUrl: toMirror(`${KITTEN_MODEL_BASE_URL}/${file.urlPath}`),
             toFile: expect.stringContaining(`/tts/kitten/${file.name}`),
           }),
         );
       }
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: applyHfMirror(TTS_DICT_URL),
+          fromUrl: toMirror(TTS_DICT_URL),
           toFile: expect.stringContaining(`/tts/kitten/${TTS_DICT_FILENAME}`),
         }),
       );
