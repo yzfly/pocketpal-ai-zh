@@ -41,6 +41,7 @@ export {default as HeartIcon} from './heart.svg';
 export {default as LockIcon} from './lock.svg';
 export {default as LinkExternalIcon} from './link-external.svg';
 export {default as MenuIcon} from './menu.svg';
+export {default as MicIcon} from './mic.svg';
 export {default as ModelIcon} from './model.svg';
 export {default as MoonIcon} from './moon.svg';
 export {default as PalIcon} from './pal.svg';

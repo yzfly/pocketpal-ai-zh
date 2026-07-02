@@ -14,7 +14,7 @@ import {useCameraPermission} from 'react-native-vision-camera';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 import {observer} from 'mobx-react';
-import {IconButton, Text} from 'react-native-paper';
+import {ActivityIndicator, IconButton, Text} from 'react-native-paper';
 
 import {hasVideoCapability} from '../../utils/pal-capabilities';
 
@@ -23,9 +23,10 @@ import {
   VideoRecorderIcon,
   PlusIcon,
   AtomIcon,
+  MicIcon,
 } from '../../assets/icons';
 
-import {useTheme} from '../../hooks';
+import {useTheme, useVoiceInput} from '../../hooks';
 
 import {createStyles} from './styles';
 
@@ -219,6 +220,16 @@ export const ChatInput = observer(
         textInputProps?.onChangeText?.(newText);
       }
     };
+
+    // 端侧语音输入（SenseVoice via sherpa-onnx）：录音停止后本地转写，
+    // 把文本 append 到输入框现有文字后面。
+    const {
+      status: voiceInputStatus,
+      downloadProgress: voiceDownloadProgress,
+      toggle: toggleVoiceInput,
+    } = useVoiceInput(transcribedText => {
+      handleChangeText(value ? `${value}${transcribedText}` : transcribedText);
+    });
 
     const handleSend = () => {
       const trimmedValue = value.trim();
@@ -636,6 +647,51 @@ export const ChatInput = observer(
                     {l10n.chat.cannotSendWithoutModel}
                   </Text>
                 </View>
+              )}
+
+              {/* 语音输入按钮（端侧 SenseVoice 转写）。
+                  空闲=麦克风；录音中=红色麦克风；转写中=loading；
+                  模型下载中=进度百分比。视频 Pal / 相机模式下隐藏。 */}
+              {!isVideoCapable && !isCameraActive && (
+                <TouchableOpacity
+                  testID="voice-input-button"
+                  style={[
+                    styles.voiceInputButton,
+                    voiceInputStatus === 'recording' && {
+                      backgroundColor: theme.colors.errorContainer,
+                    },
+                  ]}
+                  onPress={toggleVoiceInput}
+                  accessibilityLabel={
+                    voiceInputStatus === 'recording'
+                      ? l10n.components.chatInput.voiceInput.stop
+                      : voiceInputStatus === 'transcribing'
+                        ? l10n.components.chatInput.voiceInput.transcribing
+                        : l10n.components.chatInput.voiceInput.start
+                  }
+                  accessibilityRole="button">
+                  {voiceInputStatus === 'transcribing' ? (
+                    <ActivityIndicator size={16} color={onSurfaceColor} />
+                  ) : voiceInputStatus === 'downloading' ? (
+                    <Text
+                      style={[
+                        styles.voiceDownloadText,
+                        {color: onSurfaceColor},
+                      ]}>
+                      {Math.round(voiceDownloadProgress * 100)}%
+                    </Text>
+                  ) : (
+                    <MicIcon
+                      width={18}
+                      height={18}
+                      stroke={
+                        voiceInputStatus === 'recording'
+                          ? theme.colors.error
+                          : onSurfaceColor
+                      }
+                    />
+                  )}
+                </TouchableOpacity>
               )}
 
               {/* Voice chip (TTS) — always present so users can stop

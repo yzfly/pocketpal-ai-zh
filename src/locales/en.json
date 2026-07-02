@@ -99,7 +99,7 @@
     "appSettings": "App Settings",
     "language": "Language",
     "useHfMirror": "HF Mirror Acceleration",
-    "useHfMirrorDescription": "Download models via hf-mirror.com (for networks where huggingface.co is unreachable). Requests with an HF token always connect directly.",
+    "useHfMirrorDescription": "Download models via hf-mirror.com (for networks where huggingface.co is unreachable). While enabled, your HF token is never sent to the mirror — disable the mirror to download gated models with your token.",
     "darkMode": "Dark Mode",
     "displayMemoryUsage": "Display Memory Usage",
     "displayMemoryUsageDescription": "Display memory usage in the chat page.",
@@ -581,6 +581,20 @@
         "thinkingDisabled": "Thinking mode disabled",
         "thinkText": "Think",
         "cycleEffort": "Reasoning effort: {{level}}. Double tap to cycle effort level"
+      },
+      "voiceInput": {
+        "start": "Start voice input",
+        "stop": "Stop recording",
+        "transcribing": "Transcribing…",
+        "errorTitle": "Voice Input",
+        "downloadTitle": "Download Speech Recognition Model",
+        "downloadMessage": "Voice input requires the SenseVoice speech recognition model (about {{size}} MB). It runs fully on-device. Download now?",
+        "download": "Download",
+        "downloadFailed": "Failed to download the speech recognition model. Please check your network connection and try again.",
+        "transcribeFailed": "Transcription failed. Please try again.",
+        "recordFailed": "Recording failed. Please try again.",
+        "permissionDenied": "Microphone permission is required for voice input. Please enable it in system settings.",
+        "emptyResult": "No speech detected. Please try again."
       }
     },
     "contentReportSheet": {

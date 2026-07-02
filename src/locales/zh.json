@@ -94,7 +94,7 @@
     "appSettings": "APP设置",
     "language": "语言",
     "useHfMirror": "HF 镜像加速",
-    "useHfMirrorDescription": "通过 hf-mirror.com 镜像下载模型（适用于无法直连 huggingface.co 的网络）。携带 HF 令牌的请求始终直连官方。",
+    "useHfMirrorDescription": "通过 hf-mirror.com 镜像下载模型（适用于无法直连 huggingface.co 的网络）。开启期间 HF 令牌不会发给镜像；如需用令牌下载受限模型，请先关闭镜像。",
     "darkMode": "深色模式",
     "displayMemoryUsage": "显示内存使用情况",
     "displayMemoryUsageDescription": "在聊天页面中显示内存使用情况",
@@ -560,6 +560,20 @@
         "thinkingEnabled": "思考模式已启用",
         "thinkingDisabled": "思考模式已禁用",
         "thinkText": "思考"
+      },
+      "voiceInput": {
+        "start": "开始语音输入",
+        "stop": "停止录音",
+        "transcribing": "正在转写…",
+        "errorTitle": "语音输入",
+        "downloadTitle": "下载语音识别模型",
+        "downloadMessage": "语音输入需要下载 SenseVoice 语音识别模型（约 {{size}} MB），全程在设备本地运行。是否立即下载？",
+        "download": "下载",
+        "downloadFailed": "语音识别模型下载失败，请检查网络后重试。",
+        "transcribeFailed": "转写失败，请重试。",
+        "recordFailed": "录音失败，请重试。",
+        "permissionDenied": "语音输入需要麦克风权限，请在系统设置中开启。",
+        "emptyResult": "未识别到语音，请重试。"
       }
     },
     "contentReportSheet": {

@@ -58,6 +58,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>PocketPal uses your camera to capture images and video for local AI analysis only. All processing happens on your device and no images are transmitted to external servers.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>语音输入需要使用麦克风</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>PocketPal accesses your photo library to select images for local AI analysis only. Selected images are processed entirely on your device and are never transmitted to external servers.</string>
 	<key>NSSiriUsageDescription</key>

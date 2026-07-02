@@ -294,6 +294,20 @@
         "thinkingEnabled": "思考模式已啟用",
         "thinkingDisabled": "思考模式已停用",
         "thinkText": "思考"
+      },
+      "voiceInput": {
+        "start": "開始語音輸入",
+        "stop": "停止錄音",
+        "transcribing": "正在轉寫…",
+        "errorTitle": "語音輸入",
+        "downloadTitle": "下載語音識別模型",
+        "downloadMessage": "語音輸入需要下載 SenseVoice 語音識別模型（約 {{size}} MB），全程在裝置本地執行。是否立即下載？",
+        "download": "下載",
+        "downloadFailed": "語音識別模型下載失敗，請檢查網路後重試。",
+        "transcribeFailed": "轉寫失敗，請重試。",
+        "recordFailed": "錄音失敗，請重試。",
+        "permissionDenied": "語音輸入需要麥克風權限，請在系統設定中開啟。",
+        "emptyResult": "未識別到語音，請重試。"
       }
     },
     "chatGenerationSettingsSheet": {
@@ -1065,7 +1079,7 @@
     "appSettings": "應用程式設定",
     "language": "語系",
     "useHfMirror": "HF 鏡像加速",
-    "useHfMirrorDescription": "透過 hf-mirror.com 鏡像下載模型（適用於無法直連 huggingface.co 的網路）。攜帶 HF 權杖的請求始終直連官方。",
+    "useHfMirrorDescription": "透過 hf-mirror.com 鏡像下載模型（適用於無法直連 huggingface.co 的網路）。開啟期間 HF 權杖不會發給鏡像；如需用權杖下載受限模型，請先關閉鏡像。",
     "darkMode": "深色模式",
     "displayMemoryUsage": "顯示記憶體使用量",
     "displayMemoryUsageDescription": "在聊天頁面顯示記憶體使用量。",

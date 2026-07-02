@@ -83,5 +83,8 @@ module.exports = {
       '<rootDir>/__mocks__/external/@gorhom/bottom-sheet.js',
     '@pocketpalai/react-native-speech':
       '<rootDir>/__mocks__/external/@pocketpalai/react-native-speech.ts',
+    // sherpa-onnx（语音识别）：真实包是未转译的 ESM + TurboModule，统一映射到 mock
+    '^react-native-sherpa-onnx(/.*)?$':
+      '<rootDir>/__mocks__/external/react-native-sherpa-onnx.ts',
   },
 };

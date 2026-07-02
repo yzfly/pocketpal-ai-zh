@@ -9,6 +9,12 @@ import {UserContext} from '../../../utils';
 
 // Mock the theme hook
 jest.mock('../../../hooks', () => ({
+  // 语音输入 hook：这里只测思考开关，保持 idle 即可
+  useVoiceInput: () => ({
+    status: 'idle',
+    downloadProgress: 0,
+    toggle: jest.fn(),
+  }),
   useTheme: () => ({
     colors: {
       primary: '#007AFF',
@@ -58,6 +64,7 @@ jest.mock('../../../assets/icons', () => ({
   VideoRecorderIcon: 'VideoRecorderIcon',
   PlusIcon: 'PlusIcon',
   AtomIcon: 'AtomIcon',
+  MicIcon: 'MicIcon',
 }));
 
 // Mock the components

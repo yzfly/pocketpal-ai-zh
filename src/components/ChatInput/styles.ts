@@ -248,6 +248,20 @@ export const createStyles = ({
     inputWithLabel: {
       marginTop: 0,
     },
+    // 语音输入按钮（麦克风），尺寸与 plusButton 保持一致
+    voiceInputButton: {
+      height: 28,
+      width: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 100,
+      marginRight: 4,
+    },
+    // 模型下载中显示在按钮内的进度百分比
+    voiceDownloadText: {
+      fontSize: 9,
+      ...fontStyles.semibold,
+    },
     // Helper text for model not loaded warning
     helperTextContainer: {
       position: 'absolute',

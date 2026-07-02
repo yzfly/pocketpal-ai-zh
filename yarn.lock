@@ -2075,6 +2075,11 @@
   resolved "https://registry.yarnpkg.com/@jsamr/react-native-li/-/react-native-li-2.3.1.tgz#12a5b5f6e3971cec77b96bee58104eed0ae9314a"
   integrity sha512-Qbo4NEj48SQ4k8FZJHFE2fgZDKTWaUGmVxcIQh3msg5JezLdTMMHuRRDYctfdHI6L0FZGObmEv3haWbIvmol8w==
 
+"@kesha-antonov/react-native-background-downloader@^4.5.4":
+  version "4.5.6"
+  resolved "https://registry.npmjs.org/@kesha-antonov/react-native-background-downloader/-/react-native-background-downloader-4.5.6.tgz#18e95c4164b586f566e1d8b4866c072bf4c946d0"
+  integrity sha512-6wSQ4JVL0epObvbf1LmONwh1y2vOee13HIf/sb3cY5TxDHl1R9g47BvCTTYnRLLTuFh6id/jRgWNppRyHIPhLw==
+
 "@native-html/css-processor@1.11.0":
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/@native-html/css-processor/-/css-processor-1.11.0.tgz#27d02e5123b0849f4986d44060ba3f235a15f552"
@@ -7845,6 +7850,14 @@ react-native-share@^12.2.0:
   version "12.2.0"
   resolved "https://registry.yarnpkg.com/react-native-share/-/react-native-share-12.2.0.tgz#d7011825bf79631858de459873ee2618235031d6"
   integrity sha512-f6MB9BsKa9xVvu0DKbxq5jw4IyYHqQeqUlCNkD8eAFoJx6SD31ObPAn7SQ6NG9AOuhCy6aYuSJYJvx25DaoMZQ==
+
+react-native-sherpa-onnx@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.npmjs.org/react-native-sherpa-onnx/-/react-native-sherpa-onnx-0.4.3.tgz#bbf97b9720b9276be168e74a7c8a9108ceb9f196"
+  integrity sha512-fspMXBP90gZRoIvTWEFf7fLvuWPmno/RtptnUoZ3bHCrwYmZNjd4AS34KHC37WHSL1ypPltAU1yYKad8+yNfIg==
+  dependencies:
+    "@kesha-antonov/react-native-background-downloader" "^4.5.4"
+    buffer "^6.0.3"
 
 react-native-svg-transformer@^1.5.1:
   version "1.5.1"
