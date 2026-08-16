@@ -238,4 +238,4 @@ https://mp.weixin.qq.com/s/szj3L6RdFhZYPgCcP_9YEw
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yzfly/pocketpal-ai-zh&type=Date)](https://star-history.com/#yzfly/pocketpal-ai-zh&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=yzfly/pocketpal-ai-zh&type=Date)](https://star-history.dera.page/#yzfly/pocketpal-ai-zh&Date)
