@@ -8,6 +8,14 @@
 使用指南：
 https://mp.weixin.qq.com/s/szj3L6RdFhZYPgCcP_9YEw
 
+## 模型与硬件支持现状（2026-10-31）
+
+本中文分支当前应用版本为 1.6.9，推理绑定仍是 `@pocketpalai/llama.rn ^0.4.8-2`，尚未同步上游的新推理后端。不能把上游当前的 Qwen3 或 NPU 支持视为这个旧安装包已经支持。
+
+- **Qwen3 GGUF**：上游 PocketPal 已提供 Qwen3 的运行与基准记录，见 [上游实测说明](https://github.com/a-ghorbani/pocketpal-ai/discussions/883)。需要这类模型时，可使用[上游正式版本](https://github.com/a-ghorbani/pocketpal-ai/releases)；模型体积、量化和设备内存仍会影响能否加载。
+- **Android NPU**：本分支尚未接入 Hexagon 后端。当前 [llama.rn 的 Hexagon 文档](https://github.com/mybigday/llama.rn#hexagon-npu-acceleration-experimental) 将其标为实验功能，并列出 Qualcomm SM8450 / 骁龙 8 Gen 1 及更新设备条件；不是所有手机 NPU 都可通用开启。上游 PocketPal 已有相应加速路径，见[上游硬件说明](https://github.com/a-ghorbani/pocketpal-ai#readme)。
+- 本分支的升级与设备验证仍由 [#1](https://github.com/yzfly/pocketpal-ai-zh/issues/1) 和 [#2](https://github.com/yzfly/pocketpal-ai-zh/issues/2) 记录；目前没有发布宣称支持这些新后端的中文分支安装包。
+
 ## ✨ 特色功能
 
 - **离线运行**: 所有AI模型都在本地运行，无需担心网络问题

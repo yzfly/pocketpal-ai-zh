@@ -2,6 +2,14 @@
 
 口袋AI是一款强大的离线AI助手，让你随时随地与AI对话！基于小型语言模型(SLMs)，无需联网即可在手机上运行，是[PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai)项目的中文优化版本。
 
+## Model and hardware status (2026-10-31)
+
+This Chinese fork is currently at app version 1.6.9 with `@pocketpalai/llama.rn ^0.4.8-2`. New upstream inference backends have not been ported to this build.
+
+- **Qwen3 GGUF:** upstream PocketPal has published [Qwen3 runtime benchmarks](https://github.com/a-ghorbani/pocketpal-ai/discussions/883). Use an [upstream release](https://github.com/a-ghorbani/pocketpal-ai/releases) for newer model support; memory and quantization still affect whether a model can load.
+- **Android NPU:** this fork has no Hexagon integration. Current [llama.rn documentation](https://github.com/mybigday/llama.rn#hexagon-npu-acceleration-experimental) marks Hexagon experimental and lists Qualcomm SM8450 / Snapdragon 8 Gen 1 or newer hardware. It is not a universal NPU switch. See [upstream PocketPal's hardware support](https://github.com/a-ghorbani/pocketpal-ai#readme).
+- Follow [#1](https://github.com/yzfly/pocketpal-ai-zh/issues/1) and [#2](https://github.com/yzfly/pocketpal-ai-zh/issues/2) for this fork's status. No updated Chinese-fork binary with these backends has been released.
+
 ## ✨ 特色功能
 
 - **离线运行**: 所有AI模型都在本地运行，无需担心网络问题
