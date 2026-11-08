@@ -31,7 +31,8 @@
     "close": "Tutup",
     "clear": "Bersihkan",
     "gallery": "Galeri",
-    "stop": "Berhenti"
+    "stop": "Berhenti",
+    "noResults": "Tidak ada hasil"
   },
   "settings": {
     "modelInitializationSettings": "Pengaturan Inisialisasi Model",
@@ -161,7 +162,91 @@
     "ttsAvailabilityLowMemoryWarning": "Memori perangkat Anda rendah — fitur ini mungkin tidak bekerja dengan baik.",
     "requestTimeout": "Batas Waktu Permintaan (detik)",
     "requestTimeoutHelp": "Waktu tunggu maksimal untuk server yang lambat merespons. Kosongkan untuk pakai bawaan.",
-    "requestTimeoutPlaceholder": "Opsional - kosongkan untuk pakai bawaan"
+    "requestTimeoutPlaceholder": "Opsional - kosongkan untuk pakai bawaan",
+    "serverType": "Jenis Server",
+    "serverTypeHelp": "Terdeteksi otomatis; ubah jika keliru.",
+    "internetSearch": {
+      "title": "Pencarian Internet",
+      "description": "Izinkan Pal mencari di web dengan alat mereka sendiri. Bawa kunci API Anda sendiri — PocketPal tidak pernah menyimpan kunci Anda atau merutekan kueri Anda.",
+      "providerLabel": "Penyedia pencarian",
+      "providerGated": "Segera hadir",
+      "keyLabel": "Kunci API",
+      "keyIsSet": "Kunci telah diatur untuk {{provider}}.",
+      "keyNotSet": "Tidak ada kunci yang diatur untuk {{provider}}.",
+      "setKeyButton": "Atur Kunci",
+      "updateKeyButton": "Perbarui Kunci",
+      "clearKeyButton": "Hapus Kunci",
+      "keyInputPlaceholder": "Tempel kunci API {{provider}} Anda",
+      "keyUpdateError": "Gagal memperbarui kunci. Silakan coba lagi.",
+      "showKeyAccessibilityLabel": "Tampilkan kunci API",
+      "hideKeyAccessibilityLabel": "Sembunyikan kunci API",
+      "resultCountLabel": "Hasil per pencarian",
+      "resultCountDescription": "Lebih sedikit hasil menyisakan lebih banyak ruang dalam konteks model.",
+      "consentTitle": "Pencarian meninggalkan perangkat Anda",
+      "consentDescription": "Saat Pal mencari di web, kueri Anda dikirim ke penyedia yang dipilih melalui internet. Saat Pal membaca halaman, URL dan konten halaman dapat dikirim ke layanan pembaca default (r.jina.ai) jika penyedia yang dipilih tidak memiliki pembaca bawaan. Kunci dan kueri tidak pernah dikirim ke PocketPal.",
+      "consentAccept": "Saya mengerti",
+      "consentRequired": "Terima pengungkapan di atas untuk mengatur kunci dan mengaktifkan pencarian.",
+      "consentGivenTitle": "Pencarian web diaktifkan",
+      "consentGivenDescription": "Kueri dan pembacaan halaman dapat meninggalkan perangkat Anda seperti dijelaskan di atas.",
+      "consentRevoke": "Cabut",
+      "keyOptional": "Tidak perlu kunci untuk {{provider}}. Tambahkan satu untuk batas yang lebih tinggi."
+    },
+    "languageSheetTitle": "Bahasa",
+    "languageSearchPlaceholder": "Cari bahasa",
+    "speculativeDecoding": "Decoding Spekulatif",
+    "speculativeDecodingDescription": "Gunakan model draf kecil (atau model MTP tertanam) untuk memprediksi token dan mempercepat pembuatan. Eksperimental.",
+    "speculativeNotMTPCapable": "Model aktif tidak mendukung decoding spekulatif dan tidak ada draf kompatibel yang dipasangkan, sehingga fitur ini tetap mati untuknya tanpa efek. Fitur ini berlaku secara otomatis untuk model yang mendukung.",
+    "speculativeDraftModel": "Model Draf",
+    "speculativeDraftModelDescription": "Membuat draf token untuk model aktif.",
+    "speculativeDraftModelNone": "Tidak ada (MTP tertanam)",
+    "speculativeDraftModelIgnoredOverridden": "Model aktif memiliki model draf sendiri, sehingga pilihan ini diabaikan.",
+    "speculativeDraftModelIgnoredIncompatible": "Draf ini tidak kompatibel dengan model aktif, sehingga diabaikan.",
+    "speculativeDraftModelIgnoredNotCapable": "Model ini tidak memiliki lapisan draf, sehingga tidak dapat digunakan sebagai model draf.",
+    "speculativeDraftKeyCacheType": "Tipe Cache Kunci Draf",
+    "speculativeDraftValueCacheType": "Tipe Cache Nilai Draf",
+    "speculativeDraftNGpuLayers": "Lapisan GPU Draf",
+    "speculativeDraftNGpuLayersDescription": "Jumlah lapisan model draf yang dialihkan ke GPU.",
+    "speculativeDraftCacheTypeInactiveDescription": "Berlaku setelah decoding spekulatif berjalan.",
+    "purchases": {
+      "title": "Pembelian",
+      "statusOwned": "Sudah Dibeli",
+      "statusUnlocking": "Membuka Kunci",
+      "link": "Masuk untuk menggunakannya di perangkat lain"
+    },
+    "scanServerQr": "Pindai kode QR server",
+    "scanQrPermissionMessage": "Izinkan akses kamera untuk memindai kode QR server. Anda juga bisa mengetik alamatnya.",
+    "scanQrNotServer": "Bukan alamat server",
+    "scanQrUnavailable": "Tidak bisa memindai di sini. Ketik saja alamat servernya.",
+    "scanQrNotReady": "Pemindai sedang disiapkan. Anda juga bisa mengetik alamatnya.",
+    "routerModels": {
+      "cancel": "Batal",
+      "unloading": "Melepas…",
+      "stateLoading": "Memuat",
+      "stateLoaded": "Dimuat",
+      "loadingPercent": "Memuat, {{percent}} persen",
+      "unloadModel": "Lepas {{model}}",
+      "cancelLoadingModel": "Batalkan pemuatan {{model}}",
+      "loadFailed": "Model ini gagal dimuat.",
+      "unloadNotReleased": "Server tidak melepas model ini.",
+      "serverUnreachable": "Server ini tidak dapat dijangkau.",
+      "waitStopped": "Berhenti menunggu model ini.",
+      "failureWithServerWords": "{{label}}\n\n“{{message}}”",
+      "dismiss": "Tutup",
+      "unloadBoundTitle": "Lepas model ini?",
+      "unloadBoundBody": "Obrolan ini sedang menggunakannya. Model akan dimuat lagi saat Anda mengirim pesan berikutnya.",
+      "unloadBoundConfirm": "Lepas"
+    },
+    "account": {
+      "title": "Akun",
+      "deleteAccount": "Hapus akun",
+      "confirmTitle": "Hapus akun?",
+      "confirmMessage": "Ini akan menghapus akun PalsHub Anda beserta pustakanya secara permanen. Pal yang dibeli melalui App Store atau Google Play tetap bisa dipulihkan di perangkat ini dengan akun toko Anda. Catatan pembelian disimpan secara anonim karena alasan hukum.",
+      "confirmWithoutApple": "Tidak dapat mengonfirmasi dengan Apple. Tetap hapus akun Anda?",
+      "deleted": "Akun Anda telah dihapus.",
+      "signInAgain": "Silakan masuk kembali",
+      "creatorSupport": "Akun pembuat Pal dihapus oleh tim dukungan kami: {{contact}}",
+      "failed": "Gagal menghapus, coba lagi"
+    }
   },
   "memory": {
     "shortWarning": "Peringatan Memori",
@@ -348,7 +433,11 @@
         "author": "Penulis",
         "requiresProjectionModel": "Memerlukan model proyeksi",
         "downloadProjectionModel": "Unduh model proyeksi",
-        "viewModelCardOnHuggingFace": "Lihat Kartu Model di Hugging Face"
+        "viewModelCardOnHuggingFace": "Lihat Kartu Model di Hugging Face",
+        "visionSupported": "Didukung",
+        "visionNotSupported": "Tidak didukung",
+        "visionUnknown": "Tidak diketahui",
+        "draftOnlyReason": "Model khusus draf. Pilih di Pengaturan → Decoding spekulatif."
       },
       "accessibility": {
         "expandDetails": "Perluas detail",
@@ -409,7 +498,9 @@
       "multilingual": "Multibahasa",
       "rewriting": "Menulis Ulang",
       "creativity": "Penulisan Kreatif",
-      "vision": "Visi"
+      "vision": "Visi",
+      "mtp": "Spekulatif (MTP)",
+      "mtpDraft": "Draf spekulatif"
     },
     "hubRun": {
       "title": "Unduh Model",
@@ -457,16 +548,16 @@
     "supportProject": "Dukung Proyek Ini",
     "supportProjectDescription": "Jika Anda menikmati menggunakan PocketPal AI, pertimbangkan untuk mendukung proyek ini dengan:",
     "githubButton": "Beri Bintang di GitHub",
-    "orText": "atau",
     "orBy": "atau dengan",
-    "sponsorButton": "Jadi Sponsor",
     "versionCopiedTitle": "Versi disalin",
     "versionCopiedDescription": "Informasi versi telah disalin ke papan klip",
     "privacyPolicy": "Kebijakan Privasi",
     "termsOfService": "Ketentuan Layanan",
     "tour": "Tur",
     "tourDescription": "Putar ulang layar selamat datang untuk melihat apa yang ditawarkan PocketPal AI.",
-    "showIntroButton": "Tampilkan intro lagi"
+    "showIntroButton": "Tampilkan intro lagi",
+    "openSourceNotices": "Pemberitahuan open source",
+    "phononNoticesCredit": "Model dan suara Phonon oleh Gradium, dilisensikan di bawah Apache-2.0. Dibangun di atas Pocket TTS dan codec Mimi dari Kyutai."
   },
   "feedback": {
     "title": "Kirim Masukan",
@@ -551,7 +642,8 @@
         "disableThinking": "Nonaktifkan mode berpikir",
         "thinkingEnabled": "Mode berpikir diaktifkan",
         "thinkingDisabled": "Mode berpikir dinonaktifkan",
-        "thinkText": "Berpikir"
+        "thinkText": "Berpikir",
+        "cycleEffort": "Tingkat penalaran: {{level}}. Ketuk dua kali untuk mengganti tingkat penalaran"
       }
     },
     "contentReportSheet": {
@@ -702,7 +794,8 @@
       "exportCurrentSession": "Ekspor sesi saat ini",
       "exportAllSessions": "Ekspor semua sesi",
       "exportChatSession": "Ekspor sesi obrolan",
-      "importSessions": "Impor sesi"
+      "importSessions": "Impor sesi",
+      "exportCurrentSessionMarkdown": "Ekspor sebagai Markdown"
     },
     "hfTokenSheet": {
       "title": "Token Hugging Face",
@@ -734,7 +827,20 @@
     },
     "modelSettingsSheet": {
       "modelSettings": "Pengaturan Model",
-      "saveChanges": "Simpan Perubahan"
+      "saveChanges": "Simpan Perubahan",
+      "reasoningSection": "Penalaran",
+      "isReasoningModel": "Model penalaran",
+      "isReasoningModelHelp": "Tampilkan kontrol berpikir untuk model ini, meskipun tidak terdeteksi otomatis.",
+      "supportsEffort": "Mendukung tingkat penalaran bertingkat",
+      "effortValues": "Tingkat penalaran yang didukung model ini",
+      "effortLevels": {
+        "minimal": "Minimal",
+        "low": "Rendah",
+        "medium": "Sedang",
+        "high": "Tinggi",
+        "xhigh": "Sangat tinggi",
+        "max": "Maksimal"
+      }
     },
     "modelsHeaderRight": {
       "menuTitleHf": "Model Hugging Face",
@@ -766,12 +872,16 @@
       "talentNames": {
         "render_html": "Pratinjau HTML",
         "calculate": "Ekspresi matematika",
-        "datetime": "Tanggal & waktu"
+        "datetime": "Tanggal & waktu",
+        "web_search": "Pencarian web",
+        "read_url": "Baca halaman web"
       },
       "talentDescriptions": {
         "render_html": "Render dokumen HTML secara inline di chat",
         "calculate": "Evaluasi ekspresi matematika",
-        "datetime": "Dapatkan tanggal dan waktu saat ini"
+        "datetime": "Dapatkan tanggal dan waktu saat ini",
+        "web_search": "Cari di internet untuk informasi terkini (memerlukan kunci API di Pengaturan)",
+        "read_url": "Baca konten lengkap halaman web (memerlukan kunci API di Pengaturan)"
       },
       "greeting": {
         "sectionLabel": "Sapaan",
@@ -880,7 +990,8 @@
       },
       "warnings": {
         "promptChanged": "Prompt sistem telah diubah secara manual"
-      }
+      },
+      "generationBusy": "Balasan masih berjalan. Coba lagi setelah selesai."
     },
     "sidebarContent": {
       "menuItems": {
@@ -914,8 +1025,11 @@
         "threeWeeksAgo": "3 Minggu Lalu",
         "fourWeeksAgo": "4 Minggu Lalu",
         "lastMonth": "Bulan Lalu",
-        "older": "Lebih Lama"
-      }
+        "older": "Lebih Lama",
+        "pinned": "Disematkan"
+      },
+      "pin": "Sematkan",
+      "unpin": "Lepaskan sematan"
     },
     "usageStats": {
       "tooltip": {
@@ -951,7 +1065,10 @@
       "tokensPerSec": "{{value}} token/detik",
       "ttft": "{{value}}md TTFT",
       "interrupted": "Terputus",
-      "truncated": "Terpotong — kemungkinan konteks penuh"
+      "truncated": "Terpotong — kemungkinan konteks penuh",
+      "draftAccepted": "draf: {{accepted}}/{{total}} ({{pct}}%)",
+      "promptTokensPerSec": "{{value}} token prompt/detik",
+      "cachedTokens": "{{value}} dari cache"
     },
     "pendingIndicator": {
       "preparingTool": "Menyiapkan alat",
@@ -963,6 +1080,13 @@
     "toolMetrics": {
       "tokens": "{{count}} token",
       "elapsed": "{{seconds}} dtk"
+    },
+    "completionSettings": {
+      "serverDefault": "bawaan server",
+      "usingServerDefault": "Menggunakan bawaan server: {{value}}",
+      "usingServerDefaultUnreported": "Menggunakan bawaan server (tidak dilaporkan)",
+      "resetToServerDefault": "Bawaan server: {{value}} · Atur Ulang",
+      "resetToServerDefaultAccessibilityLabel": "Atur ulang {{name}} ke bawaan server, {{value}}"
     }
   },
   "palsScreen": {
@@ -1016,8 +1140,6 @@
       "download": "Unduh",
       "getFree": "Dapatkan Gratis"
     },
-    "premiumPalDescription": "Pal premium dari komunitas palshub.ai",
-    "premiumInfoText": "Kunjungi palshub.ai untuk menjelajahi lebih banyak pal",
     "sortOptions": {
       "newest": "Terbaru",
       "oldest": "Terlama",
@@ -1041,15 +1163,48 @@
       "error": "Kesalahan",
       "failedToLoadDetails": "Gagal memuat detail pal",
       "failedToDownload": "Gagal mengunduh pal",
-      "premiumPalMessage": "Ini adalah Pal Premium.\n• Jika Anda sudah membukanya dengan akun Palshub, cukup masuk untuk mengakses detail lengkapnya.\n• Belum membukanya? Kunjungi aplikasi palshub.ai untuk informasi lebih lanjut.",
-      "notAvailable": "T/A",
-      "buyOnPalshub": "Beli di Palshub",
-      "finalizingPurchase": "Menyelesaikan pembelian Anda…",
-      "processingPurchase": "Memproses — akan segera terbuka.",
-      "checkoutSessionExpired": "Sesi Anda telah berakhir. Masuk lagi untuk melanjutkan.",
-      "signInAgain": "Masuk Lagi",
-      "palNotAvailable": "Pal ini sedang tidak tersedia untuk dibeli saat ini.",
-      "checkoutFailed": "Terjadi kesalahan. Silakan coba lagi."
+      "notAvailable": "T/A"
+    },
+    "purchase": {
+      "buy": "{{price}}",
+      "open": "Buka",
+      "install": "Pasang",
+      "pending": "Tertunda",
+      "unlocking": "Membuka Kunci",
+      "retry": "Coba Lagi",
+      "supportCode": "Kode dukungan: {{code}}",
+      "noLongerAvailable": "Pal ini tidak lagi tersedia. Anda dapat {{refundLink}}.",
+      "refundLink": "meminta pengembalian dana ke Apple",
+      "notCompleted": "Pembelian ini tidak dapat diselesaikan. Google akan mengembalikan dana Anda.",
+      "withdrawnRefunding": "Pal ini telah ditarik. Hubungi dukungan untuk pengembalian dana.",
+      "invalid": "Kami tidak dapat memverifikasi pembelian ini.",
+      "heldInvalid": "Kami tidak dapat membuka kunci pembelian ini. Hubungi dukungan dengan kode ini.",
+      "recommendedModel": "Model yang Direkomendasikan",
+      "sampleExchange": "Contoh Percakapan",
+      "signInLine": "Sudah punya? Masuk",
+      "licenseNotice": "Anda membeli lisensi untuk menggunakan Pal ini.",
+      "termsOfSale": "Ketentuan Penjualan",
+      "appleMediaTerms": "Ketentuan Layanan Media Apple",
+      "linkPrompt": "Masuk untuk menggunakannya di perangkat Anda yang lain juga",
+      "linkSignIn": "Masuk",
+      "dismiss": "Nanti Saja",
+      "linkConflict": "Pembelian ini tertaut ke akun lain.",
+      "restorePurchases": "Pulihkan Pembelian",
+      "badgePending": "Tertunda",
+      "badgeUnlocking": "Membuka Kunci",
+      "badgeUpdate": "Pembaruan Tersedia",
+      "updatePrompt": "Versi baru dari pembuatnya sudah tersedia.",
+      "updatePromptWithNote": "Versi baru dari pembuatnya sudah tersedia: {{note}}.",
+      "updateButton": "Perbarui",
+      "updateConfirmText": "Ini akan menggantikan perubahan Anda pada bagian yang diubah oleh pembuatnya.",
+      "updateConfirm": "Perbarui",
+      "updateCancel": "Batal",
+      "modelStep": {
+        "download": "Unduh · {{size}}",
+        "startChat": "Mulai Obrolan",
+        "needsMemory": "Pal ini memerlukan perangkat dengan memori minimal {{size}} untuk model terkecilnya.",
+        "noModelFits": "Perangkat ini tidak memiliki cukup memori untuk Pal ini."
+      }
     }
   },
   "validation": {
@@ -1163,7 +1318,21 @@
     "increaseContextReloading": "Memuat ulang model dengan konteks yang lebih besar…",
     "increaseContextSuccess": "Konteks ditingkatkan menjadi {{target}} token.",
     "increaseContextFailure": "Gagal meningkatkan ukuran konteks. Pengaturan sebelumnya telah dipulihkan.",
-    "palLoadHint": "Pal ini cenderung membutuhkan lebih banyak ruang daripada yang diizinkan ukuran konteks saat ini."
+    "palLoadHint": "Pal ini cenderung membutuhkan lebih banyak ruang daripada yang diizinkan ukuran konteks saat ini.",
+    "webSearch": {
+      "searched": "Dicari: {{query}}",
+      "noResults": "Tidak ada hasil",
+      "noResultsFor": "Tidak ada hasil untuk {{query}}",
+      "resultsCount": "{{count}} hasil",
+      "resultsCountOne": "1 hasil",
+      "searchResultsTitle": "Hasil pencarian",
+      "showResultsAccessibilityLabel": "Tampilkan hasil pencarian web untuk {{query}}",
+      "openLinkError": "Tidak dapat membuka tautan ini."
+    },
+    "contextFullRemote": "Percakapan kehabisan ruang. Mulai obrolan baru.",
+    "speculativeInitFailed": "Perangkat ini tidak dapat memulai decoding spekulatif untuk model ini — kemungkinan besar tidak ada cukup memori untuk konteks draf. Matikan Decoding spekulatif di Pengaturan → Pengaturan Lanjutan dan coba lagi.",
+    "routerLoading": "Memuat model…",
+    "routerLoadingPercent": "Memuat model · {{percent}}%"
   },
   "benchmark": {
     "title": "Benchmark",
@@ -1189,7 +1358,8 @@
       "testWarning": "Catatan: Uji dapat berjalan hingga 2-5 menit untuk model besar dan tidak dapat dihentikan setelah dimulai.",
       "keepScreenOpen": "Harap biarkan layar ini tetap terbuka.",
       "initializingModel": "Menginisialisasi model...",
-      "modelMaxValue": "(maks: {{maxValue}})"
+      "modelMaxValue": "(maks: {{maxValue}})",
+      "testFailed": "Tidak dapat menjalankan uji. Tunggu hingga balasan selesai, lalu coba lagi."
     },
     "dialogs": {
       "advancedSettings": {
@@ -1397,7 +1567,11 @@
       "tr": "Turki",
       "uk": "Ukraina",
       "vi": "Vietnam"
-    }
+    },
+    "engineChipPhonon": "Phonon",
+    "enginePhononTagline": "Cepat memulai dan ringan di RAM. Hanya bahasa Inggris.",
+    "enginePhononCredit": "Model dan suara oleh Gradium (Apache-2.0), dibangun di atas Mimi dari Kyutai.",
+    "engineTierNatural": "bahasa Inggris alami"
   },
   "htmlPreview": {
     "defaultTitle": "Pratinjau",
@@ -1501,6 +1675,163 @@
   "downloadBanner": {
     "titleByPal": "{{name}} sedang mengunduh",
     "titleByModel": "{{name}} sedang mengunduh",
-    "extraInProgress": "+{{count}} lainnya sedang berlangsung"
+    "extraInProgress": "+{{count}} lainnya sedang berlangsung",
+    "failedTitle": "Unduhan tidak selesai",
+    "retry": "Coba Lagi"
+  },
+  "voiceInput": {
+    "micLabel": "Dikte",
+    "recordingLabel": "Merekam",
+    "stopLabel": "Hentikan dan transkripsikan",
+    "cancelLabel": "Batalkan input suara",
+    "transcribingLabel": "Mentranskripsikan…",
+    "setupLabel": "Siapkan input suara",
+    "settingTitle": "Input suara",
+    "settingDescription": "Ketuk mikrofon di obrolan untuk mendikte; ucapan ditranskripsikan di perangkat Anda.",
+    "unsupportedDeviceHelper": "Perangkat ini di bawah spesifikasi yang disarankan. Input suara kemungkinan akan lambat atau bisa gagal.",
+    "spokenLanguageLabel": "Bahasa yang diucapkan",
+    "spokenLanguageAuto": "Deteksi otomatis",
+    "spokenLanguageDetected": "Terdeteksi otomatis: {{language}}",
+    "resetLanguageCta": "Atur Ulang",
+    "recordingLanguageAuto": "Bahasa: otomatis",
+    "recordingLanguage": "Bahasa: {{code}} (ketuk untuk atur ulang)",
+    "waitingForChatLabel": "Akan ditranskripsikan setelah balasan selesai…",
+    "tierSizeLabel": "{{sizeMb}} MB",
+    "installCta": "Unduh",
+    "downloadingLabel": "Mengunduh…",
+    "retryCta": "Coba lagi",
+    "removeCta": "Hapus",
+    "errorPermissionDenied": "Akses mikrofon diperlukan untuk input suara.",
+    "errorPermissionBlocked": "Akses mikrofon diblokir. Aktifkan di Pengaturan.",
+    "errorTranscribeFailed": "Tidak dapat mentranskripsikan — silakan coba lagi.",
+    "errorNotInstalled": "Unduh model suara untuk menggunakan input suara.",
+    "errorInsufficientMemory": "Memori tidak cukup untuk input suara dengan model obrolan ini. Coba model yang lebih kecil.",
+    "errorMicUnavailable": "Mikrofon tidak merespons. Coba lagi, atau ganti ke model obrolan yang lebih kecil.",
+    "errorTranscriptPartial": "Sebagian dikte Anda tidak dapat ditranskripsikan.",
+    "openSettingsLabel": "Buka Pengaturan",
+    "insufficientStorage": "Ruang tidak mencukupi — bebaskan {{requiredMb}} MB untuk memasang model ini ({{freeMb}} MB tersedia).",
+    "setupSheetTitle": "Siapkan input suara",
+    "setupSheetBody": "Satu unduhan singkat, lalu Anda bisa mendikte secara offline.",
+    "tierNameBase": "Base",
+    "tierNameSmall": "Small",
+    "tierNameLargeTurbo": "Large Turbo",
+    "tierHintBase": "Bawaan, cepat",
+    "tierHintSmall": "Lebih akurat, lebih lambat. Lebih baik untuk bahasa lain",
+    "tierHintLargeTurbo": "Sangat lambat di sebagian besar ponsel",
+    "useCta": "Gunakan",
+    "inUseLabel": "Digunakan",
+    "modelSectionHelper": "Digunakan oleh input suara dan suara bebas genggam.",
+    "memoryAlertTitle": "Memori terbatas",
+    "memoryAlertBody": "Input suara perlu memori tambahan selain model obrolan ini. Bisa jadi sangat lambat, atau aplikasi bisa tertutup.",
+    "memoryAlertTryAnyway": "Tetap coba"
+  },
+  "plus": {
+    "eyebrow": "PocketPal Plus",
+    "headline": "Bawa AI lokal lebih jauh.",
+    "subline": "Plus menjaga PocketPal tetap gratis dan open source. Fitur tambahannya adalah ucapan terima kasih kami.",
+    "unsupportedSubline": "Fitur Plus belum bisa jalan di ponsel ini. Anda tetap bisa mendukung PocketPal.",
+    "thanksHeadline": "Terima kasih sudah ikut menjaga PocketPal tetap berjalan.",
+    "thanksSubline": "Plus sudah terbuka di perangkat ini.",
+    "features": {
+      "handsFreeVoice": "Suara bebas genggam",
+      "localApiServer": "Server API lokal"
+    },
+    "ready": "Siap",
+    "needsRam": "Perlu RAM {{gb}} GB",
+    "comingSoon": "Segera hadir",
+    "speedLine": "Kecepatan tergantung ponsel dan model Anda.",
+    "inDevelopment": "Fitur yang masih dikembangkan bisa berubah atau tidak dirilis.",
+    "priceCaption": "Bayar sesuka Anda. Fiturnya sama di semua harga.",
+    "buyError": "Pembelian tidak berhasil. Coba lagi.",
+    "getPlus": "Dapatkan Plus · {{price}}",
+    "getPlusAnyway": "Tetap dapatkan Plus · {{price}}",
+    "loading": "Memuat",
+    "pending": "Tertunda",
+    "pendingTitle": "Menunggu toko mengonfirmasi pembayaran Anda.",
+    "pendingBody": "Plus akan terbuka sendiri begitu pembayaran berhasil. Anda boleh menutup layar ini.",
+    "unavailableTitle": "Pembelian sedang tidak tersedia.",
+    "unavailableBody": "Toko tidak dapat dijangkau. Coba lagi nanti, atau pulihkan pembelian sebelumnya.",
+    "done": "Selesai",
+    "oneTimePurchase": "Pembelian sekali bayar",
+    "restore": "Pulihkan",
+    "openSource": "Open source ↗",
+    "licence": "Pembelian sekali bayar untuk lisensi penggunaan Plus.",
+    "terms": "Ketentuan",
+    "appleMediaTerms": "Ketentuan Layanan Media Apple",
+    "noPurchaseFound": "Tidak ada pembelian Plus yang ditemukan.",
+    "restoreFailed": "Toko tidak dapat dijangkau. Coba lagi.",
+    "sidebar": {
+      "title": "PocketPal Plus",
+      "unlocked": "Terbuka",
+      "subtitleOne": "{{first}}",
+      "subtitleTwo": "{{first}}, {{second}}",
+      "subtitleMore": "{{first}}, {{second}} & lainnya"
+    },
+    "optIn": "Nonaktif",
+    "optInNote": "Nonaktif di ponsel ini. Aktifkan di Pengaturan kalau Anda berani.",
+    "offInSettingsNote": "Dinonaktifkan di Pengaturan.",
+    "chatStaysFree": "Plus itu opsional. Mengobrol tetap gratis.",
+    "chooseAmount": "Pilih nominal"
+  },
+  "voiceMode": {
+    "settingTitle": "Suara bebas genggam",
+    "settingDescription": "Bicara dengan model di obrolan dan dengar balasannya.",
+    "unsupportedDeviceHelper": "Mungkin lambat di ponsel ini.",
+    "startingTitle": "Memulai",
+    "startingHint": "Memuat pengenalan ucapan dan suara. Pertama kali bisa sedikit lebih lama.",
+    "startFailed": "Tidak dapat memulai mode suara. Coba lagi.",
+    "micFailed": "Tidak dapat menggunakan mikrofon, jadi mode suara dihentikan.",
+    "listeningTitle": "Mendengarkan",
+    "listeningHint": "Berhenti bicara saat selesai, atau ketuk gelembung untuk mengirim",
+    "thinkingTitle": "Berpikir",
+    "thinkingHint": "Ketuk gelembung untuk membatalkan",
+    "speakingTitle": "Berbicara",
+    "speakingHint": "Ketuk gelembung untuk menyela",
+    "mutedTitle": "Mikrofon nonaktif",
+    "mutedHint": "Ketuk mikrofon untuk bicara lagi",
+    "errorTranscribe": "Tidak terdengar jelas. Coba lagi.",
+    "errorReply": "Tidak dapat memperoleh jawaban. Coba lagi.",
+    "errorSpeech": "Tidak dapat membacakan jawaban dengan lantang.",
+    "pullDownHint": "Tarik ke bawah untuk melihat obrolan",
+    "showChatLabel": "Tampilkan obrolan",
+    "swipeUpHint": "Geser ke atas untuk tampilan suara",
+    "cloudLabel": "Gelembung mode suara",
+    "openViewLabel": "Buka tampilan suara",
+    "micSwitchLabel": "Mikrofon",
+    "endLabel": "Akhiri mode suara",
+    "setupTitle": "Siapkan mode suara",
+    "setupBody": "Dua model kecil berjalan di ponsel Anda agar Anda bisa bicara secara offline.",
+    "sttRowTitle": "Pengenalan ucapan",
+    "sttRowModel": "Whisper {{tier}} · {{size}}",
+    "sttProgress": "{{done}} dari {{total}}",
+    "sttDownloadFailed": "Unduhan gagal. Coba lagi.",
+    "installedLabel": "Terpasang",
+    "voiceRowTitle": "Suara",
+    "voiceRowReady": "{{voice}} · siap",
+    "voiceRowMissing": "Pilih suara alami. Suara sistem tidak bisa berbicara di mode suara.",
+    "chooseVoiceCta": "Pilih suara",
+    "micNote": "Setelah ini kami akan meminta akses mikrofon.",
+    "micDenied": "Mode suara memerlukan akses mikrofon.",
+    "continueCta": "Lanjutkan",
+    "memoryTightTitle": "Memori terbatas",
+    "memoryTightBody": "Mode suara memuat tiga model sekaligus. Di ponsel ini bisa jadi lambat, atau aplikasi bisa tertutup.",
+    "memoryWontFitTitle": "Memori tidak cukup",
+    "memoryWontFitBody": "Pengenalan ucapan tidak akan muat bersama model obrolan ini. Pilih model yang lebih kecil untuk memakai mode suara.",
+    "memoryChatRow": "Model obrolan · {{name}}",
+    "memorySttRowModel": "Pengenalan ucapan · Whisper {{tier}}",
+    "memoryVoiceRow": "Suara · {{name}}",
+    "memoryNeeded": "Dibutuhkan",
+    "continueAnywayCta": "Tetap lanjutkan",
+    "chooseSmallerModelCta": "Pilih model lebih kecil",
+    "startLabel": "Mulai mode suara",
+    "startLockedLabel": "Suara bebas genggam, PocketPal Plus",
+    "startLockedHint": "Membuka pratinjau singkat. Mengetik dan dikte tetap gratis.",
+    "teaserTitle": "Percakapan suara adalah fitur Plus",
+    "teaserBody": "Bicara bebas genggam. Jawabannya dibacakan dengan lantang.",
+    "teaserGetPlus": "Dapatkan Plus",
+    "teaserKeepTyping": "Tetap mengetik, gratis",
+    "voiceRowFileMissing": "{{voice}} belum diunduh. Ketuk Lanjutkan untuk mengunduhnya.",
+    "voiceRowFileFailed": "Tidak dapat mengunduh {{voice}}. Sambungkan ke internet dan coba lagi.",
+    "memoryNeededOfTotal": "{{needed}} dari {{total}} di ponsel ini"
   }
 }

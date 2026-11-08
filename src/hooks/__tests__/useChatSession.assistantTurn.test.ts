@@ -9,9 +9,10 @@ import {
 } from '../../../jest/fixtures/models';
 
 import {useChatSession} from '../useChatSession';
-import {chatSessionStore, modelStore, palStore} from '../../store';
+import {chatSessionStore, modelStore, palStore, serverStore} from '../../store';
+import {resolveBannerVariant} from '../../utils/bannerVariantResolver';
+import {ModelOrigin} from '../../utils/types';
 import {assistant} from '../../utils/chat';
-import {chatSessionRepository} from '../../repositories/ChatSessionRepository';
 import {talentRegistry} from '../../services/talents';
 import type {MessageType} from '../../utils/types';
 import type {TalentEngine, TalentResult} from '../../services/talents/types';
@@ -773,6 +774,118 @@ describe('useChatSession — AssistantTurn integration', () => {
     (talentRegistry as any).engines.delete('datetime');
   });
 
+  it('a later call that settles first still reaches appendToolOutcome after the earlier call', async () => {
+    const settleOrder: string[] = [];
+    let releaseCalculate!: () => void;
+    const calcTalent: TalentEngine = {
+      name: 'calculate',
+      execute: () =>
+        new Promise<TalentResult>(resolve => {
+          releaseCalculate = () => {
+            settleOrder.push('calculate');
+            resolve({type: 'text', summary: '4'});
+          };
+        }),
+      toToolDefinition: () => ({
+        type: 'function',
+        function: {name: 'calculate', description: '', parameters: {}},
+      }),
+    };
+    const dtTalent: TalentEngine = {
+      name: 'datetime',
+      execute: () => {
+        const settled = Promise.resolve<TalentResult>({
+          type: 'text',
+          summary: '8:28 AM',
+        });
+        settled.then(() => {
+          settleOrder.push('datetime');
+          releaseCalculate();
+        });
+        return settled;
+      },
+      toToolDefinition: () => ({
+        type: 'function',
+        function: {name: 'datetime', description: '', parameters: {}},
+      }),
+    };
+    talentRegistry.register(calcTalent);
+    talentRegistry.register(dtTalent);
+    palStore.pals = [
+      {
+        id: 'pal-1',
+        type: 'local',
+        name: 'Multi Pal',
+        systemPrompt: '',
+        parameters: {},
+        parameterSchema: [],
+        isSystemPromptChanged: false,
+        useAIPrompt: false,
+        source: 'local',
+        pact: {
+          talents: [
+            {name: 'calculate', necessity: 'optional'},
+            {name: 'datetime', necessity: 'optional'},
+          ],
+        },
+      } as any,
+    ];
+    chatSessionStore.sessions = [
+      {
+        id: 'session-1',
+        title: '',
+        date: '',
+        messages: [],
+        completionSettings: {},
+        settingsSource: 'pal',
+        activePalId: 'pal-1',
+      } as any,
+    ];
+    chatSessionStore.activeSessionId = 'session-1';
+
+    let turnIndex = 0;
+    if (modelStore.context) {
+      modelStore.context.completion = jest.fn().mockImplementation(async () => {
+        turnIndex += 1;
+        if (turnIndex === 1) {
+          return {
+            text: '',
+            content: '',
+            tool_calls: [
+              {
+                id: 'c0',
+                type: 'function',
+                function: {name: 'calculate', arguments: '{}'},
+              },
+              {
+                id: 'c1',
+                type: 'function',
+                function: {name: 'datetime', arguments: '{}'},
+              },
+            ],
+          };
+        }
+        return {text: '4 at 8:28', content: '4 at 8:28'};
+      });
+    }
+
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+    await act(async () => {
+      await result.current.handleSendPress(textMessage);
+    });
+
+    expect(settleOrder).toEqual(['datetime', 'calculate']);
+    const outcomeIds = (
+      chatSessionStore.appendToolOutcome as jest.Mock
+    ).mock.calls.map(c => (c[2] as {callId: string}).callId);
+    expect(outcomeIds).toEqual(['c0', 'c1']);
+
+    (talentRegistry as any).engines.delete('calculate');
+    (talentRegistry as any).engines.delete('datetime');
+  });
+
   it('#hookTest4 tool-followed-by-tool (multi-step chain): appendToolCall fires per step, ids stay distinct across steps', async () => {
     // Step 0: invoke calculate. Step 1: invoke datetime. Step 2: final
     // answer. The runner attaches a fresh normalized list to each
@@ -1018,16 +1131,100 @@ describe('useChatSession — AssistantTurn integration', () => {
     (talentRegistry as any).engines.delete('calculate');
   });
 
-  it('#hookTest6 abort with no partial content: empty turn deleted via repository, no interrupted-metadata write', async () => {
+  it('a Stop before the tool phase of a six-call reply cancels every call and ends the lease', async () => {
+    const execute = jest.fn(
+      async (): Promise<TalentResult> => ({type: 'text', summary: '4'}),
+    );
+    talentRegistry.register({
+      name: 'calculate',
+      execute,
+      toToolDefinition: () => ({
+        type: 'function',
+        function: {name: 'calculate', description: '', parameters: {}},
+      }),
+    });
+    palStore.pals = [
+      {
+        id: 'pal-1',
+        type: 'local',
+        name: 'Calc Pal',
+        systemPrompt: '',
+        parameters: {},
+        parameterSchema: [],
+        isSystemPromptChanged: false,
+        useAIPrompt: false,
+        source: 'local',
+        pact: {talents: [{name: 'calculate', necessity: 'optional'}]},
+      } as any,
+    ];
+    chatSessionStore.sessions = [
+      {
+        id: 'session-1',
+        title: '',
+        date: '',
+        messages: [],
+        completionSettings: {},
+        settingsSource: 'pal',
+        activePalId: 'pal-1',
+      } as any,
+    ];
+    chatSessionStore.activeSessionId = 'session-1';
+    modelStore.context!.completion = jest.fn().mockResolvedValue({
+      text: '',
+      content: '',
+      tool_calls: [0, 1, 2, 3, 4, 5].map(i => ({
+        id: `c${i}`,
+        type: 'function',
+        function: {name: 'calculate', arguments: '{"e":"2+2"}'},
+      })),
+    });
+
+    try {
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+      (chatSessionStore.appendToolCall as jest.Mock).mockImplementationOnce(
+        async () => {
+          result.current.handleStopPress();
+        },
+      );
+      let settled = false;
+      result.current.handleSendPress(textMessage).then(() => {
+        settled = true;
+      });
+      await act(async () => {
+        for (let i = 0; i < 1000 && !settled; i++) {
+          await Promise.resolve();
+        }
+      });
+
+      expect(settled).toBe(true);
+      expect(modelStore.isGenerationBusy).toBe(false);
+      const outcomes = (
+        chatSessionStore.appendToolOutcome as jest.Mock
+      ).mock.calls.map(call => call[2].result.errorMessage);
+      expect(outcomes).toEqual(Array(6).fill('cancelled'));
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
+      (talentRegistry as any).engines.delete('calculate');
+    }
+  });
+
+  it('#hookTest6 abort with no partial content: empty turn deleted via the store, no interrupted-metadata write', async () => {
     // The runner throws BEFORE any token / step_finished. The hook's
     // catch path sees `hasPartialContent === false` → calls
-    // chatSessionRepository.deleteMessage(turnId) and skips the
+    // chatSessionStore.deleteMessageFromSession(sessionId, turnId) and skips the
     // updateMessage({metadata: {interrupted, copyable}}) write. A
     // system message about the failure is added below.
     const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const deleteMessageSpy = jest
-      .spyOn(chatSessionRepository, 'deleteMessage')
-      .mockResolvedValue(undefined);
+    const deleteMessageSpy = (
+      chatSessionStore.deleteMessageFromSession as jest.Mock
+    ).mockImplementation(async (sessionId: string, id: string) => {
+      const owner = chatSessionStore.sessions.find(s => s.id === sessionId);
+      if (owner) {
+        owner.messages = owner.messages.filter(m => m.id !== id);
+      }
+    });
 
     if (modelStore.context) {
       modelStore.context.completion = jest
@@ -1087,8 +1284,8 @@ describe('useChatSession — AssistantTurn integration', () => {
       await result.current.handleSendPress(textMessage);
     });
 
-    // PATH B: the empty turn is deleted from the repository.
-    expect(deleteMessageSpy).toHaveBeenCalledWith(turnId);
+    // PATH B: the empty turn is deleted from its session.
+    expect(deleteMessageSpy).toHaveBeenCalledWith('session-1', turnId);
 
     // No `interrupted` metadata write — that branch only fires when
     // partial content exists. Filter all updateMessage calls to
@@ -1098,8 +1295,7 @@ describe('useChatSession — AssistantTurn integration', () => {
     );
     expect(interruptedCalls).toHaveLength(0);
 
-    // The empty turn is removed from the in-memory session by the
-    // catch path's runInAction filter.
+    // The empty turn is removed from the in-memory session.
     const session = chatSessionStore.sessions.find(s => s.id === 'session-1');
     expect(session?.messages.find((m: any) => m.id === turnId)).toBeUndefined();
 
@@ -1110,7 +1306,369 @@ describe('useChatSession — AssistantTurn integration', () => {
     ).mock.calls.find(c => c[0]?.metadata?.system === true);
     expect(sysCall).toBeDefined();
 
-    deleteMessageSpy.mockRestore();
+    deleteMessageSpy.mockReset();
+    deleteMessageSpy.mockResolvedValue(undefined);
     errSpy.mockRestore();
+  });
+
+  describe('remote context accounting', () => {
+    const REMOTE_WINDOW = 4096;
+
+    // `activeModelCaps` is a computed over `capsFor()`, so the window is set up
+    // by registering a remote model and the probe entry it resolves through.
+    const activateRemoteModel = () => {
+      modelStore.activeModelId = 'remote-1';
+      modelStore.models = [
+        {id: 'remote-1', origin: ModelOrigin.REMOTE, serverId: 'srv-1'} as any,
+      ];
+      (modelStore as any).activeContextSettings = undefined;
+      serverStore.servers = [
+        {
+          id: 'srv-1',
+          name: 'llama',
+          url: 'http://localhost:8080',
+          serverType: 'llama.cpp',
+        } as any,
+      ];
+      serverStore.remoteCaps = {'remote-1': {contextLength: REMOTE_WINDOW}};
+    };
+
+    const bannerInput = () => ({
+      effectiveNCtx: modelStore.activeModelCaps.effectiveContextLength,
+      isRemote: true,
+      htmlPreviewCount: 0,
+      activeModelId: modelStore.activeModelId,
+      dismissed: new Set<never>(),
+    });
+
+    it('a finished remote turn feeds the full banner a real count', async () => {
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest.fn().mockResolvedValue({
+          text: 'cut off',
+          content: 'cut off',
+          timings: {prompt_n: 3900, cache_n: 0, predicted_n: 100},
+          tokens_evaluated: 3900,
+          tokens_predicted: 100,
+          stopped_limit: 1,
+        });
+      }
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const snapshot = (
+        chatSessionStore.recordCompletionSnapshot as jest.Mock
+      ).mock.calls.at(-1)![0];
+      expect(snapshot.used).toBe(4000);
+      expect(snapshot.contextFull).toBe(true);
+      expect(modelStore.activeModelCaps.effectiveContextLength).toBe(
+        REMOTE_WINDOW,
+      );
+
+      expect(resolveBannerVariant(snapshot, bannerInput()).variant).toBe(
+        'context-full',
+      );
+      // The window is only reached because the count is real: a zeroed one
+      // fails the freshness gate and the banner never renders.
+      expect(
+        resolveBannerVariant({...snapshot, used: 0}, bannerInput()).variant,
+      ).not.toBe('context-full');
+    });
+
+    it('re-probes remote capabilities once the model has provably answered', async () => {
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest.fn().mockResolvedValue({
+          text: 'hello',
+          content: 'hello',
+        });
+      }
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      expect(modelStore.reprobeRemoteCapsAfterCompletion).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
+    it('leaves a finished local turn alone', async () => {
+      if (modelStore.context) {
+        modelStore.context.completion = jest.fn().mockResolvedValue({
+          text: 'hello',
+          content: 'hello',
+        });
+      }
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      expect(
+        modelStore.reprobeRemoteCapsAfterCompletion,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('a remote turn with no timings reports no count at all', async () => {
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest.fn().mockResolvedValue({
+          text: 'hello',
+          content: 'hello',
+          tokens_predicted: 12,
+        });
+      }
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const snapshot = (
+        chatSessionStore.recordCompletionSnapshot as jest.Mock
+      ).mock.calls.at(-1)![0];
+      // A predicted-only tally carries no prompt term and is not an occupancy
+      // number, so there is nothing to report.
+      expect(snapshot.used).toBeUndefined();
+      expect(resolveBannerVariant(snapshot, bannerInput()).variant).not.toBe(
+        'context-full',
+      );
+    });
+
+    it('a remote turn whose timings carry rates but no token counts reports no count', async () => {
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest.fn().mockResolvedValue({
+          text: 'hello',
+          content: 'hello',
+          // `timings` is present and carries no prompt term, so the presence
+          // of the object says nothing about whether a count arrived.
+          timings: {predicted_per_second: 80, prompt_per_second: 800},
+          tokens_predicted: 600,
+        });
+      }
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const snapshot = (
+        chatSessionStore.recordCompletionSnapshot as jest.Mock
+      ).mock.calls.at(-1)![0];
+      expect(snapshot.used).toBeUndefined();
+      expect(resolveBannerVariant(snapshot, bannerInput()).variant).not.toBe(
+        'context-full',
+      );
+    });
+
+    it('an aborted turn with partial content reports no count, not zero', async () => {
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest
+          .fn()
+          .mockRejectedValueOnce(new Error('socket hang up'));
+      }
+      const ref: {
+        current: {createdAt: number; id: string; sessionId: string} | null;
+      } = {current: null};
+      const {result} = renderHook(() =>
+        useChatSession(ref, textMessage.author, mockAssistant),
+      );
+
+      const turnId = 'turn-remote-abort';
+      chatSessionStore.sessions = [
+        {
+          id: 'session-1',
+          title: '',
+          date: '',
+          messages: [
+            {
+              id: turnId,
+              type: 'assistant_turn',
+              author: assistant,
+              createdAt: Date.now(),
+              steps: [{content: 'partial'}],
+              metadata: {copyable: true},
+            } as MessageType.AssistantTurn,
+          ],
+          completionSettings: {},
+          settingsSource: 'pal',
+        },
+      ] as any;
+      (
+        chatSessionStore.addMessageToCurrentSession as jest.Mock
+      ).mockImplementation(async (msg: any) => {
+        msg.id = turnId;
+      });
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const interruptedCall = (
+        chatSessionStore.updateMessage as jest.Mock
+      ).mock.calls.find(c => c[2]?.metadata?.interrupted === true);
+      expect(interruptedCall).toBeDefined();
+      const snapshot = interruptedCall![2].metadata.completionResult;
+      expect(snapshot.contextFull).toBe(false);
+      // Tokens were certainly consumed and no turn reported how many.
+      expect(snapshot.used).toBeUndefined();
+      expect('used' in snapshot).toBe(true);
+
+      errSpy.mockRestore();
+    });
+
+    // The overflow paths never see a finished turn, so they pin `used` to the
+    // session's context window. A remote session leaves the local context
+    // settings unset, which is why reading the window from there suppressed
+    // this banner outright.
+    const overflowSession = (turnId: string, steps: any[]) => {
+      chatSessionStore.sessions = [
+        {
+          id: 'session-1',
+          title: '',
+          date: '',
+          messages: [
+            {
+              id: turnId,
+              type: 'assistant_turn',
+              author: assistant,
+              createdAt: Date.now(),
+              steps,
+              metadata: {copyable: true},
+            } as MessageType.AssistantTurn,
+          ],
+          completionSettings: {},
+          settingsSource: 'pal',
+        },
+      ] as any;
+      (
+        chatSessionStore.addMessageToCurrentSession as jest.Mock
+      ).mockImplementation(async (msg: any) => {
+        msg.id = turnId;
+      });
+    };
+
+    it('a prompt that overflows a remote window pins used to that window', async () => {
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest
+          .fn()
+          .mockRejectedValueOnce(new Error('Context is full'));
+      }
+      const ref: {
+        current: {createdAt: number; id: string; sessionId: string} | null;
+      } = {current: null};
+      const {result} = renderHook(() =>
+        useChatSession(ref, textMessage.author, mockAssistant),
+      );
+      overflowSession('turn-remote-overflow', []);
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const snapshot = (
+        chatSessionStore.recordCompletionSnapshot as jest.Mock
+      ).mock.calls.at(-1)![0];
+      expect(snapshot).toMatchObject({
+        used: REMOTE_WINDOW,
+        contextFull: true,
+        isRemote: true,
+      });
+      expect(resolveBannerVariant(snapshot, bannerInput()).variant).toBe(
+        'context-full',
+      );
+
+      // The window has to come from the probe: a remote session never
+      // populates the local context settings, so a snapshot sourced from
+      // those carries no count and the freshness gate rejects it.
+      expect(modelStore.activeContextSettings?.n_ctx).toBeUndefined();
+      expect(
+        resolveBannerVariant(
+          {...snapshot, used: modelStore.activeContextSettings?.n_ctx ?? 0},
+          bannerInput(),
+        ).variant,
+      ).not.toBe('context-full');
+
+      errSpy.mockRestore();
+    });
+
+    it('an overflow after partial output records the window on the turn', async () => {
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      activateRemoteModel();
+      if (modelStore.context) {
+        modelStore.context.completion = jest
+          .fn()
+          .mockRejectedValueOnce(new Error('Context is full'));
+      }
+      const ref: {
+        current: {createdAt: number; id: string; sessionId: string} | null;
+      } = {current: null};
+      const {result} = renderHook(() =>
+        useChatSession(ref, textMessage.author, mockAssistant),
+      );
+      overflowSession('turn-remote-overflow-partial', [{content: 'partial'}]);
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      const interruptedCall = (
+        chatSessionStore.updateMessage as jest.Mock
+      ).mock.calls.find(c => c[2]?.metadata?.interrupted === true);
+      expect(interruptedCall).toBeDefined();
+      const snapshot = interruptedCall![2].metadata.completionResult;
+      expect(snapshot.contextFull).toBe(true);
+      expect(snapshot.used).toBe(REMOTE_WINDOW);
+      expect(resolveBannerVariant(snapshot, bannerInput()).variant).toBe(
+        'context-full',
+      );
+
+      errSpy.mockRestore();
+    });
+  });
+
+  it('a local turn with no evaluated count reports no count either', async () => {
+    if (modelStore.context) {
+      modelStore.context.completion = jest.fn().mockResolvedValue({
+        text: 'hello',
+        content: 'hello',
+        timings: {predicted_per_second: 80},
+        tokens_predicted: 600,
+      });
+    }
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+
+    await act(async () => {
+      await result.current.handleSendPress(textMessage);
+    });
+
+    const snapshot = (
+      chatSessionStore.recordCompletionSnapshot as jest.Mock
+    ).mock.calls.at(-1)![0];
+    expect(snapshot.isRemote).toBe(false);
+    expect(snapshot.used).toBeUndefined();
   });
 });

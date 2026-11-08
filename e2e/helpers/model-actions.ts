@@ -10,10 +10,53 @@ import {DrawerPage} from '../pages/DrawerPage';
 import {ModelsPage} from '../pages/ModelsPage';
 import {HFSearchSheet} from '../pages/HFSearchSheet';
 import {ModelDetailsSheet} from '../pages/ModelDetailsSheet';
-import {Selectors} from './selectors';
+import {Selectors, byTestId} from './selectors';
+import {Gestures} from './gestures';
 import {TIMEOUTS, ModelTestConfig, ModelQuantVariant} from '../fixtures/models';
 
 declare const browser: WebdriverIO.Browser;
+
+/**
+ * Wait for a model's card to appear on the Models screen after a download.
+ *
+ * Fails fast on the app's download-error dialog: once that is up the download
+ * is over, so waiting out the remaining minutes only buys a timeout that names
+ * the wrong thing.
+ */
+export async function waitForModelDownloaded(
+  downloadFile: string,
+  timeout: number = TIMEOUTS.download,
+): Promise<void> {
+  const cardSelector = Selectors.modelCard.cardContainer(downloadFile);
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    if (
+      await browser
+        .$(cardSelector)
+        .isDisplayed()
+        .catch(() => false)
+    ) {
+      return;
+    }
+    if (
+      await browser
+        .$(byTestId('download-error-dialog'))
+        .isDisplayed()
+        .catch(() => false)
+    ) {
+      const reason = await browser
+        .$(byTestId('error-message-text'))
+        .getText()
+        .catch(() => 'unknown');
+      throw new Error(`Download failed for ${downloadFile}: ${reason}`);
+    }
+    await browser.pause(1000);
+  }
+  throw new Error(
+    `Model card for ${downloadFile} did not appear within ${timeout}ms`,
+  );
+}
 
 /**
  * Dismiss memory/performance warning alert if it appears.
@@ -89,6 +132,51 @@ export async function waitForAiMessage(
 }
 
 /**
+ * Expand a downloaded model card and switch its Vision toggle off. No-op when
+ * the card exposes no vision row (non-multimodal model) or the toggle already
+ * reads off.
+ */
+async function disableVisionOnCard(filename: string): Promise<void> {
+  const card = browser.$(Selectors.modelCard.cardContainer(filename));
+  // `.//`-scoped so Android evaluates the child query against THIS card —
+  // an absolute testID XPath is document-global and can expand a sibling.
+  const expand = (browser as any).isAndroid
+    ? card.$('.//*[contains(@resource-id, "expand-details-button")]')
+    : card.$('~expand-details-button');
+  await expand.waitForExist({timeout: 10000});
+  await expand.click();
+  await browser.pause(600);
+
+  // The switch carries its own testID: RN view-flattening turns the row
+  // container into a leaf in the a11y tree, so a child query under the row
+  // can never match. Scroll BEFORE concluding it is absent — an off-screen
+  // toggle also reads as not existing, and skipping then silently leaves
+  // vision ON (the failure this helper exists to prevent).
+  const visionSwitch = browser.$(byTestId('vision-toggle-switch'));
+  const reachable = await Gestures.scrollToElement(
+    byTestId('vision-toggle-switch'),
+    5,
+  );
+  if (!reachable && !(await visionSwitch.isExisting().catch(() => false))) {
+    console.log(`[disableVision] no vision toggle on ${filename}; skipping`);
+    return;
+  }
+  // Android exposes `checked`, iOS `value` ("1"/"0"); anything unreadable
+  // falls through to a click, which is correct for the fresh-install default.
+  const isAndroid = (browser as any).isAndroid;
+  const state = isAndroid
+    ? await visionSwitch.getAttribute('checked').catch(() => null)
+    : await visionSwitch.getAttribute('value').catch(() => null);
+  if (state === 'false' || state === '0') {
+    console.log(`[disableVision] already off on ${filename}`);
+    return;
+  }
+  await visionSwitch.click();
+  await browser.pause(400);
+  console.log(`[disableVision] vision switched off on ${filename}`);
+}
+
+/**
  * Download a model from HuggingFace and load it.
  * After completion, the app auto-navigates to the Chat screen.
  *
@@ -132,8 +220,12 @@ export async function downloadAndLoadModel(
   const containerSelector = Selectors.modelCard.cardContainer(
     model.downloadFile,
   );
+  await waitForModelDownloaded(model.downloadFile, downloadTimeout);
   const modelCardContainer = browser.$(containerSelector);
-  await modelCardContainer.waitForDisplayed({timeout: downloadTimeout});
+
+  if (model.disableVisionBeforeLoad) {
+    await disableVisionOnCard(model.downloadFile);
+  }
 
   // Find and click load button
   const loadBtn = modelCardContainer.$(Selectors.modelCard.loadButtonElement);
@@ -144,7 +236,7 @@ export async function downloadAndLoadModel(
   await dismissPerformanceWarningIfPresent();
 
   // Verify we're on chat screen (auto-navigates after load)
-  await chatPage.waitForReady();
+  await chatPage.waitForReady(TIMEOUTS.appReady);
 
   console.log(`Model loaded successfully: ${model.id}`);
 }
@@ -192,70 +284,129 @@ export async function downloadAndLoadModelVariant(
   const containerSelector = Selectors.modelCard.cardContainer(
     variant.downloadFile,
   );
+  await waitForModelDownloaded(variant.downloadFile, downloadTimeout);
   const modelCardContainer = browser.$(containerSelector);
-  await modelCardContainer.waitForDisplayed({timeout: downloadTimeout});
 
   const loadBtn = modelCardContainer.$(Selectors.modelCard.loadButtonElement);
   await loadBtn.waitForDisplayed({timeout: 10000});
   await loadBtn.click();
 
   await dismissPerformanceWarningIfPresent();
-  await chatPage.waitForReady();
+  await chatPage.waitForReady(TIMEOUTS.appReady);
 
   console.log(
     `Model variant loaded: ${model.id} / ${variant.quant} (${variant.downloadFile})`,
   );
 }
 
+const RUN_START_WINDOW_MS = 3_000;
+const STOP_POLL_MS = 250;
+
+type StopButtonState = 'present' | 'absent' | 'unknown';
+
+async function probeStopButton(): Promise<StopButtonState> {
+  try {
+    return (await browser.$(Selectors.chat.stopButton).isExisting())
+      ? 'present'
+      : 'absent';
+  } catch {
+    return 'unknown';
+  }
+}
+
+export async function readNewestTimingText(): Promise<string | undefined> {
+  const labels = browser.$$(Selectors.chat.inferenceComplete);
+  const count = await labels.length;
+  let newestIndex = -1;
+  let newestY = -Infinity;
+  for (let i = 0; i < count; i++) {
+    const y = await labels[i].getLocation('y').catch(() => -Infinity);
+    if (y > newestY) {
+      newestY = y;
+      newestIndex = i;
+    }
+  }
+  if (newestIndex < 0) {
+    return undefined;
+  }
+
+  const attrName = (browser as any).isAndroid ? 'content-desc' : 'label';
+  const labelText = await labels[newestIndex]
+    .getAttribute(attrName)
+    .catch(() => '');
+  const timingMatch = labelText.match(/(\d+(?:\.\d+)?ms\/token.*TTFT)/);
+  return timingMatch ? timingMatch[1] : labelText.slice(-100);
+}
+
+async function swipeChatDown(): Promise<void> {
+  try {
+    const {width, height} = await (browser as any).getWindowSize();
+    await (browser as any)
+      .action('pointer', {parameters: {pointerType: 'touch'}})
+      .move({x: Math.floor(width / 2), y: Math.floor(height * 0.7)})
+      .down()
+      .move({
+        x: Math.floor(width / 2),
+        y: Math.floor(height * 0.3),
+        duration: 300,
+      })
+      .up()
+      .perform();
+  } catch {
+    // Swipe failed, continue waiting
+  }
+}
+
 /**
- * Wait for inference to complete by polling for timing info.
- * Returns the timing text when complete.
+ * Wait for the run started by the caller's send to finish: the Stop button
+ * appears, then stays gone. Returns the timing text of the newest reply.
+ *
+ * Every finished reply carries a timing label, so on a later turn in a chat a
+ * label alone does not mean the new reply is done.
  *
  * @param maxWaitMs - Maximum time to wait for completion
- * @param pollIntervalMs - How often to check
+ * @param pollIntervalMs - How often to check once the run has started
  */
 export async function waitForInferenceComplete(
   maxWaitMs = 60000,
   pollIntervalMs = 2000,
 ): Promise<string> {
   const startTime = Date.now();
+  let stopSeen = false;
 
   while (Date.now() - startTime < maxWaitMs) {
     // A "Give this chat more room" sheet can overlay the chat and stall
     // generation; clear it before polling so inference can proceed.
     await dismissContextRoomSheetIfPresent();
 
-    const timingElement = browser.$(Selectors.chat.inferenceComplete);
-    const exists = await timingElement.isExisting().catch(() => false);
-
-    if (exists) {
-      const attrName = (browser as any).isAndroid ? 'content-desc' : 'label';
-      const labelText = await timingElement
-        .getAttribute(attrName)
-        .catch(() => '');
-      const timingMatch = labelText.match(/(\d+(?:\.\d+)?ms\/token.*TTFT)/);
-      return timingMatch ? timingMatch[1] : labelText.slice(-100);
+    const stop = await probeStopButton();
+    if (stop === 'present' && !stopSeen) {
+      stopSeen = true;
+      console.log(
+        `[waitForInferenceComplete] run started after ${Date.now() - startTime}ms`,
+      );
     }
 
-    // Swipe up to scroll down while waiting (in case content is long)
-    try {
-      const {width, height} = await (browser as any).getWindowSize();
-      await (browser as any)
-        .action('pointer', {parameters: {pointerType: 'touch'}})
-        .move({x: Math.floor(width / 2), y: Math.floor(height * 0.7)})
-        .down()
-        .move({
-          x: Math.floor(width / 2),
-          y: Math.floor(height * 0.3),
-          duration: 300,
-        })
-        .up()
-        .perform();
-    } catch {
-      // Swipe failed, continue waiting
+    const startWindowOver = Date.now() - startTime > RUN_START_WINDOW_MS;
+    if (stop === 'absent' && (stopSeen || startWindowOver)) {
+      await browser.pause(STOP_POLL_MS);
+      if ((await probeStopButton()) === 'absent') {
+        const timingText = await readNewestTimingText();
+        if (timingText !== undefined) {
+          if (!stopSeen) {
+            console.log('[waitForInferenceComplete] run start not observed');
+          }
+          return timingText;
+        }
+      }
     }
 
-    await browser.pause(pollIntervalMs);
+    if (stopSeen) {
+      await swipeChatDown();
+      await browser.pause(pollIntervalMs);
+    } else {
+      await browser.pause(STOP_POLL_MS);
+    }
   }
 
   throw new Error('Inference timed out - timing info not found');

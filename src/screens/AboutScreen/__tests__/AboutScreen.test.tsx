@@ -60,6 +60,58 @@ describe('AboutScreen', () => {
     );
   });
 
+  it('opens the bundled open-source notices in a sheet without a network link', () => {
+    const {getByTestId, getByText} = render(<AboutScreen />);
+
+    fireEvent.press(getByTestId('about-open-source-notices'));
+
+    expect(getByTestId('about-open-source-notices-sheet')).toBeTruthy();
+    expect(getByText(l10n.en.about.phononNoticesCredit)).toBeTruthy();
+    expect(getByText(/^## Licenses used/)).toBeTruthy();
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
+
+  it('gives each legal link a 44pt tap target with its role', () => {
+    const {getByRole} = render(<AboutScreen />);
+
+    const privacy = getByRole('link', {name: l10n.en.about.privacyPolicy});
+    const terms = getByRole('link', {name: l10n.en.about.termsOfService});
+    const notices = getByRole('button', {
+      name: l10n.en.about.openSourceNotices,
+    });
+    for (const target of [privacy, terms, notices]) {
+      expect(target).toHaveStyle({minHeight: 44});
+    }
+
+    fireEvent.press(privacy);
+    fireEvent.press(terms);
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://pocketpal.dev/privacy-policy',
+    );
+    expect(Linking.openURL).toHaveBeenCalledWith('https://pocketpal.dev/terms');
+    expect(notices.props.testID).toBe('about-open-source-notices');
+  });
+
+  it('hides the separator before a legal link that wraps to the next line', () => {
+    const {getByTestId, getAllByText} = render(<AboutScreen />);
+    const layoutAt = (i: number, y: number) =>
+      fireEvent(getByTestId(`about-legal-item-${i}`), 'layout', {
+        nativeEvent: {layout: {x: 0, y, width: 100, height: 16}},
+      });
+
+    act(() => {
+      layoutAt(0, 0);
+      layoutAt(1, 0);
+      layoutAt(2, 20);
+    });
+
+    const [first, second] = getAllByText('·', {
+      includeHiddenElements: true,
+    });
+    expect(first).not.toHaveStyle({opacity: 0});
+    expect(second).toHaveStyle({opacity: 0});
+  });
+
   it('opens GitHub URL when GitHub button is pressed', () => {
     const {getByText} = render(<AboutScreen />);
 
@@ -70,22 +122,26 @@ describe('AboutScreen', () => {
     );
   });
 
-  it('opens Buy Me a Coffee URL when sponsor button is pressed on non-iOS platforms', () => {
-    Platform.OS = 'android';
-    const {getByText} = render(<AboutScreen />);
+  describe.each(['android', 'ios'] as const)('on %s', os => {
+    const originalOS = Platform.OS;
 
-    fireEvent.press(getByText(l10n.en.about.sponsorButton));
+    beforeEach(() => {
+      Platform.OS = os;
+    });
 
-    expect(Linking.openURL).toHaveBeenCalledWith(
-      'https://www.buymeacoffee.com/aghorbani',
-    );
-  });
+    afterEach(() => {
+      Platform.OS = originalOS;
+    });
 
-  it('does not show sponsor button on iOS', () => {
-    Platform.OS = 'ios';
-    const {queryByText} = render(<AboutScreen />);
+    it('shows no sponsorship option in the support section', () => {
+      const {queryByText, getByText} = render(<AboutScreen />);
 
-    expect(queryByText(l10n.en.about.sponsorButton)).toBeNull();
+      expect(queryByText('Become a Sponsor')).toBeNull();
+      expect(queryByText('or')).toBeNull();
+      expect(getByText(l10n.en.about.githubButton)).toBeTruthy();
+      expect(getByText(l10n.en.about.orBy)).toBeTruthy();
+      expect(getByText(l10n.en.feedback.shareThoughtsButton)).toBeTruthy();
+    });
   });
 
   it('opens feedback form when share thoughts button is pressed', async () => {

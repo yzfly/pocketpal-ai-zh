@@ -1,0 +1,101 @@
+import {ExaProvider} from '../exa';
+
+const okJson = (body: unknown) =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    text: () => Promise.resolve(JSON.stringify(body)),
+  });
+
+describe('ExaProvider', () => {
+  beforeEach(() => {
+    global.fetch = jest.fn();
+  });
+
+  it('prefers highlights for the snippet, joining them', async () => {
+    (global.fetch as jest.Mock).mockReturnValue(
+      okJson({
+        results: [
+          {
+            title: 'Doc',
+            url: 'https://example.com/doc',
+            highlights: ['first', 'second'],
+            summary: 'unused summary',
+            publishedDate: '2026-03-03',
+          },
+        ],
+      }),
+    );
+    const provider = new ExaProvider(() => 'key');
+    const [hit] = await provider.search('q', {maxResults: 3});
+    expect(hit.snippet).toBe('first second');
+    expect(hit.url).toBe('https://example.com/doc');
+    expect(hit.publishedAt).toBe('2026-03-03');
+  });
+
+  it('falls back to summary then text when highlights are absent', async () => {
+    (global.fetch as jest.Mock).mockReturnValue(
+      okJson({results: [{url: 'https://e.com/x', summary: 'sum'}]}),
+    );
+    const provider = new ExaProvider(() => 'key');
+    const [hit] = await provider.search('q', {maxResults: 3});
+    expect(hit.snippet).toBe('sum');
+  });
+
+  it('supports a native deep-read mapped to PageContent', async () => {
+    (global.fetch as jest.Mock).mockReturnValue(
+      okJson({results: [{title: 'Page', text: 'full body text'}]}),
+    );
+    const provider = new ExaProvider(() => 'key');
+    const page = await provider.read!('https://example.com/p');
+    expect(page).toEqual({
+      url: 'https://example.com/p',
+      title: 'Page',
+      text: 'full body text',
+    });
+  });
+
+  it('throws when the body has no results array', async () => {
+    const provider = new ExaProvider(() => 'key');
+    for (const body of [null, {}, {results: null}]) {
+      (global.fetch as jest.Mock).mockReturnValue(okJson(body));
+      await expect(provider.search('q', {maxResults: 3})).rejects.toThrow(
+        /^unexpected response$/,
+      );
+    }
+  });
+
+  it('returns [] for an explicit empty results array', async () => {
+    (global.fetch as jest.Mock).mockReturnValue(okJson({results: []}));
+    const provider = new ExaProvider(() => 'key');
+    await expect(provider.search('q', {maxResults: 3})).resolves.toEqual([]);
+  });
+
+  it('throws when the contents body has no results array', async () => {
+    const provider = new ExaProvider(() => 'key');
+    for (const body of [null, {}, {results: null}, {results: {}}]) {
+      (global.fetch as jest.Mock).mockReturnValue(okJson(body));
+      await expect(provider.read!('https://e.com/x')).rejects.toThrow(
+        /^unexpected response$/,
+      );
+    }
+  });
+
+  it('reads to empty text when the contents results are empty or textless', async () => {
+    const provider = new ExaProvider(() => 'key');
+    for (const body of [{results: []}, {results: [{url: 'https://e.com/x'}]}]) {
+      (global.fetch as jest.Mock).mockReturnValue(okJson(body));
+      await expect(provider.read!('https://e.com/x')).resolves.toEqual({
+        url: 'https://e.com/x',
+        text: '',
+      });
+    }
+  });
+
+  it('throws when no key is set', async () => {
+    const provider = new ExaProvider(() => '');
+    await expect(provider.search('q', {maxResults: 3})).rejects.toThrow(
+      /key not set/i,
+    );
+  });
+});

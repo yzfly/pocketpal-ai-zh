@@ -9,12 +9,6 @@ import {UserContext} from '../../../utils';
 
 // Mock the theme hook
 jest.mock('../../../hooks', () => ({
-  // 语音输入 hook：这里只测思考开关，保持 idle 即可
-  useVoiceInput: () => ({
-    status: 'idle',
-    downloadProgress: 0,
-    toggle: jest.fn(),
-  }),
   useTheme: () => ({
     colors: {
       primary: '#007AFF',
@@ -32,6 +26,11 @@ jest.mock('../../../hooks', () => ({
       },
     },
   }),
+  useVoiceCapture: () => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    cancel: jest.fn(),
+  }),
 }));
 
 // Mock the stores
@@ -47,6 +46,9 @@ jest.mock('../../../store', () => ({
   },
   uiStore: {
     colorScheme: 'light',
+  },
+  asrStore: {
+    captureState: 'idle',
   },
   ttsStore: {
     isTTSAvailable: false,
@@ -64,7 +66,6 @@ jest.mock('../../../assets/icons', () => ({
   VideoRecorderIcon: 'VideoRecorderIcon',
   PlusIcon: 'PlusIcon',
   AtomIcon: 'AtomIcon',
-  MicIcon: 'MicIcon',
 }));
 
 // Mock the components

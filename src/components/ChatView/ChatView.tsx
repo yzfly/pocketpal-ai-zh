@@ -2,11 +2,8 @@ import * as React from 'react';
 import {
   FlatList,
   FlatListProps,
-  InteractionManager,
-  LayoutAnimation,
   Platform,
   StatusBar,
-  StatusBarProps,
   View,
   TouchableOpacity,
   Keyboard,
@@ -42,6 +39,7 @@ import {
 
 import ImageView from './ImageView';
 import {BannerRow} from './BannerRow';
+import {RouterLoadStatus, boundRouterLoad} from '../RouterLoadStatus';
 import {createStyles} from './styles';
 
 import {IncreaseContextSheet} from '../IncreaseContextSheet';
@@ -53,8 +51,18 @@ import {t} from '../../locales';
 import {getModelMemoryRequirement} from '../../utils/memoryEstimator';
 import {CONTEXT_LADDER} from '../../utils/bannerVariantResolver';
 
-import {chatSessionStore, modelStore} from '../../store';
+import {
+  NEW_CHAT_DRAFT_KEY,
+  asrStore,
+  chatSessionStore,
+  modelStore,
+  voiceModeStore,
+} from '../../store';
+import type {UndoneSend} from '../../hooks/useChatSession';
+import type {VoiceEntryActions} from '../../hooks/useVoiceMode';
 
+import {openMicSettings} from '../../utils/asrMicPermission';
+import type {AsrErrorKind} from '../../services/asr';
 import {MessageType, User} from '../../utils/types';
 import {Pal} from '../../types/pal';
 import {
@@ -81,6 +89,7 @@ import {
   ContentReportSheet,
   GreetingBubble,
   SuggestedPromptsRow,
+  VoiceBar,
 } from '..';
 import {
   AlertIcon,
@@ -105,17 +114,17 @@ type SubMenuItem = {
   width?: number;
 };
 
-// Untestable
-/* istanbul ignore next */
-const animate = () => {
-  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-};
+const prependText = (first: string, rest: string) =>
+  rest ? `${first}\n${rest}` : first;
 
 dayjs.extend(calendar);
 
 export type ChatTopLevelProps = ChatInputTopLevelProps & MessageTopLevelProps;
 
-export interface ChatProps extends ChatTopLevelProps {
+export interface ChatProps extends Omit<ChatTopLevelProps, 'onSendPress'> {
+  onSendPress: (
+    message: MessageType.PartialText,
+  ) => Promise<UndoneSend | undefined> | void;
   /** If {@link ChatProps.dateFormat} and/or {@link ChatProps.timeFormat} is not enough to
    * customize date headers in your case, use this to return an arbitrary
    * string based on a `dateTime` of a particular message. Can be helpful to
@@ -136,7 +145,7 @@ export interface ChatProps extends ChatTopLevelProps {
    * `emptyChatPlaceholder` and `emptyChatPlaceholderTextStyle` are ignored
    * in this case. */
   emptyState?: () => React.ReactNode;
-  /** Use this to enable `LayoutAnimation`. Experimental on Android (same as React Native). */
+  /** Forwarded to each `Message`. */
   enableAnimation?: boolean;
   flatListProps?: Partial<FlatListProps<MessageType.DerivedAny[]>>;
   inputProps?: ChatInputAdditionalProps;
@@ -171,6 +180,8 @@ export interface ChatProps extends ChatTopLevelProps {
   initialInputText?: string;
   /** Callback when initial text is consumed */
   onInitialTextConsumed?: () => void;
+  /** Opens voice mode with this chat's model picker and composer focus. */
+  onVoiceModePress?: (actions: VoiceEntryActions) => void;
   /**
    * Allows you to customize the time format. IMPORTANT: only for the time,
    * do not return date here. @see {@link ChatProps.dateFormat} to customize the date format.
@@ -190,13 +201,39 @@ export interface ChatProps extends ChatTopLevelProps {
  * its deps), and FlatList would unmount + remount the header every
  * ~50ms — killing both Animated.loop and setInterval.
  */
-const PendingIndicatorView: React.FC = observer(() => (
-  <PendingIndicator
-    pendingTalentNames={chatSessionStore.agentUiState.pendingTalentNames}
-    toolCallTokenCount={chatSessionStore.toolCallTokenCount}
-    isStopping={chatSessionStore.isStopping}
-  />
-));
+const PendingIndicatorView: React.FC = observer(() =>
+  !chatSessionStore.isStopping && boundRouterLoad() ? (
+    <RouterLoadStatus />
+  ) : (
+    <PendingIndicator
+      pendingTalentNames={chatSessionStore.agentUiState.pendingTalentNames}
+      toolCallTokenCount={chatSessionStore.toolCallTokenCount}
+      isStopping={chatSessionStore.isStopping}
+    />
+  ),
+);
+
+type L10n = React.ContextType<typeof L10nContext>;
+
+/** Map a capture error kind to its user-facing composer message. */
+function asrErrorMessage(kind: AsrErrorKind, l10n: L10n): string {
+  switch (kind) {
+    case 'permission_denied':
+      return l10n.voiceInput.errorPermissionDenied;
+    case 'permission_blocked':
+      return l10n.voiceInput.errorPermissionBlocked;
+    case 'transcribe_failed':
+      return l10n.voiceInput.errorTranscribeFailed;
+    case 'not_installed':
+      return l10n.voiceInput.errorNotInstalled;
+    case 'insufficient_memory':
+      return l10n.voiceInput.errorInsufficientMemory;
+    case 'mic_unavailable':
+      return l10n.voiceInput.errorMicUnavailable;
+    case 'transcript_partial':
+      return l10n.voiceInput.errorTranscriptPartial;
+  }
+}
 
 /** Entry component, represents the complete chat */
 export const ChatView = observer(
@@ -232,6 +269,7 @@ export const ChatView = observer(
     showImageUpload = false,
     isVisionEnabled = false,
     initialInputText,
+    onVoiceModePress,
     onInitialTextConsumed,
     textInputProps,
     timeFormat,
@@ -246,7 +284,6 @@ export const ChatView = observer(
     const isFocused = useIsFocused();
 
     // ============ REFS ============
-    const animationRef = React.useRef(false);
     const list = React.useRef<FlatList<MessageType.DerivedAny>>(null);
 
     // ============ COMPONENT STATE ============
@@ -264,7 +301,9 @@ export const ChatView = observer(
     // Image viewer state
     const [isImageViewVisible, setIsImageViewVisible] = React.useState(false);
     const [imageViewIndex, setImageViewIndex] = React.useState(0);
-    const [stackEntry, setStackEntry] = React.useState<StatusBarProps>({});
+    const [stackEntry, setStackEntry] = React.useState(
+      {} as ReturnType<typeof StatusBar.pushStackEntry>,
+    );
 
     // Context menu state
     const [menuVisible, setMenuVisible] = React.useState(false);
@@ -309,7 +348,7 @@ export const ChatView = observer(
         memBytesFor: nCtx => {
           try {
             return getModelMemoryRequirement(activeModel, projectionModel, {
-              ...modelStore.contextInitParams,
+              ...modelStore.memoryEstimateSettings,
               n_ctx: nCtx,
             });
           } catch {
@@ -369,18 +408,25 @@ export const ChatView = observer(
     // ============ DRAFT AUTOSAVE ============
     // Save draft on session switch, restore draft for new session
     const prevSessionId = usePrevious(chatSessionStore.activeSessionId);
+    const syncedDraftRef = React.useRef('');
     React.useEffect(() => {
-      const NEW_CHAT_DRAFT_KEY = '__new_chat__';
       const prevKey = prevSessionId ?? NEW_CHAT_DRAFT_KEY;
       const newKey = chatSessionStore.activeSessionId ?? NEW_CHAT_DRAFT_KEY;
 
-      // Save draft for the session we're leaving
-      if (prevKey !== newKey) {
-        chatSessionStore.saveDraft(prevKey, inputTextRef.current);
+      // This runs after the switch, so a cancelled send may already have put
+      // its text into the draft being left: keep it rather than overwrite it.
+      const typed = inputTextRef.current;
+      if (prevKey !== newKey && typed !== syncedDraftRef.current) {
+        const stored = chatSessionStore.getDraft(prevKey);
+        chatSessionStore.saveDraft(
+          prevKey,
+          stored === syncedDraftRef.current ? typed : `${stored}\n${typed}`,
+        );
       }
 
       // Restore draft for the session we're entering
       const draft = chatSessionStore.getDraft(newKey);
+      syncedDraftRef.current = draft;
       setInputText(draft);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- MobX observer makes activeSessionId reactive
     }, [chatSessionStore.activeSessionId]);
@@ -510,25 +556,62 @@ export const ChatView = observer(
     const previousChatMessages = usePrevious(chatMessages);
 
     // ============ MESSAGE INPUT HANDLERS ============
+    const restoreUndone = React.useCallback(
+      ({message, sessionId}: UndoneSend) => {
+        if (!chatSessionStore.sessions.some(s => s.id === sessionId)) {
+          return;
+        }
+        if (sessionId === chatSessionStore.activeSessionId) {
+          setInputText(prev => prependText(message.text, prev));
+          setInputImages(prev => [...(message.imageUris ?? []), ...prev]);
+        } else {
+          chatSessionStore.saveDraft(
+            sessionId,
+            prependText(message.text, chatSessionStore.getDraft(sessionId)),
+          );
+        }
+      },
+      [],
+    );
+
     const wrappedOnSendPress = React.useCallback(
       async (message: MessageType.PartialText) => {
+        if (chatSessionStore.isStopping) {
+          return;
+        }
+        const draftKey = chatSessionStore.activeSessionId ?? NEW_CHAT_DRAFT_KEY;
         if (chatSessionStore.isEditMode) {
           await chatSessionStore.commitEdit();
         }
-        onSendPress(message);
+        const sent = onSendPress(message);
         setInputText('');
-        if (chatSessionStore.activeSessionId) {
-          chatSessionStore.clearDraft(chatSessionStore.activeSessionId);
-        }
+        syncedDraftRef.current = '';
+        chatSessionStore.clearDraft(draftKey);
         Keyboard.dismiss();
+        const undone = await sent;
+        if (undone) {
+          restoreUndone(undone);
+        }
       },
-      [onSendPress],
+      [onSendPress, restoreUndone],
     );
 
     const handleCancelEdit = React.useCallback(() => {
       setInputText('');
       setInputImages([]);
       chatSessionStore.exitEditMode();
+    }, []);
+
+    // Voice-input seam: append a transcript to the current composer text.
+    // Reuses the prop-driven external-write mechanism of `initialInputText`
+    // but APPENDS (`prev => prev + text`) instead of overwriting, so a spoken
+    // phrase joins what the user has already typed. ChatView stays the single
+    // writer of `inputText`; the transcript is never auto-sent.
+    const composerShowsPromptText =
+      !!activePal && hasVideoCapability(activePal);
+
+    const appendTranscript = React.useCallback((text: string) => {
+      setInputText(prev => (prev ? `${prev} ${text}` : text));
     }, []);
 
     const {handleCopy, handleEdit, handleTryAgain, handleTryAgainWith} =
@@ -555,23 +638,6 @@ export const ChatView = observer(
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [chatMessages]);
-
-    // ============ LAYOUT ANIMATION SETUP ============
-    // Untestable
-    /* istanbul ignore next */
-    if (animationRef.current && enableAnimation) {
-      InteractionManager.runAfterInteractions(animate);
-    }
-
-    React.useEffect(() => {
-      // Untestable
-      /* istanbul ignore next */
-      if (animationRef.current && enableAnimation) {
-        InteractionManager.runAfterInteractions(animate);
-      } else {
-        animationRef.current = true;
-      }
-    }, [enableAnimation, messages]);
 
     // ============ PAGINATION HANDLER ============
     const handleEndReached = React.useCallback(
@@ -670,6 +736,8 @@ export const ChatView = observer(
       reportContent: reportContentLabel,
     } = l10n.components.chatView.menuItems;
 
+    const isStopping = chatSessionStore.isStopping;
+    const voiceModeOpen = voiceModeStore.isOpen;
     const menuItems = React.useMemo((): MenuItem[] => {
       if (
         !selectedMessage ||
@@ -680,7 +748,8 @@ export const ChatView = observer(
       }
 
       const isAuthor = selectedMessage.author.id === user.id;
-      const hasActiveModel = modelStore.activeModelId !== undefined;
+      const canGenerate =
+        modelStore.activeModelId !== undefined && !isStopping && !voiceModeOpen;
       const models = modelStore.availableModels || [];
 
       const baseItems: MenuItem[] = [
@@ -703,13 +772,13 @@ export const ChatView = observer(
             handleMenuDismiss();
           },
           icon: () => <RefreshIcon stroke={theme.colors.primary} />,
-          disabled: !hasActiveModel,
+          disabled: !canGenerate,
         });
 
         baseItems.push({
           label: regenerateWithLabel,
           icon: () => <GridIcon stroke={theme.colors.primary} />,
-          disabled: false,
+          disabled: isStopping || voiceModeOpen,
           submenu: models.map(model => ({
             label: model.name,
             width: Math.min(300, size.width),
@@ -729,7 +798,7 @@ export const ChatView = observer(
             handleMenuDismiss();
           },
           icon: () => <PencilLineIcon stroke={theme.colors.primary} />,
-          disabled: !hasActiveModel,
+          disabled: !canGenerate,
         });
       }
 
@@ -746,6 +815,8 @@ export const ChatView = observer(
       return baseItems;
     }, [
       selectedMessage,
+      isStopping,
+      voiceModeOpen,
       user.id,
       handleCopy,
       handleTryAgain,
@@ -823,10 +894,6 @@ export const ChatView = observer(
       agentStatus === 'prefill' ||
       agentStatus === 'generating_tool_call' ||
       agentStatus === 'executing_tool' ||
-      // Keep the indicator visible during the user-initiated stop
-      // window so they see the "Stopping…" feedback even if status
-      // had been `streaming_text` (no indicator) at the moment of the
-      // tap. Cleared together with `isStopping` once the runner exits.
       chatSessionStore.isStopping;
     const activeRunPendingTalentNames =
       chatSessionStore.agentUiState.pendingTalentNames;
@@ -1149,33 +1216,48 @@ export const ChatView = observer(
                 onNewChat={() => chatSessionStore.resetActiveSession()}
                 onIncreaseContext={() => setIncreaseSheetOpen(true)}
               />
-              <ChatInput
-                {...{
-                  ...unwrap(inputProps),
-                  isStreaming,
-                  onSendPress: wrappedOnSendPress,
-                  onStopPress,
-                  chatInputHeight,
-                  inputBackgroundColor,
-                  onCancelEdit: handleCancelEdit,
-                  onPalBtnPress: () => setIsPickerVisible(!isPickerVisible),
-                  isStopVisible,
-                  isPickerVisible,
-                  sendButtonVisibilityMode,
-                  showImageUpload,
-                  isVisionEnabled,
-                  defaultImages: inputImages,
-                  onDefaultImagesChange: setInputImages,
-                  textInputProps: {
-                    ...textInputProps,
-                    // Only override value and onChangeText if not using promptText
-                    ...(!(activePal && hasVideoCapability(activePal)) && {
-                      value: inputText,
-                      onChangeText: setInputText,
-                    }),
-                  },
-                }}
-              />
+              {onVoiceModePress && voiceModeStore.isOpen ? (
+                <VoiceBar />
+              ) : (
+                <ChatInput
+                  {...{
+                    ...unwrap(inputProps),
+                    isStreaming,
+                    onSendPress: wrappedOnSendPress,
+                    onStopPress,
+                    chatInputHeight,
+                    inputBackgroundColor,
+                    onCancelEdit: handleCancelEdit,
+                    onPalBtnPress: () => setIsPickerVisible(!isPickerVisible),
+                    isStopVisible,
+                    isPickerVisible,
+                    sendButtonVisibilityMode,
+                    showImageUpload,
+                    isVisionEnabled,
+                    defaultImages: inputImages,
+                    onDefaultImagesChange: setInputImages,
+                    appendTranscript: composerShowsPromptText
+                      ? undefined
+                      : appendTranscript,
+                    onVoicePress:
+                      onVoiceModePress &&
+                      ((focusInput: () => void) => {
+                        Keyboard.dismiss();
+                        onVoiceModePress({
+                          openModelPicker: () => setIsPickerVisible(true),
+                          focusInput,
+                        });
+                      }),
+                    textInputProps: {
+                      ...textInputProps,
+                      ...(!composerShowsPromptText && {
+                        value: inputText,
+                        onChangeText: setInputText,
+                      }),
+                    },
+                  }}
+                />
+              )}
             </Reanimated.View>
 
             {/* Suggested prompts — float above the input container, share
@@ -1183,6 +1265,7 @@ export const ChatView = observer(
                 render as a sibling (no shared background / rounded top). */}
             {messages.length === 0 &&
             !isStreaming &&
+            !voiceModeOpen &&
             modelStore.activeModelId !== undefined &&
             activePal?.greeting?.suggestedPrompts &&
             activePal.greeting.suggestedPrompts.length > 0 ? (
@@ -1296,6 +1379,32 @@ export const ChatView = observer(
             }}
             testID="pal-load-hint-snackbar">
             {l10n.chat.palLoadHint}
+          </Snackbar>
+
+          <Snackbar
+            visible={
+              isFocused &&
+              asrStore.lastError !== null &&
+              !reloadSnackbar &&
+              !palLoadHint.hintVisible
+            }
+            onDismiss={() => asrStore.resetCapture()}
+            duration={4000}
+            action={
+              asrStore.lastError === 'permission_blocked'
+                ? {
+                    label: l10n.voiceInput.openSettingsLabel,
+                    onPress: () => {
+                      asrStore.resetCapture();
+                      openMicSettings();
+                    },
+                  }
+                : undefined
+            }
+            testID="asr-error-snackbar">
+            {asrStore.lastError
+              ? asrErrorMessage(asrStore.lastError, l10n)
+              : ''}
           </Snackbar>
         </View>
       </UserContext.Provider>

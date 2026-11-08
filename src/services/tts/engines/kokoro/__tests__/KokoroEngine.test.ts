@@ -6,8 +6,10 @@
 import {Platform} from 'react-native';
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import Speech, {TTSEngine} from '@pocketpalai/react-native-speech';
+import {waitFor} from '@testing-library/react-native';
 
 import {KokoroEngine} from '..';
+import {ttsRuntime} from '../../../runtime';
 import {
   KOKORO_MODEL_BASE_URL,
   KOKORO_MODEL_FILES,
@@ -142,7 +144,9 @@ describe('KokoroEngine', () => {
         expect(RNFS.downloadFile).toHaveBeenCalledWith(
           expect.objectContaining({
             fromUrl: toMirror(`${KOKORO_VOICES_BASE_URL}/${voice.id}.bin`),
-            toFile: expect.stringContaining(`/voices/${voice.id}.bin`),
+            toFile: expect.stringMatching(
+              new RegExp(`/voices/${voice.id}\\.bin\\.part$`),
+            ),
           }),
         );
       }
@@ -153,6 +157,20 @@ describe('KokoroEngine', () => {
           `/tts/kokoro/${KOKORO_VOICES_MANIFEST_FILENAME}`,
         ),
         expect.any(String),
+      );
+    });
+
+    it('keeps baseUrl in the voices manifest', async () => {
+      (RNFS.downloadFile as jest.Mock).mockImplementation(okDownload);
+
+      await new KokoroEngine().downloadModel();
+
+      const manifestCall = (RNFS.writeFile as jest.Mock).mock.calls.find(
+        ([p]: [string]) => p.endsWith(`/${KOKORO_VOICES_MANIFEST_FILENAME}`),
+      );
+      expect(JSON.parse(manifestCall![1])).toHaveProperty(
+        'baseUrl',
+        KOKORO_VOICES_BASE_URL,
       );
     });
 
@@ -197,8 +215,11 @@ describe('KokoroEngine', () => {
         expect.stringContaining(KOKORO_VOICES_MANIFEST_FILENAME),
         expect.any(String),
       );
-      // Phase-1 cleanup must NOT be triggered.
-      expect(RNFS.unlink).not.toHaveBeenCalled();
+      const unlinked = (RNFS.unlink as jest.Mock).mock.calls.map(
+        ([path]: [string]) => path,
+      );
+      expect(unlinked.every(path => path.endsWith('.bin.part'))).toBe(true);
+      expect(RNFS.moveFile).not.toHaveBeenCalled();
     });
 
     it('phase 2 voice rejection is tolerated (best-effort): manifest still written, no throw', async () => {
@@ -282,6 +303,25 @@ describe('KokoroEngine', () => {
       // Second play() reuses the initialized engine.
       await engine.play('again', anyVoice);
       expect(Speech.initialize).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('playStreaming()', () => {
+    it('passes voice stream options to the lib stream', async () => {
+      (RNFS.exists as jest.Mock).mockResolvedValue(true);
+      ttsRuntime._resetForTests();
+      const onProgress = jest.fn();
+
+      new KokoroEngine().playStreaming(anyVoice, undefined, {
+        firstChunk: 'clause',
+        onProgress,
+      });
+      await waitFor(() =>
+        expect(Speech.createSpeechStream).toHaveBeenCalledWith(
+          anyVoice.id,
+          expect.objectContaining({firstChunk: 'clause'}),
+        ),
+      );
     });
   });
 });

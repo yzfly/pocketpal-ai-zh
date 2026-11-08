@@ -1,27 +1,51 @@
 import React, {useRef} from 'react';
+import {AccessibilityInfo} from 'react-native';
 
-import {toJS, runInAction} from 'mobx';
+import {toJS} from 'mobx';
 import type {JinjaFormattedChatResult} from '../services/llm';
-
-import {chatSessionRepository} from '../repositories/ChatSessionRepository';
 
 import {randId} from '../utils';
 import {L10nContext} from '../utils';
 import {
   chatSessionStore,
   modelStore,
+  NEW_SESSION_TITLE,
   palStore,
   serverStore,
   ttsStore,
   uiStore,
 } from '../store';
-import {resolveReasoningCapability} from '../utils/reasoningCapability';
+import type {GenerationLease} from '../store/generationLease';
+import type {PersistedTurnTimings} from '../utils/completionTypes';
+import {
+  clampEffort,
+  resolveReasoningCapability,
+} from '../utils/reasoningCapability';
 
-import {MessageType, ModelOrigin, User} from '../utils/types';
-import {createMultimodalWarning} from '../utils/errors';
-import {resolveSystemMessages} from '../utils/systemPromptResolver';
-import {convertToChatMessages, removeThinkingParts} from '../utils/chat';
-import {activateKeepAwake, deactivateKeepAwake} from '../utils/keepAwake';
+import {
+  MessageType,
+  ModelOrigin,
+  User,
+  type AgentToolCall,
+} from '../utils/types';
+import {
+  RemoteModelNotReadyError,
+  RemoteModelRequestWithdrawnError,
+  createMultimodalWarning,
+} from '../utils/errors';
+import {routerFailureMessage} from '../utils/routerCopy';
+import {
+  assembleMessages,
+  resolveSystemMessages,
+} from '../utils/systemPromptResolver';
+import {
+  convertToChatMessages,
+  removeThinkingParts,
+  visibleStepContent,
+} from '../utils/chat';
+import {acquireKeepAwake} from '../utils/keepAwake';
+import {vtrace} from '../utils/voiceTrace';
+import {LLAMARN_ERROR_PATTERNS} from '../utils/llamaRnErrors';
 import {
   toApiCompletionParams,
   ApiCompletionParams,
@@ -29,15 +53,21 @@ import {
   CompletionResult,
   CompletionResultSnapshot,
 } from '../utils/completionTypes';
-import {talentRegistry} from '../services/talents';
+import {
+  collectSystemPromptFragments,
+  seedReadUrlAllowlist,
+  talentRegistry,
+} from '../services/talents';
 import type {ToolDefinition} from '../services/talents/types';
 import {
   agentStateReducer,
   createTriggerMarkerCache,
+  DEFAULT_MAX_TURNS,
   initialAgentUiState,
   runAgent,
   type AgentEvent,
   type AgentUiState,
+  type TokenDelta,
 } from '../services/agent';
 // Helper function to prepare completion parameters using OpenAI-compatible
 // messages API. Creates the empty `assistant_turn` row up-front so the
@@ -53,6 +83,7 @@ const prepareCompletion = async ({
   isMultimodalEnabled,
   l10n,
   currentMessages,
+  spoken,
 }: {
   imageUris: string[];
   message: MessageType.PartialText;
@@ -63,6 +94,7 @@ const prepareCompletion = async ({
   isMultimodalEnabled: boolean;
   l10n: any;
   currentMessages: MessageType.Any[];
+  spoken: boolean;
 }) => {
   const sessionCompletionSettings =
     await chatSessionStore.getCurrentCompletionSettings();
@@ -122,17 +154,29 @@ const prepareCompletion = async ({
     });
   }
 
-  const messages = [
-    ...systemMessages,
+  // Talent-contributed system-prompt fragments (e.g. search grounding). Kept on
+  // the initial messages array so they persist across every follow-up tool turn.
+  const sessionToolNames = (
+    (sessionCompletionSettings?.tools as ToolDefinition[] | undefined) ?? []
+  ).map(tool => tool.function?.name ?? '');
+  const systemPromptFragments = collectSystemPromptFragments(sessionToolNames, {
+    now: new Date(),
+    maxToolTurns: DEFAULT_MAX_TURNS,
+  });
+
+  const messages = assembleMessages(systemMessages, systemPromptFragments, [
     ...chatMessages,
-    {
-      role: 'user',
-      content: userMessageContent,
-    },
-  ];
+    {role: 'user', content: userMessageContent},
+  ]);
+
+  // Reseed the read_url exfiltration allowlist for this run; the trust policy
+  // (which sources count) lives in the talents module.
+  seedReadUrlAllowlist(messages, currentMessages);
 
   const completionParamsWithAppProps = {
     ...sessionCompletionSettings,
+    // A spoken reply must start talking at once, not after a reasoning pass.
+    ...(spoken ? {enable_thinking: false, reasoning: {enabled: false}} : {}),
     messages,
     stop: stopWords,
   };
@@ -149,11 +193,11 @@ const prepareCompletion = async ({
   // hint — it never strips reasoning the model still returns (rendered by
   // ReasoningBlock); separate from include_thinking_in_context, which only
   // governs what prior <think> we SEND.
-  const isReasoningCapable =
-    resolveReasoningCapability(
-      modelStore.activeModel,
-      serverStore.remoteReasoning,
-    ).isReasoning !== 'no';
+  const reasoningCapability = resolveReasoningCapability(
+    modelStore.activeModel,
+    serverStore.remoteReasoning,
+  );
+  const isReasoningCapable = reasoningCapability.isReasoning !== 'no';
   cleanCompletionParams.reasoning_format = 'auto';
   // The enable_thinking:false hint only matters for reasoning-capable models;
   // a non-reasoning model would just ignore it.
@@ -164,6 +208,17 @@ const prepareCompletion = async ({
     };
   }
   // Graded effort (gpt-oss-style): carried by the resolver-populated intent.
+  // The stored effort may be another model's; clamp it on the intent, which
+  // the remote engines read too.
+  if (cleanCompletionParams.reasoning) {
+    cleanCompletionParams.reasoning = {
+      ...cleanCompletionParams.reasoning,
+      effort: clampEffort(
+        cleanCompletionParams.reasoning.effort,
+        reasoningCapability.effortValues,
+      ),
+    };
+  }
   const reasoningEffort = cleanCompletionParams.reasoning?.effort;
   if (reasoningEffort) {
     cleanCompletionParams.chat_template_kwargs = {
@@ -192,6 +247,7 @@ const prepareCompletion = async ({
       // run_finished (success/maxTurns) or at the abort catch path with
       // partial content.
       multimodal: hasImages,
+      ...(spoken ? {spoken: true} : {}),
     },
   };
 
@@ -206,29 +262,122 @@ const prepareCompletion = async ({
   return {cleanCompletionParams, messageInfo};
 };
 
-// Per-run TTS streaming state. The runner emits CUMULATIVE content/
-// reasoning on each `token` event (mirroring llama.rn's callback
-// semantics); the TTS streaming hooks expect per-call deltas, so we
-// diff cumulative against `prev*` and forward only the new substring.
+// Per-run TTS streaming state. The runner emits content/reasoning
+// CUMULATIVE PER STEP on each `token` event (mirroring llama.rn's
+// callback semantics); the TTS streaming hooks expect per-call deltas,
+// so we diff cumulative against `prev*` (reset at each step) and
+// forward only the new substring.
 // Carried in ctx so a single run keeps a coherent audio stream.
 type TtsRunState = {
-  // Snapshot of autoSpeakEnabled at run start; gates the per-chunk
+  // Snapshot of ttsStore.streamsReplies at run start; gates the per-chunk
   // TTS hook. Per-run so mid-stream toggles don't flicker audio.
   enabled: boolean;
   started: boolean;
+  mayEcho: boolean;
   prevContent: string;
   prevReasoning: string;
+  stepMode: 'undecided' | 'streaming' | 'held';
+  spokeAny: boolean;
 };
+
+const TTS_STEP_SEPARATOR = '\n\n';
+
+function decideTtsStepMode(
+  content: string,
+  mayEcho: boolean,
+): TtsRunState['stepMode'] {
+  const firstChar = content.trimStart()[0];
+  if (!firstChar) {
+    return 'undecided';
+  }
+  return mayEcho && (firstChar === '{' || firstChar === '`')
+    ? 'held'
+    : 'streaming';
+}
+
+function spokenChunk(
+  tts: TtsRunState,
+  text: string,
+  isStepStart: boolean,
+): string {
+  const chunk = isStepStart && tts.spokeAny ? TTS_STEP_SEPARATOR + text : text;
+  tts.spokeAny = true;
+  return chunk;
+}
+
+// Echo-shaped steps are held until step_finished, where the tool calls
+// that decide visibility land; every other step streams per token.
+function forwardTokenToTts(
+  messageId: string,
+  delta: TokenDelta,
+  tts: TtsRunState,
+): void {
+  const cumulativeContent = delta.content ?? tts.prevContent;
+  const cumulativeReasoning = delta.reasoningContent ?? tts.prevReasoning;
+  if (!tts.started && (delta.content || delta.reasoningContent)) {
+    tts.started = true;
+    ttsStore.onAssistantMessageStart(messageId);
+  }
+  if (tts.stepMode === 'undecided') {
+    tts.stepMode = decideTtsStepMode(cumulativeContent, tts.mayEcho);
+  }
+  if (tts.stepMode === 'held') {
+    tts.prevContent = cumulativeContent;
+  }
+  const contentDelta =
+    tts.stepMode === 'streaming' &&
+    cumulativeContent.length > tts.prevContent.length
+      ? cumulativeContent.slice(tts.prevContent.length)
+      : '';
+  const reasoningDelta =
+    cumulativeReasoning.length > tts.prevReasoning.length
+      ? cumulativeReasoning.slice(tts.prevReasoning.length)
+      : '';
+  if (!contentDelta && !reasoningDelta) {
+    return;
+  }
+  const contentChunk = contentDelta
+    ? spokenChunk(tts, contentDelta, tts.prevContent === '')
+    : '';
+  if (tts.stepMode === 'streaming') {
+    tts.prevContent = cumulativeContent;
+  }
+  tts.prevReasoning = cumulativeReasoning;
+  ttsStore.onAssistantMessageChunk(
+    messageId,
+    contentChunk,
+    reasoningDelta || undefined,
+  );
+}
+
+function releaseHeldStepToTts(
+  messageId: string,
+  toolCalls: AgentToolCall[] | undefined,
+  tts: TtsRunState,
+): void {
+  const visible = visibleStepContent({content: tts.prevContent, toolCalls});
+  if (visible) {
+    ttsStore.onAssistantMessageChunk(
+      messageId,
+      spokenChunk(tts, visible, true),
+      undefined,
+    );
+  }
+}
 
 // Normalise a finished turn's result into the snapshot the banner reads.
 // `contextFull` is frozen here as the OR of the native full/truncated flags
 // and (remote only) a 'length' finish reason derived from `stopped_limit`.
 function deriveSnapshotFromResult(
   result: CompletionResult,
-  effectiveNCtx: number | undefined,
   isRemote: boolean,
 ): CompletionResultSnapshot {
-  const used = (result.tokens_evaluated ?? 0) + (result.tokens_predicted ?? 0);
+  // Without a prompt term the total is a predicted-only tally, which is not an
+  // occupancy number on either path.
+  const used =
+    result.tokens_evaluated === undefined
+      ? undefined
+      : result.tokens_evaluated + (result.tokens_predicted ?? 0);
   // Local turns set context_full/truncated directly; finishReason only bridges
   // the remote engine's signal (stopped_limit) into the OR predicate below, so
   // it is intentionally remote-only.
@@ -266,6 +415,7 @@ async function applyEventToStore(
     hasImages: boolean;
     isMultimodalEnabled: boolean;
     tts: TtsRunState;
+    stopped: boolean;
   },
 ): Promise<void> {
   switch (event.type) {
@@ -275,16 +425,20 @@ async function applyEventToStore(
       // persist here — the message was added before the run started.
       return;
     case 'step_started':
+      if (ctx.tts.enabled) {
+        ctx.tts.prevContent = '';
+        ctx.tts.prevReasoning = '';
+        ctx.tts.stepMode = 'undecided';
+      }
       await chatSessionStore.pushAgentStep(ctx.messageId, ctx.sessionId, {
         partial: true,
       });
       return;
     case 'token': {
-      // Capture time-to-first-token on the first content/reasoning token.
-      if (
-        ctx.timeToFirstTokenMs.value === null &&
-        (event.delta.content || event.delta.reasoningContent)
-      ) {
+      const hasFirstTokenSignal = !!(
+        event.delta.content || event.delta.reasoningContent
+      );
+      if (ctx.timeToFirstTokenMs.value === null && hasFirstTokenSignal) {
         ctx.timeToFirstTokenMs.value = Date.now() - ctx.completionStartTime;
       }
       if (!modelStore.isStreaming) {
@@ -307,41 +461,10 @@ async function applyEventToStore(
           modelStore.recordReasoningObserved(activeModel.id);
         }
       }
-      // TTS streaming hooks. Open a StreamingHandle on the first token
-      // that carries content OR reasoning, then forward each new
-      // substring via onAssistantMessageChunk. Wrapped defensively so a
-      // UI-path failure cannot kill the completion stream. Skipped
-      // when auto-speak is off — ttsStore calls would early-return
-      // anyway, but the slice math is the residual per-token cost.
+      // Wrapped so a TTS failure cannot kill the completion stream.
       if (ctx.tts.enabled) {
         try {
-          const cumulativeContent = event.delta.content ?? ctx.tts.prevContent;
-          const cumulativeReasoning =
-            event.delta.reasoningContent ?? ctx.tts.prevReasoning;
-          if (
-            !ctx.tts.started &&
-            (event.delta.content || event.delta.reasoningContent)
-          ) {
-            ctx.tts.started = true;
-            ttsStore.onAssistantMessageStart(ctx.messageId);
-          }
-          const contentDelta =
-            cumulativeContent.length > ctx.tts.prevContent.length
-              ? cumulativeContent.slice(ctx.tts.prevContent.length)
-              : '';
-          const reasoningDelta =
-            cumulativeReasoning.length > ctx.tts.prevReasoning.length
-              ? cumulativeReasoning.slice(ctx.tts.prevReasoning.length)
-              : '';
-          if (contentDelta || reasoningDelta) {
-            ctx.tts.prevContent = cumulativeContent;
-            ctx.tts.prevReasoning = cumulativeReasoning;
-            ttsStore.onAssistantMessageChunk(
-              ctx.messageId,
-              contentDelta,
-              reasoningDelta || undefined,
-            );
-          }
+          forwardTokenToTts(ctx.messageId, event.delta, ctx.tts);
         } catch (ttsErr) {
           console.warn('[useChatSession] TTS stream hook failed:', ttsErr);
         }
@@ -384,6 +507,13 @@ async function applyEventToStore(
       );
       return;
     case 'step_finished':
+      if (ctx.tts.enabled && ctx.tts.stepMode === 'held') {
+        try {
+          releaseHeldStepToTts(ctx.messageId, event.toolCalls, ctx.tts);
+        } catch (ttsErr) {
+          console.warn('[useChatSession] TTS stream hook failed:', ttsErr);
+        }
+      }
       // Land step.toolCalls AFTER step_finished with the runner's
       // authoritative normalized ids so they match outcomes' callIds by
       // construction. Skipped for text-only and final-of-chain steps
@@ -402,17 +532,34 @@ async function applyEventToStore(
       // (not in the runner) because timings are an observability
       // concern of the hook, not the runner.
       const finalResult = event.result.finalResult;
+      vtrace('run.done', {
+        stopped: ctx.stopped,
+        tokens: finalResult.tokens_predicted,
+        chars: finalResult.content?.length,
+        eos: finalResult.stopped_eos,
+        limit: finalResult.stopped_limit,
+        word: finalResult.stopped_word,
+        interrupted: finalResult.interrupted,
+      });
       const snapshot = deriveSnapshotFromResult(
         finalResult,
-        modelStore.activeContextSettings?.n_ctx,
         modelStore.activeModel?.origin === ModelOrigin.REMOTE,
       );
+      const draftTimings =
+        finalResult.draft_tokens != null && finalResult.draft_tokens > 0
+          ? {
+              draft_tokens: finalResult.draft_tokens,
+              draft_tokens_accepted: finalResult.draft_tokens_accepted,
+            }
+          : {};
+      const timings: PersistedTurnTimings = {
+        ...(finalResult.timings ?? {}),
+        time_to_first_token_ms: ctx.timeToFirstTokenMs.value,
+        ...draftTimings,
+      };
       await chatSessionStore.updateMessage(ctx.messageId, ctx.sessionId, {
         metadata: {
-          timings: {
-            ...(finalResult.timings ?? {}),
-            time_to_first_token_ms: ctx.timeToFirstTokenMs.value,
-          },
+          timings,
           copyable: true,
           multimodal: ctx.hasImages && ctx.isMultimodalEnabled,
           completionResult: snapshot,
@@ -420,6 +567,9 @@ async function applyEventToStore(
         },
       });
       chatSessionStore.recordCompletionSnapshot(snapshot);
+      if (snapshot.isRemote) {
+        modelStore.reprobeRemoteCapsAfterCompletion();
+      }
       if (event.result.hitMaxTurns) {
         console.warn(
           '[useChatSession] agent run hit maxTurns; surfacing last available content',
@@ -427,7 +577,22 @@ async function applyEventToStore(
       }
       // Fire TTS auto-speak after the final text is observable. Store
       // enforces auto-speak / voice / idempotency gating internally.
+      // A stopped run ends on whatever step it reached, often a tool-call
+      // step, so it speaks nothing more; a stop that bypassed
+      // handleStopPress (model switch, video Pal) still left its stream open.
       // Wrapped defensively — UI-path errors must not bubble.
+      if (ctx.stopped) {
+        const playback = ttsStore.playbackState;
+        if (
+          playback.mode === 'streaming' &&
+          playback.messageId === ctx.messageId
+        ) {
+          ttsStore.stop('run_stopped').catch(ttsErr => {
+            console.warn('[useChatSession] TTS stop on abort failed:', ttsErr);
+          });
+        }
+        return;
+      }
       try {
         ttsStore.onAssistantMessageComplete(
           ctx.messageId,
@@ -449,6 +614,40 @@ async function applyEventToStore(
   }
 }
 
+/**
+ * Lets queued touches dispatch. Ends at once when `signal` aborts: JS timers
+ * do not fire while the app is backgrounded, and a release there waits for
+ * this run to drain.
+ */
+function yieldToTouches(signal: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const done = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', done);
+      resolve();
+    };
+    const timer = setTimeout(done, 0);
+    signal.addEventListener('abort', done);
+  });
+}
+
+export type UndoneSend = {
+  message: MessageType.PartialText;
+  sessionId: string;
+};
+
+export type SendOptions = {
+  /** The message was spoken in voice mode: both rows are marked, and the
+   * reply runs with thinking off. */
+  spoken?: boolean;
+  /** Receives the assistant turn's id as soon as its row exists. */
+  onTurnCreated?: (turnId: string) => void;
+};
+
 export const useChatSession = (
   currentMessageInfo: React.MutableRefObject<{
     createdAt: number;
@@ -466,33 +665,105 @@ export const useChatSession = (
   // passed into AgentRunOptions.triggerMarkers so the runner has no
   // direct dependency on the cache, modelStore, or getFormattedChat.
   const triggerCacheRef = useRef(createTriggerMarkerCache());
-  // AbortController for the active run. Replaced per run; signal is
-  // forwarded to runAgent for stop-mid-tool semantics.
-  const abortRef = useRef<AbortController | null>(null);
+  const leaseRef = useRef<GenerationLease | null>(null);
+  const stopsBeforeLease = useRef(0);
 
   const addMessage = async (message: MessageType.Any) => {
     await chatSessionStore.addMessageToCurrentSession(message);
   };
 
+  const systemRow = (text: string, metadata = {}): MessageType.Text => ({
+    author: assistant,
+    createdAt: Date.now(),
+    id: randId(),
+    text,
+    type: 'text',
+    metadata: {system: true, ...metadata},
+  });
+
   const addSystemMessage = async (text: string, metadata = {}) => {
-    const textMessage: MessageType.Text = {
-      author: assistant,
-      createdAt: Date.now(),
-      id: randId(),
-      text,
-      type: 'text',
-      metadata: {system: true, ...metadata},
-    };
-    await addMessage(textMessage);
+    await addMessage(systemRow(text, metadata));
   };
 
-  const handleSendPress = async (message: MessageType.PartialText) => {
-    const engine = modelStore.engine;
-    if (!engine) {
+  const handleSendPress = async (
+    message: MessageType.PartialText,
+    opts: SendOptions = {},
+  ): Promise<UndoneSend | undefined> => {
+    const sentFrom = chatSessionStore.activeSessionId;
+    const stopsAtSend = stopsBeforeLease.current;
+    if (modelStore.isGenerationBusy) {
+      chatSessionStore.setIsStopping(true);
+    }
+    const lease = await modelStore.acquireGeneration();
+    chatSessionStore.setIsStopping(false);
+    if (chatSessionStore.activeSessionId !== sentFrom) {
+      lease?.end();
+      chatSessionStore.restoreUnsentText(sentFrom, message.text);
+      return;
+    }
+    if (!lease) {
       await addSystemMessage(l10n.chat.modelNotLoaded);
       return;
     }
+    leaseRef.current = lease;
+    const stopsWhileWaiting = stopsBeforeLease.current - stopsAtSend;
+    vtrace('lease.grant', {spoken: !!opts.spoken, stopsWhileWaiting});
+    if (stopsWhileWaiting !== 0) {
+      lease.abort();
+    }
 
+    // Run UI clears on abort, not on drain.
+    let uiStopped = false;
+    let releaseAwake: (() => void) | undefined;
+    const uiStop = () => {
+      if (uiStopped) {
+        return;
+      }
+      uiStopped = true;
+      modelStore.setInferencing(false);
+      modelStore.setIsStreaming(false);
+      chatSessionStore.setIsGenerating(false);
+      chatSessionStore.setAgentUiState(initialAgentUiState);
+      chatSessionStore.setToolCallTokenCount(0);
+      releaseAwake?.();
+    };
+    if (lease.signal.aborted) {
+      uiStop();
+    } else {
+      lease.signal.addEventListener('abort', uiStop);
+    }
+
+    try {
+      return await sendUnderLease(message, lease, opts, {
+        stop: uiStop,
+        isStopped: () => uiStopped,
+        holdAwake: () => {
+          if (!uiStopped) {
+            releaseAwake ??= acquireKeepAwake();
+          }
+        },
+      });
+    } finally {
+      lease.signal.removeEventListener('abort', uiStop);
+      uiStop();
+      if (leaseRef.current === lease) {
+        leaseRef.current = null;
+      }
+      lease.end();
+    }
+  };
+
+  const sendUnderLease = async (
+    message: MessageType.PartialText,
+    lease: GenerationLease,
+    opts: SendOptions,
+    runUi: {
+      stop: () => void;
+      isStopped: () => boolean;
+      holdAwake: () => void;
+    },
+  ): Promise<UndoneSend | undefined> => {
+    const engine = lease.engine;
     const contextId = modelStore.contextId;
     if (!contextId) {
       await addSystemMessage(l10n.chat.modelNotLoaded);
@@ -502,7 +773,7 @@ export const useChatSession = (
     const imageUris = message.imageUris;
     const hasImages = !!(imageUris && imageUris.length > 0);
 
-    const isMultimodalEnabled = await modelStore.isMultimodalEnabled();
+    const isMultimodalEnabled = modelStore.activeModelCaps.visionActive;
 
     const currentMessages = toJS(chatSessionStore.currentSessionMessages);
 
@@ -518,17 +789,19 @@ export const useChatSession = (
         conversationId: conversationIdRef.current,
         copyable: true,
         multimodal: hasImages,
+        ...(opts.spoken ? {spoken: true} : {}),
       },
     };
+    const wasUntitled =
+      (chatSessionStore.sessions.find(
+        s => s.id === chatSessionStore.activeSessionId,
+      )?.title ?? NEW_SESSION_TITLE) === NEW_SESSION_TITLE;
     await addMessage(textMessage);
-    modelStore.setInferencing(true);
-    modelStore.setIsStreaming(false);
-    chatSessionStore.setIsGenerating(true);
-
-    try {
-      activateKeepAwake();
-    } catch (error) {
-      console.error('Failed to activate keep awake during chat:', error);
+    if (!lease.signal.aborted) {
+      modelStore.setInferencing(true);
+      modelStore.setIsStreaming(false);
+      chatSessionStore.setIsGenerating(true);
+      runUi.holdAwake();
     }
 
     const activeSession = chatSessionStore.sessions.find(
@@ -553,23 +826,18 @@ export const useChatSession = (
       isMultimodalEnabled,
       l10n,
       currentMessages,
+      spoken: !!opts.spoken,
     });
 
     currentMessageInfo.current = messageInfo;
+    opts.onTurnCreated?.(messageInfo.id);
 
     // Allowed talent names for this Pal. The runner rejects any
     // tool call whose function.name isn't in this list.
     const palTalents = (pal?.pact?.talents ?? []).map(t => t.name);
 
-    abortRef.current = new AbortController();
     const completionStartTime = Date.now();
     const timeToFirstTokenMs: {value: number | null} = {value: null};
-    const tts: TtsRunState = {
-      enabled: ttsStore.autoSpeakEnabled,
-      started: false,
-      prevContent: '',
-      prevReasoning: '',
-    };
     let uiState: AgentUiState = initialAgentUiState;
 
     // Precompute trigger markers via the per-hook cache. We use the
@@ -582,6 +850,15 @@ export const useChatSession = (
     // later) instead of `marker_seen`.
     const tools =
       (cleanCompletionParams.tools as ToolDefinition[] | undefined) ?? [];
+    const tts: TtsRunState = {
+      enabled: ttsStore.streamsReplies,
+      started: false,
+      mayEcho: tools.length > 0,
+      prevContent: '',
+      prevReasoning: '',
+      stepMode: 'undecided',
+      spokeAny: false,
+    };
     let triggerMarkers: string[] = [];
     // Marker detection reads `grammar_triggers` from a local Jinja
     // `getFormattedChat` call — only meaningful when a local llama.rn
@@ -608,6 +885,7 @@ export const useChatSession = (
       }
     }
 
+    let undone: UndoneSend | undefined;
     try {
       const events = runAgent({
         engine,
@@ -616,7 +894,7 @@ export const useChatSession = (
         talentLookup: name => talentRegistry.get(name),
         triggerMarkers,
         messageId: messageInfo.id,
-        signal: abortRef.current.signal,
+        signal: lease.signal,
       });
 
       // The chunk-cycle would otherwise run entirely via microtask
@@ -638,7 +916,7 @@ export const useChatSession = (
       const TOOL_TOKEN_BUCKET = 10;
 
       for await (const event of events) {
-        if (abortRef.current?.signal.aborted && event.type === 'token') {
+        if (lease.signal.aborted && event.type === 'token') {
           continue;
         }
 
@@ -649,7 +927,9 @@ export const useChatSession = (
         const nextUiState = agentStateReducer(uiState, event);
         if (nextUiState !== uiState) {
           uiState = nextUiState;
-          chatSessionStore.setAgentUiState(nextUiState);
+          if (!runUi.isStopped()) {
+            chatSessionStore.setAgentUiState(nextUiState);
+          }
         }
 
         switch (event.type) {
@@ -659,7 +939,9 @@ export const useChatSession = (
           case 'run_finished':
           case 'run_failed':
             toolCallTokensRaw = 0;
-            chatSessionStore.setToolCallTokenCount(0);
+            if (!runUi.isStopped()) {
+              chatSessionStore.setToolCallTokenCount(0);
+            }
             break;
           case 'token':
             if (event.delta.toolCalls && event.delta.toolCalls.length > 0) {
@@ -684,10 +966,11 @@ export const useChatSession = (
           hasImages,
           isMultimodalEnabled,
           tts,
+          stopped: lease.signal.aborted,
         });
 
         if (performance.now() - lastYieldTs >= YIELD_INTERVAL_MS) {
-          await new Promise(resolve => setTimeout(resolve, 0));
+          await yieldToTouches(lease.signal);
           lastYieldTs = performance.now();
         }
 
@@ -695,25 +978,17 @@ export const useChatSession = (
           throw event.error;
         }
       }
-
-      modelStore.setInferencing(false);
-      modelStore.setIsStreaming(false);
-      chatSessionStore.setIsGenerating(false);
-      chatSessionStore.setIsStopping(false);
     } catch (error) {
       console.error('Completion error:', error);
-      modelStore.setInferencing(false);
-      modelStore.setIsStreaming(false);
-      chatSessionStore.setIsGenerating(false);
-      chatSessionStore.setIsStopping(false);
-      // Reset agentUiState back to idle so renderers don't get
-      // stuck in a failed state across the next user message.
-      chatSessionStore.setAgentUiState(initialAgentUiState);
-      chatSessionStore.setToolCallTokenCount(0);
+      vtrace('run.error', {aborted: lease.signal.aborted});
+      // Send stays blocked until an undone turn's rows are gone.
+      if (!(error instanceof RemoteModelRequestWithdrawnError)) {
+        runUi.stop();
+      }
 
       // Stop any in-flight TTS — the completion errored, so buffered
       // audio should not keep playing.
-      ttsStore.stop().catch(ttsErr => {
+      ttsStore.stop('run_error').catch(ttsErr => {
         console.warn('[useChatSession] TTS stop on error failed:', ttsErr);
       });
 
@@ -724,18 +999,19 @@ export const useChatSession = (
       // turn's metadata so the footer can show a friendlier hint
       // instead of a multi-KB raw error dump.
       const isToolArgsParseError =
-        /Failed to parse tool call arguments as JSON/i.test(errorMessage);
+        LLAMARN_ERROR_PATTERNS.toolArgsParse.test(errorMessage);
       // Prompt-processing overflow: when the prompt itself exceeds n_ctx
       // (ctx_shift is off — the llama.rn default), the native layer throws
       // "Context is full" before any token is generated, so it never reaches
       // run_finished. Treat it as an n_ctx-exhaustion signal so the banner
       // surfaces instead of a raw error dump.
-      // LLAMARN-DEP: string-coupled to the native throw in RNLlamaJSI.cpp.
-      // No typed flag exists yet; a llama.rn reword would silently stop the
-      // prompt-overflow banner. Re-verify on upgrade; prefer a typed
-      // CompletionResult flag upstream when available.
-      const isContextFullError = /context is full/i.test(errorMessage);
+      const isContextFullError =
+        LLAMARN_ERROR_PATTERNS.contextFull.test(errorMessage);
       const treatAsContextFull = isToolArgsParseError || isContextFullError;
+      // Low-RAM devices can fail to allocate the speculative draft context at
+      // first completion (the load-time memory check has no term for it).
+      const isSpeculativeInitError =
+        LLAMARN_ERROR_PATTERNS.speculativeInit.test(errorMessage);
 
       // Error rollback path. The empty/in-flight AssistantTurn row
       // already exists; preserve any partial steps and tag with
@@ -744,119 +1020,126 @@ export const useChatSession = (
       // this metadata write does not silently no-op on assistant_turn
       // rows and does not clobber metadata.steps.
       let turnAbsorbedError = false;
-      if (currentMessageInfo.current) {
-        const session = chatSessionStore.sessions.find(
-          s => s.id === currentMessageInfo.current!.sessionId,
-        );
-        const currentMsg = session?.messages.find(
-          msg => msg.id === currentMessageInfo.current!.id,
-        );
+      const session = chatSessionStore.sessions.find(
+        s => s.id === messageInfo.sessionId,
+      );
+      const currentMsg = session?.messages.find(
+        msg => msg.id === messageInfo.id,
+      );
 
-        const hasAnyStepContent =
-          currentMsg?.type === 'assistant_turn' &&
-          ((currentMsg as MessageType.AssistantTurn).steps ?? []).some(
-            s => (s.content?.length ?? 0) > 0 || (s.toolCalls?.length ?? 0) > 0,
-          );
-        const hasLegacyText =
-          currentMsg?.type === 'text' &&
-          !!(currentMsg as MessageType.Text).text;
-        const hasPartialContent = hasAnyStepContent || hasLegacyText;
+      const hasAnyStepContent =
+        currentMsg?.type === 'assistant_turn' &&
+        ((currentMsg as MessageType.AssistantTurn).steps ?? []).some(
+          s => (s.content?.length ?? 0) > 0 || (s.toolCalls?.length ?? 0) > 0,
+        );
+      const hasLegacyText =
+        currentMsg?.type === 'text' && !!(currentMsg as MessageType.Text).text;
+      const hasPartialContent = hasAnyStepContent || hasLegacyText;
 
-        if (hasPartialContent) {
-          // No finalResult on the abort path. truncationLikely is the
-          // n_ctx-exhaustion signal; when set, treat the turn as full and
-          // pin `used` to the loaded n_ctx so the sticky banner's freshness
-          // gate holds.
+      if (hasPartialContent) {
+        // No finalResult on the abort path, so no turn reported a count.
+        // truncationLikely is the n_ctx-exhaustion signal: when set, treat
+        // the turn as full and pin `used` to the context window so the
+        // sticky banner's freshness gate holds. Otherwise the count is
+        // unknown, which is not zero.
+        const isRemote = modelStore.activeModel?.origin === ModelOrigin.REMOTE;
+        const effectiveNCtx = modelStore.activeModelCaps.effectiveContextLength;
+        const abortSnapshot: CompletionResultSnapshot = {
+          used: treatAsContextFull ? effectiveNCtx : undefined,
+          contextFull: treatAsContextFull,
+          isRemote,
+        };
+        await chatSessionStore.updateMessage(
+          messageInfo.id,
+          messageInfo.sessionId,
+          {
+            metadata: {
+              interrupted: true,
+              copyable: true,
+              completionResult: abortSnapshot,
+              ...(isToolArgsParseError ? {truncationLikely: true} : {}),
+            },
+          },
+        );
+        chatSessionStore.recordCompletionSnapshot(abortSnapshot);
+        // The turn now carries the failure context; suppress the
+        // duplicate `Completion failed: …` system message dump.
+        turnAbsorbedError = true;
+      } else {
+        // A prompt that overflows n_ctx throws before any token, so there
+        // is no content to keep — but still record the snapshot so the
+        // banner surfaces the full state. The empty turn is cleaned up
+        // below; the store snapshot drives the banner independently.
+        // Per-process for this draft: with no message persisted, the banner
+        // does not rehydrate after a session switch / restart (it re-fires
+        // on the next overflowing send).
+        if (isContextFullError) {
           const isRemote =
             modelStore.activeModel?.origin === ModelOrigin.REMOTE;
-          const effectiveNCtx = modelStore.activeContextSettings?.n_ctx;
-          const abortSnapshot: CompletionResultSnapshot = {
-            used: treatAsContextFull ? (effectiveNCtx ?? 0) : 0,
-            contextFull: treatAsContextFull,
+          const effectiveNCtx =
+            modelStore.activeModelCaps.effectiveContextLength;
+          chatSessionStore.recordCompletionSnapshot({
+            used: effectiveNCtx,
+            contextFull: true,
             isRemote,
-          };
-          await chatSessionStore.updateMessage(
-            currentMessageInfo.current.id,
-            currentMessageInfo.current.sessionId,
-            {
-              metadata: {
-                interrupted: true,
-                copyable: true,
-                completionResult: abortSnapshot,
-                ...(isToolArgsParseError ? {truncationLikely: true} : {}),
-              },
-            },
-          );
-          chatSessionStore.recordCompletionSnapshot(abortSnapshot);
-          // The turn now carries the failure context; suppress the
-          // duplicate `Completion failed: …` system message dump.
+          });
           turnAbsorbedError = true;
-        } else {
-          // A prompt that overflows n_ctx throws before any token, so there
-          // is no content to keep — but still record the snapshot so the
-          // banner surfaces the full state. The empty turn is cleaned up
-          // below; the store snapshot drives the banner independently.
-          // Per-process for this draft: with no message persisted, the banner
-          // does not rehydrate after a session switch / restart (it re-fires
-          // on the next overflowing send).
-          if (isContextFullError) {
-            const isRemote =
-              modelStore.activeModel?.origin === ModelOrigin.REMOTE;
-            const effectiveNCtx = modelStore.activeContextSettings?.n_ctx;
-            chatSessionStore.recordCompletionSnapshot({
-              used: effectiveNCtx ?? 0,
-              contextFull: true,
-              isRemote,
-            });
-            turnAbsorbedError = true;
-          }
-          try {
-            await chatSessionRepository.deleteMessage(
-              currentMessageInfo.current.id,
-            );
-            if (session) {
-              runInAction(() => {
-                session.messages = session.messages.filter(
-                  msg => msg.id !== currentMessageInfo.current!.id,
-                );
-              });
-            }
-          } catch (cleanupError) {
-            console.error(
-              'Failed to clean up empty message after error:',
-              cleanupError,
-            );
-          }
         }
+        await chatSessionStore.deleteMessageFromSession(
+          messageInfo.sessionId,
+          messageInfo.id,
+        );
       }
 
       if (turnAbsorbedError) {
         // Footer already surfaces interrupted / truncationLikely; nothing
         // more to add to chat.
+      } else if (error instanceof RemoteModelRequestWithdrawnError) {
+        if (!hasPartialContent) {
+          await chatSessionStore.deleteMessageFromSession(
+            messageInfo.sessionId,
+            textMessage.id,
+          );
+          if (wasUntitled) {
+            await chatSessionStore.updateSessionTitleBySessionId(
+              messageInfo.sessionId,
+              NEW_SESSION_TITLE,
+            );
+          }
+          undone = {message, sessionId: messageInfo.sessionId};
+        }
+      } else if (error instanceof RemoteModelNotReadyError) {
+        const text = routerFailureMessage(
+          error.cause,
+          error.serverMessage,
+          l10n,
+        );
+        await chatSessionStore.addMessageToSession(
+          messageInfo.sessionId,
+          systemRow(text),
+        );
+        AccessibilityInfo.announceForAccessibility(text);
       } else if (errorMessage.includes('network')) {
         await addSystemMessage(l10n.common.networkError);
       } else if (isToolArgsParseError) {
         // No turn content to attach the hint to — fall back to a
         // friendly system message instead of the raw native error dump.
         await addSystemMessage(l10n.chat.toolCallTruncated);
+      } else if (isSpeculativeInitError) {
+        await addSystemMessage(l10n.chat.speculativeInitFailed);
       } else if (isContextFullError) {
         // No turn to attach to; surface the banner via a store snapshot
         // rather than dumping the raw "Context is full" native error.
         chatSessionStore.recordCompletionSnapshot({
-          used: modelStore.activeContextSettings?.n_ctx ?? 0,
+          used: modelStore.activeModelCaps.effectiveContextLength,
           contextFull: true,
           isRemote: modelStore.activeModel?.origin === ModelOrigin.REMOTE,
         });
       } else {
         await addSystemMessage(`${l10n.chat.completionFailed}${errorMessage}`);
       }
-    } finally {
-      try {
-        deactivateKeepAwake();
-      } catch (error) {
-        console.error('Failed to deactivate keep awake after chat:', error);
-      }
     }
+    return undone;
   };
 
   const handleResetConversation = async () => {
@@ -865,43 +1148,25 @@ export const useChatSession = (
   };
 
   const handleStopPress = async () => {
-    // Enter the `stopping` state IMMEDIATELY: the user gets visible
-    // feedback ("Stopping…") and the send button is gated off so a
-    // new completion can't try to use the still-busy native context.
-    // We do NOT touch `inferencing` / `isGenerating` here — those get
-    // cleared by the for-await cleanup in handleSendPress once the
-    // runner has actually exited (native llama.rn has returned from
-    // its current llama_decode chunk; see ChatSessionStore.isStopping
-    // for the rationale).
-    chatSessionStore.setIsStopping(true);
-    // The runner's abort listener owns engine.stopCompletion — this
-    // signal is the single source of stop intent.
-    abortRef.current?.abort();
+    vtrace('stopPress', {
+      lease: !!leaseRef.current,
+      stopsBeforeLease: stopsBeforeLease.current,
+    });
+    if (leaseRef.current) {
+      leaseRef.current.abort();
+    } else {
+      stopsBeforeLease.current += 1;
+    }
     // Stop any in-flight TTS so buffered audio doesn't keep playing
-    // after the user tapped Stop. Inferencing/isStreaming/isGenerating
-    // flags are NOT cleared here — those get cleared by the for-await
-    // cleanup in handleSendPress once the runner has actually exited.
-    ttsStore.stop().catch(err => {
+    // after the user tapped Stop.
+    ttsStore.stop('stop_press').catch(err => {
       console.warn('[useChatSession] TTS stop on user-stop failed:', err);
     });
-
-    // Note: deactivateKeepAwake intentionally stays here so the device
-    // can sleep as soon as the user signals stop, even if native is
-    // still finishing the current chunk.
-    try {
-      deactivateKeepAwake();
-    } catch (error) {
-      console.error(
-        'Failed to deactivate keep awake after stopping chat:',
-        error,
-      );
-    }
   };
 
   return {
     handleSendPress,
     handleResetConversation,
     handleStopPress,
-    isMultimodalEnabled: async () => await modelStore.isMultimodalEnabled(),
   };
 };

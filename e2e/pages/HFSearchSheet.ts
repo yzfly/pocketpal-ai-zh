@@ -39,7 +39,7 @@ export class HFSearchSheet extends BasePage {
    * Check if sheet is displayed
    */
   async isDisplayed(): Promise<boolean> {
-    return this.isElementDisplayed(Selectors.hfSearch.view, 3000);
+    return this.isElementDisplayed(Selectors.hfSearch.searchBar, 3000);
   }
 
   /**
@@ -55,7 +55,7 @@ export class HFSearchSheet extends BasePage {
    * Wait for sheet to close
    */
   async waitForClose(timeout = 5000): Promise<void> {
-    await this.waitForElementToDisappear(Selectors.hfSearch.view, timeout);
+    await this.waitForElementToDisappear(Selectors.hfSearch.searchBar, timeout);
   }
 
   /**
@@ -79,13 +79,39 @@ export class HFSearchSheet extends BasePage {
   }
 
   /**
-   * Close the sheet by tapping the close button
+   * Close the sheet, re-tapping the close button until it goes away.
+   *
+   * A single tap is not enough. The model-details sheet stacks above this one
+   * and its handle (Pixel 9: [0,242][1080,316]) covers the close button
+   * ([42,268][105,331]), so a tap during the ~3.5s dismiss animation lands on
+   * the dismissing sheet instead. The system back action is not a usable
+   * fallback either: this sheet never consumes back, which instead navigates
+   * the screen underneath and leaves the sheet up.
    */
-  async close(): Promise<void> {
-    const closeBtn = await this.waitForEnabled(
-      Selectors.common.sheetCloseButton,
-    );
-    await closeBtn.click();
-    await this.waitForClose();
+  async close(timeout = 20000): Promise<void> {
+    const deadline = Date.now() + timeout;
+    while (await this.isOpen()) {
+      const closeBtn = this.getElement(Selectors.common.sheetCloseButton);
+      if (await closeBtn.isDisplayed().catch(() => false)) {
+        await closeBtn.click().catch(() => undefined);
+      }
+      try {
+        await this.waitForClose(3000);
+        return;
+      } catch {
+        if (Date.now() >= deadline) {
+          throw new Error(
+            `${Selectors.hfSearch.searchBar} still displayed after ${timeout}ms of close attempts`,
+          );
+        }
+      }
+    }
+  }
+
+  // Keyed on the search bar: XCUITest reports the sheet's container view as not visible on RN 0.87.
+  private async isOpen(): Promise<boolean> {
+    return this.getElement(Selectors.hfSearch.searchBar)
+      .isDisplayed()
+      .catch(() => false);
   }
 }

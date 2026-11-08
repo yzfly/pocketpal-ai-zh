@@ -5,18 +5,13 @@
  * 决策与三阶段路线图见 docs/adr/0001-llm-engine-boundary.md。
  *
  * 阶段一（已落地）：1:1 透传重导出，不改任何行为。
- * 阶段二（已落地）：LlmEngine（engine.ts）持有原生 context 的所有权
- *         与生命周期机制；策略仍在 ModelStore。见 ADR-0002。
- * 阶段三（已落地）：LlmBackend 接缝（backend.ts），llama.cpp 为首个实现。
+ * 阶段二/三（LlmEngine 接管生命周期、LlmBackend 接缝）已于 2026-11 同步
+ *         上游时撤回：上游以 GenerationSlot/lease 重写了同一生命周期，
+ *         继续分叉会让每次同步都在 ModelStore 上冲突。见 ADR-0002。
  *
  * 新增对 llama.rn 符号的依赖时，先在此登记导出，再从 'services/llm'
  * 导入——这是有意设计的摩擦，用来保持引用面清单可审计。
  */
-
-// ─── 引擎与后端 ──────────────────────────────────────────────
-export {LlmEngine, llmEngine} from './engine';
-export {llamaCppBackend} from './backend';
-export type {LlmBackend, LlmSession} from './backend';
 
 // ─── 运行时符号 ───────────────────────────────────────────────
 // 原生模块的完整可执行面。除本文件外，任何代码不得直接触碰。
@@ -52,4 +47,6 @@ export type {
   NativeBackendDeviceInfo,
   // 原生层 context 描述（测试 fixtures 使用）
   NativeLlamaContext,
+  // OpenAI 兼容消息结构（本地 API 服务把请求转换为该格式）
+  RNLlamaOAICompatibleMessage,
 } from 'llama.rn';

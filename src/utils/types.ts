@@ -11,6 +11,8 @@ import type {TokenRadius, TokenStroke, TokenTypography} from '../theme/tokens';
 import {SkillKey} from '.';
 import type {TalentResult} from '../services/talents/types';
 import type {ReasoningCapability} from './reasoningCapability';
+import type {ServerType} from './serverTypes';
+import type {Samplers} from './samplerParams';
 
 /**
  * One model-emitted tool call within an `AgentStep`. The `arguments` field
@@ -326,6 +328,7 @@ export interface SemanticColors {
   // Status bar specific
   bgStatusActive: string;
   bgStatusIdle: string;
+  statusLoaded: string;
 
   // Button specific
   btnPrimaryBg: string;
@@ -469,21 +472,85 @@ export interface ServerConfig {
   url: string; // Base URL e.g. "http://192.168.1.100:1234"
   lastConnected?: number; // Timestamp
   requestTimeoutMs?: number; // Per-server network timeout in ms; undefined = API default
-  // User-selectable server type; gates the per-server reasoning wire payload.
-  // detectServerType seeds it best-effort; user selection wins. undefined = unknown.
-  serverType?:
-    | 'llama.cpp'
-    | 'LM Studio'
-    | 'Ollama'
-    | 'OpenAI'
-    | 'vLLM'
-    | string;
+  // detectServerType seeds it best-effort; user selection wins. undefined =
+  // unknown, on rows written before the field existed.
+  serverType?: ServerType;
+}
+
+/**
+ * Raw API response shape from OpenAI /v1/models. The optional fields are what
+ * a llama.cpp server adds: the first three arrive on the row itself, the last
+ * is lifted from the sibling `models[]` array a single-model server emits.
+ */
+export interface RemoteModelInfo {
+  id: string;
+  object: string;
+  owned_by: string;
+  status?: {value?: string; args?: string[]};
+  architecture?: {input_modalities?: string[]; output_modalities?: string[]};
+  meta?: {n_ctx?: number; n_ctx_train?: number; [key: string]: unknown};
+  capabilities?: string[];
+}
+
+/**
+ * What a llama.cpp server reports for one model via GET /props, keyed per full
+ * model id (`${serverId}/${remoteModelId}`) in ServerStore. One record, so one
+ * entry and one merge path carry everything a probe learned.
+ * An absent field means unknown; a field is only ever set from a response that
+ * describes an actually loaded model, never from a router placeholder.
+ */
+export interface RemoteModelCaps {
+  // Never written or read at runtime. Every other field here is optional, so
+  // without a discriminant the weaker list-derived type would be silently
+  // assignable to this one and could be passed wherever a probed answer is
+  // expected.
+  tier?: 'probe';
+  contextLength?: number; // /props n_ctx; only ever a finite number > 0
+  supportsVision?: boolean; // /props modalities.vision
+  // The server's own generation defaults. Descriptive rather than gating: a
+  // settings surface shows them alongside the user's values.
+  samplerDefaults?: Samplers;
+  // The backend these describe. ServerConfig.url is mutable and a live session
+  // does not follow it, so caps that do not carry their own url cannot be
+  // matched against the session. Absent on an entry written before this field
+  // existed: taken at face value, no migration.
+  probedUrl?: string;
+}
+
+/**
+ * What a `GET /v1/models` row already says about a model, before anything is
+ * activated or probed. Weaker than a probe: the fields describe how the server
+ * was configured, not what a loaded session reports.
+ *
+ * The required `tier` makes this and `RemoteModelCaps` mutually non-assignable,
+ * so "a list answer can never be mistaken for a confirmed one" is a compile
+ * error rather than a rule to remember.
+ */
+export interface ListDerivedCaps {
+  tier: 'list';
+  supportsVision?: boolean;
+  contextLength?: number;
+}
+
+/**
+ * The backend a live remote chat session is actually talking to. Captured when
+ * the completion engine is built and never repointed, unlike the ServerConfig
+ * it was built from — editing a server url leaves the session on the old
+ * backend until the model is re-selected. Owned by ModelStore, not persisted.
+ */
+export interface RemoteSessionBinding {
+  modelId: string; // `${serverId}/${remoteModelId}`
+  serverId: string;
+  remoteModelId: string;
+  url: string;
+  serverType: ServerType;
 }
 
 export enum ModelType {
   PROJECTION = 'projection',
   VISION = 'vision',
   LLM = 'llm',
+  DRAFT = 'draft',
 }
 
 /**
@@ -501,6 +568,8 @@ export interface GGUFMetadata {
   n_embd_head_v: number; // Value head dimension
   sliding_window?: number; // For SWA models
   context_length?: number; // Native context length from GGUF
+  nextn_predict_layers?: number; // <arch>.nextn_predict_layers; >0 ⇒ embedded MTP draft layers
+  embedding_length_out?: number; // <arch>.embedding_length_out; draft output width (n_embd_out)
 }
 
 export interface Model {
@@ -531,6 +600,8 @@ export interface Model {
   compatibleProjectionModels?: string[]; // Array of mmproj model IDs that work with this model
   defaultProjectionModel?: string; // Default mmproj model ID to use with this model
   visionEnabled?: boolean; // User preference for enabling vision capabilities (defaults to true for backward compatibility)
+
+  defaultDraftModel?: string; // Default draft model ID to auto-pair / auto-download
 
   // Thinking capabilities
   /** @deprecated Read via resolveReasoningCapability; kept as a fallback for old records. */
@@ -563,6 +634,11 @@ export interface Model {
   serverName?: string; // Denormalized for display convenience
   remoteModelId?: string; // The model ID as reported by the server's /v1/models
 }
+
+export type DraftConfig =
+  | {mode: 'off'}
+  | {mode: 'embedded'}
+  | {mode: 'paired'; resolvedDraftPath: string; draftModel: Model};
 
 export type RootDrawerParamList = {
   Chat: undefined;
@@ -687,6 +763,14 @@ export interface ContextInitParams
   /** Disable extra buffer types for weight repacking (CPU_REPACK). Android only.
    * Reduces memory usage at the cost of slower prompt processing. Default: false */
   no_extra_bufts?: boolean;
+
+  // v2.3+ speculative decoding / draft model. This shape is persisted, so an
+  // upstream rename of the inherited spec_draft_* fields needs a migration.
+  /** Master switch for speculative decoding; default false (feature OFF). */
+  speculativeEnabled?: boolean;
+  /** User-picked global draft Model ID, used when a target has no per-target
+   * defaultDraftModel; undefined = none. */
+  selectedDraftModelId?: string;
 
   // Deprecated (kept for migration)
   /** @deprecated Use devices instead */

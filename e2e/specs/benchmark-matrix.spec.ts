@@ -21,11 +21,11 @@ import {getBenchmarkMatrix} from '../fixtures/benchmark-models';
 import {byTestId} from '../helpers/selectors';
 import {OUTPUT_DIR} from '../wdio.shared.conf';
 import {
+  assertRowsPass,
   deepLinkLaunch,
-  getCommitHash,
-  getLlamaRnVersion,
   pullLatestReport,
   pushConfig,
+  stampReportMetadata,
 } from '../helpers/bench-runner';
 
 declare const driver: WebdriverIO.Browser;
@@ -35,7 +35,11 @@ const MAX_WAIT_MS =
   parseInt(process.env.BENCH_MAX_WAIT_MIN || '60', 10) * 60_000;
 const POLL_MS = 5000;
 
-describe('Benchmark Matrix', () => {
+describe('Benchmark Matrix', function () {
+  this.timeout(
+    Math.max(Number(process.env.E2E_MOCHA_TIMEOUT) || 0, MAX_WAIT_MS + 60_000),
+  );
+
   const matrix = getBenchmarkMatrix();
   const udid = process.env.E2E_DEVICE_UDID;
   let outDir: string;
@@ -55,9 +59,7 @@ describe('Benchmark Matrix', () => {
     await deepLinkLaunch();
   });
 
-  it('runs the matrix and writes a JSON report', async function (this: Mocha.Context) {
-    this.timeout(MAX_WAIT_MS + 60_000);
-
+  it('runs the matrix and writes a JSON report', async () => {
     // No tap: the deep link carried `?autostart=1`, so the screen self-starts
     // the matrix once it mounts (the fix for HyperOS / MediaTek dropping
     // injected taps). We just wait for the status element to appear, then
@@ -118,34 +120,15 @@ describe('Benchmark Matrix', () => {
     // spec fills the top-level device/soc/commit/llama_rn/os fields the
     // screen has no clean way to know.
     const caps = (driver.capabilities || {}) as Record<string, any>;
-    report.device = caps.deviceModel || process.env.E2E_DEVICE_NAME || 'unknown';
-    report.soc = process.env.E2E_DEVICE_SOC || null;
-    report.os_version =
-      caps.platformVersion || process.env.E2E_PLATFORM_VERSION || 'unknown';
-    report.commit = getCommitHash();
-    report.llama_rn_version = getLlamaRnVersion();
+    stampReportMetadata(report, {
+      device: caps.deviceModel || process.env.E2E_DEVICE_NAME || 'unknown',
+      osVersion:
+        caps.platformVersion || process.env.E2E_PLATFORM_VERSION || 'unknown',
+    });
     fs.writeFileSync(localFile, JSON.stringify(report, null, 2));
 
     if (terminal !== 'complete') throw new Error(`Matrix ended: ${terminal}`);
-    if (!report.runs.length) throw new Error('Matrix produced zero rows');
-    // Per-row pass gate (round-1 B2). The screen catches per-cell failures,
-    // appends a status:'failed' row, then sets terminal='complete', so a
-    // matrix where every cell threw still reports `complete` with a full
-    // run list. This guard fails the spec when any cell did not complete
-    // cleanly, surfacing the failed-cell key + truncated error.
-    const failed = report.runs.filter((r: any) => r.status !== 'ok');
-    if (failed.length > 0) {
-      const summary = failed
-        .map(
-          (r: any) =>
-            `${r.model_id}::${r.quant}::${r.requested_backend}: ` +
-            String(r.error ?? r.reason ?? 'unknown').slice(0, 120),
-        )
-        .join('; ');
-      throw new Error(
-        `Matrix completed but ${failed.length}/${report.runs.length} cells failed: ${summary}`,
-      );
-    }
+    assertRowsPass(report);
     console.log(`Matrix complete: ${report.runs.length} rows in ${localFile}`);
   });
 });

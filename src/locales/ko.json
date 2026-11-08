@@ -5,16 +5,16 @@
     "supportProject": "프로젝트 지원하기",
     "supportProjectDescription": "PocketPal AI가 마음에 드신다면, 다음 방법으로 프로젝트를 지원해 주세요:",
     "githubButton": "GitHub Star 주기",
-    "orText": "또는",
     "orBy": "또는",
     "versionCopiedDescription": "버전 정보가 클립보드에 복사되었습니다",
-    "sponsorButton": "스폰서 되기",
     "versionCopiedTitle": "버전 복사됨",
     "privacyPolicy": "개인정보 처리방침",
     "termsOfService": "서비스 약관",
     "tourDescription": "온보딩 화면을 재생하여 PocketPal AI가 제공하는 기능을 확인하세요.",
     "showIntroButton": "인트로 다시 보기",
-    "tour": "둘러보기"
+    "tour": "둘러보기",
+    "openSourceNotices": "오픈소스 고지",
+    "phononNoticesCredit": "Phonon 음성 모델과 음성은 Gradium에서 제작했으며 Apache-2.0 라이선스를 따릅니다. Kyutai의 Pocket TTS와 Mimi 코덱을 기반으로 합니다."
   },
   "benchmark": {
     "title": "벤치마크",
@@ -40,7 +40,8 @@
       "testWarning": "주의: 테스트는 대형 모델의 경우 최대 2~5분까지 걸릴 수 있으며, 실행 중에 중단할 수 없습니다.",
       "keepScreenOpen": "이 화면을 그대로 유지해 주세요.",
       "initializingModel": "모델 초기화 중...",
-      "modelMaxValue": "(최대: {{maxValue}})"
+      "modelMaxValue": "(최대: {{maxValue}})",
+      "testFailed": "테스트를 실행할 수 없습니다. 답변 생성이 끝난 뒤 다시 시도해 주세요."
     },
     "dialogs": {
       "advancedSettings": {
@@ -199,7 +200,21 @@
     "increaseContextReloading": "더 큰 컨텍스트로 모델을 다시 불러오는 중…",
     "increaseContextSuccess": "컨텍스트가 {{target}} 토큰으로 늘어났습니다.",
     "increaseContextFailure": "컨텍스트 크기를 늘릴 수 없습니다. 이전 설정으로 복원되었습니다.",
-    "palLoadHint": "이 Pal은 현재 컨텍스트 크기보다 더 많은 공간이 필요한 편입니다."
+    "palLoadHint": "이 Pal은 현재 컨텍스트 크기보다 더 많은 공간이 필요한 편입니다.",
+    "webSearch": {
+      "searched": "검색함: {{query}}",
+      "noResults": "결과 없음",
+      "noResultsFor": "{{query}}에 대한 결과 없음",
+      "resultsCount": "결과 {{count}}개",
+      "resultsCountOne": "결과 1개",
+      "searchResultsTitle": "검색 결과",
+      "showResultsAccessibilityLabel": "{{query}}에 대한 웹 검색 결과 표시",
+      "openLinkError": "이 링크를 열 수 없습니다."
+    },
+    "contextFullRemote": "대화 공간이 가득 찼습니다. 새 채팅을 시작하세요.",
+    "speculativeInitFailed": "이 기기에서 이 모델의 추측 디코딩을 시작할 수 없어요 — 드래프트 컨텍스트에 필요한 메모리가 부족한 것 같아요. 설정 → 고급 설정에서 추측 디코딩을 끄고 다시 시도해 주세요.",
+    "routerLoading": "모델 로딩 중…",
+    "routerLoadingPercent": "모델 로딩 중 · {{percent}}%"
   },
   "common": {
     "cancel": "취소",
@@ -233,7 +248,8 @@
     "clear": "모두 삭제",
     "gallery": "갤러리",
     "error": "오류",
-    "stop": "중지"
+    "stop": "중지",
+    "noResults": "결과 없음"
   },
   "completionParams": {
     "grammar": "특정 문법 규칙을 적용하여 생성된 텍스트가 정해진 구조나 형식을 따르도록 강제합니다.",
@@ -287,7 +303,8 @@
         "disableThinking": "사고 모드 비활성화",
         "thinkingEnabled": "사고 모드 활성화됨",
         "thinkingDisabled": "사고 모드 비활성화됨",
-        "thinkText": "사고"
+        "thinkText": "사고",
+        "cycleEffort": "추론 강도: {{level}}. 두 번 탭하면 강도 단계가 바뀌어요"
       }
     },
     "chatGenerationSettingsSheet": {
@@ -349,11 +366,25 @@
       "export": "내보내기/가져오기",
       "exportCurrentSession": "현재 세션 내보내기",
       "exportAllSessions": "모든 세션 내보내기",
-      "importSessions": "세션 가져오기"
+      "importSessions": "세션 가져오기",
+      "exportCurrentSessionMarkdown": "Markdown으로 내보내기"
     },
     "modelSettingsSheet": {
       "modelSettings": "모델 설정",
-      "saveChanges": "변경 사항 저장"
+      "saveChanges": "변경 사항 저장",
+      "reasoningSection": "추론",
+      "isReasoningModel": "추론 모델",
+      "isReasoningModelHelp": "자동 감지되지 않더라도 이 모델의 사고 제어를 표시합니다.",
+      "supportsEffort": "단계별 추론 강도 지원",
+      "effortValues": "이 모델이 지원하는 추론 강도 단계",
+      "effortLevels": {
+        "minimal": "최소",
+        "low": "낮음",
+        "medium": "보통",
+        "high": "높음",
+        "xhigh": "매우 높음",
+        "max": "최대"
+      }
     },
     "assistantPalSheet": {
       "title": {
@@ -438,7 +469,8 @@
       },
       "warnings": {
         "promptChanged": "시스템 프롬프트가 수동으로 설정되었습니다."
-      }
+      },
+      "generationBusy": "응답이 아직 생성 중입니다. 완료된 후에 다시 시도해 주세요."
     },
     "sidebarContent": {
       "menuItems": {
@@ -461,7 +493,8 @@
         "threeWeeksAgo": "3주 전",
         "fourWeeksAgo": "4주 전",
         "lastMonth": "지난 달",
-        "older": "오래된 항목"
+        "older": "오래된 항목",
+        "pinned": "고정됨"
       },
       "select": "선택",
       "nSelected": "{{count}}개 선택됨",
@@ -473,7 +506,9 @@
       "bulkDeleteMessage": "{{count}}개의 채팅 세션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       "bulkDeleteError": "채팅 세션 삭제에 실패했습니다. 다시 시도해 주세요.",
       "exportError": "채팅 세션 내보내기에 실패했습니다. 다시 시도해 주세요.",
-      "bulkExportError": "채팅 세션 내보내기에 실패했습니다. 다시 시도해 주세요."
+      "bulkExportError": "채팅 세션 내보내기에 실패했습니다. 다시 시도해 주세요.",
+      "pin": "고정",
+      "unpin": "고정 해제"
     },
     "usageStats": {
       "tooltip": {
@@ -659,12 +694,16 @@
       "talentNames": {
         "render_html": "HTML 미리보기",
         "calculate": "수학 표현식",
-        "datetime": "날짜와 시간"
+        "datetime": "날짜와 시간",
+        "web_search": "웹 검색",
+        "read_url": "웹 페이지 읽기"
       },
       "talentDescriptions": {
         "render_html": "채팅 내 HTML 문서 인라인 렌더링",
         "calculate": "수학 표현식 계산",
-        "datetime": "현재 날짜와 시간 가져오기"
+        "datetime": "현재 날짜와 시간 가져오기",
+        "web_search": "최신 정보를 인터넷에서 검색 (설정에서 API 키 필요)",
+        "read_url": "웹 페이지의 전체 내용 읽기 (설정에서 API 키 필요)"
       },
       "greeting": {
         "removePromptLabel": "프롬프트 제거",
@@ -710,7 +749,10 @@
       "tokensPerSec": "{{value}} 토큰/초",
       "ttft": "{{value}}ms TTFT",
       "interrupted": "중단됨",
-      "truncated": "응답 중단됨 — 컨텍스트가 가득 참"
+      "truncated": "응답 중단됨 — 컨텍스트가 가득 참",
+      "draftAccepted": "드래프트: {{accepted}}/{{total}} ({{pct}}%)",
+      "promptTokensPerSec": "{{value}} 프롬프트 토큰/초",
+      "cachedTokens": "{{value}} 캐시됨"
     },
     "pendingIndicator": {
       "preparingTool": "도구 준비 중",
@@ -722,6 +764,13 @@
     "toolMetrics": {
       "tokens": "{{count}} 토큰",
       "elapsed": "{{seconds}}초"
+    },
+    "completionSettings": {
+      "serverDefault": "서버 기본값",
+      "usingServerDefault": "서버 기본값 사용 중: {{value}}",
+      "usingServerDefaultUnreported": "서버 기본값 사용 중 (값 알 수 없음)",
+      "resetToServerDefault": "서버 기본값: {{value}} · 재설정",
+      "resetToServerDefaultAccessibilityLabel": "{{name}} 설정을 서버 기본값 {{value}}(으)로 재설정"
     }
   },
   "feedback": {
@@ -902,7 +951,11 @@
         "author": "제작자",
         "requiresProjectionModel": "프로젝션 모델 필요",
         "downloadProjectionModel": "프로젝션 모델 다운로드",
-        "viewModelCardOnHuggingFace": "Hugging Face에서 모델 카드 보기"
+        "viewModelCardOnHuggingFace": "Hugging Face에서 모델 카드 보기",
+        "visionSupported": "지원함",
+        "visionNotSupported": "지원 안 함",
+        "visionUnknown": "알 수 없음",
+        "draftOnlyReason": "드래프트 전용 모델이에요. 설정 → 추측 디코딩에서 선택하세요."
       },
       "accessibility": {
         "expandDetails": "세부정보 펼치기",
@@ -963,7 +1016,9 @@
       "multilingual": "다국어",
       "rewriting": "재작성",
       "creativity": "창의적인 작문",
-      "vision": "시각"
+      "vision": "시각",
+      "mtp": "추측 (MTP)",
+      "mtpDraft": "추측 드래프트"
     },
     "vision": "시각",
     "mmproj": "시각 프로젝터",
@@ -1153,7 +1208,91 @@
     "ttsAvailabilityLowMemoryWarning": "귀하의 기기 메모리가 낮습니다 — 신뢰성 있게 작동하지 않을 수 있습니다.",
     "requestTimeout": "요청 제한 시간(초)",
     "requestTimeoutHelp": "서버 응답을 기다리는 최대 시간입니다. 비워 두면 기본값이 적용됩니다.",
-    "requestTimeoutPlaceholder": "선택 사항 - 비워 두면 기본값 적용"
+    "requestTimeoutPlaceholder": "선택 사항 - 비워 두면 기본값 적용",
+    "serverType": "서버 유형",
+    "serverTypeHelp": "자동으로 감지된 설정입니다. 틀린 부분이 있다면 변경해 주세요.",
+    "internetSearch": {
+      "title": "인터넷 검색",
+      "description": "Pal이 자체 도구로 웹을 검색할 수 있도록 해보세요. 본인의 API 키만 가져오시면 됩니다 — PocketPal은 사용자의 키를 저장하거나 쿼리를 라우팅하지 않습니다.",
+      "providerLabel": "검색 제공자",
+      "providerGated": "출시 예정",
+      "keyLabel": "API 키",
+      "keyIsSet": "{{provider}}의 키가 설정되었습니다.",
+      "keyNotSet": "{{provider}}의 키가 설정되지 않았습니다.",
+      "setKeyButton": "키 설정",
+      "updateKeyButton": "키 업데이트",
+      "clearKeyButton": "키 삭제",
+      "keyInputPlaceholder": "{{provider}}의 API 키를 붙여넣으세요",
+      "keyUpdateError": "키를 업데이트하지 못했어요. 다시 시도해 주세요.",
+      "showKeyAccessibilityLabel": "API 키 표시",
+      "hideKeyAccessibilityLabel": "API 키 숨기기",
+      "resultCountLabel": "검색당 결과 수",
+      "resultCountDescription": "결과가 적을수록 모델의 컨텍스트에 더 많은 공간이 유지됩니다.",
+      "consentTitle": "검색어는 기기 외부로 전송됩니다",
+      "consentDescription": "Pal이 웹을 검색하면 여러분의 검색어가 인터넷을 통해 선택한 제공자로 전송돼요. Pal이 페이지를 읽을 때, 선택한 제공자에 자체 리더가 없으면 URL과 페이지 내용이 대신 기본 리더 서비스(r.jina.ai)로 전송될 수 있어요. 키와 검색어는 절대 PocketPal로 전송되지 않아요.",
+      "consentAccept": "확인했습니다",
+      "consentRequired": "키를 설정하고 검색을 활성화하려면 위 고지에 동의해 주세요.",
+      "consentGivenTitle": "웹 검색이 활성화됨",
+      "consentGivenDescription": "위에서 설명한 대로 쿼리와 페이지 읽기 결과가 기기를 벗어날 수 있습니다.",
+      "consentRevoke": "동의 철회",
+      "keyOptional": "{{provider}}의 경우 키가 필요하지 않습니다. 키를 추가하면 한도가 늘어납니다."
+    },
+    "languageSheetTitle": "언어",
+    "languageSearchPlaceholder": "언어 검색",
+    "speculativeDecoding": "추측 디코딩",
+    "speculativeDecodingDescription": "소형 드래프트 모델(또는 내장 MTP 모델)을 사용하여 토큰을 예측하고 생성 속도를 높입니다. 실험적 기능입니다.",
+    "speculativeNotMTPCapable": "현재 활성 모델은 추측 디코딩을 지원하지 않으며 호환되는 드래프트 모델도 연결되지 않아 이 기능은 꺼진 상태로 유지되며 아무런 영향을 주지 않습니다. 지원 가능한 모델에는 자동으로 적용됩니다.",
+    "speculativeDraftModel": "드래프트 모델",
+    "speculativeDraftModelDescription": "활성 모델을 위해 토큰을 미리 생성합니다.",
+    "speculativeDraftModelNone": "없음 (내장 MTP)",
+    "speculativeDraftModelIgnoredOverridden": "활성 모델에 자체 드래프트 모델이 포함되어 있어 이 선택은 무시됩니다.",
+    "speculativeDraftModelIgnoredIncompatible": "이 드래프트 모델은 활성 모델과 호환되지 않아 무시됩니다.",
+    "speculativeDraftModelIgnoredNotCapable": "이 모델에는 드래프트 레이어가 없어, 드래프트 모델로 사용할 수 없습니다.",
+    "speculativeDraftKeyCacheType": "드래프트 키 캐시 유형",
+    "speculativeDraftValueCacheType": "드래프트 값 캐시 유형",
+    "speculativeDraftNGpuLayers": "드래프트 GPU 레이어",
+    "speculativeDraftNGpuLayersDescription": "GPU로 오프로드할 드래프트 모델 레이어 수입니다.",
+    "speculativeDraftCacheTypeInactiveDescription": "추측 디코딩이 실행되면 적용됩니다.",
+    "purchases": {
+      "title": "구매 항목",
+      "statusOwned": "구매 완료",
+      "statusUnlocking": "잠금 해제 중",
+      "link": "다른 기기에서 사용하려면 로그인"
+    },
+    "scanServerQr": "서버 QR 코드 스캔",
+    "scanQrPermissionMessage": "서버 QR 코드를 스캔하려면 카메라 접근 권한을 허용해 주세요. 주소를 직접 입력할 수도 있습니다.",
+    "scanQrNotServer": "서버 주소가 아닙니다",
+    "scanQrUnavailable": "여기서는 스캔할 수 없습니다. 서버 주소를 직접 입력해 주세요.",
+    "scanQrNotReady": "스캐너를 준비하는 중입니다. 주소를 직접 입력할 수도 있습니다.",
+    "routerModels": {
+      "cancel": "취소",
+      "unloading": "언로드 중…",
+      "stateLoading": "로딩 중",
+      "stateLoaded": "로드됨",
+      "loadingPercent": "로딩 중, {{percent}}퍼센트",
+      "unloadModel": "{{model}} 언로드",
+      "cancelLoadingModel": "{{model}} 로딩 취소",
+      "loadFailed": "이 모델을 로드하지 못했습니다.",
+      "unloadNotReleased": "서버에서 이 모델을 언로드하지 못했습니다.",
+      "serverUnreachable": "이 서버에 연결할 수 없습니다.",
+      "waitStopped": "이 모델 대기를 중단했습니다.",
+      "failureWithServerWords": "{{label}}\n\n“{{message}}”",
+      "dismiss": "닫기",
+      "unloadBoundTitle": "이 모델을 언로드하시겠습니까?",
+      "unloadBoundBody": "이 채팅에서 사용 중인 모델입니다. 다음 메시지를 보내면 다시 로드됩니다.",
+      "unloadBoundConfirm": "언로드"
+    },
+    "account": {
+      "title": "계정",
+      "deleteAccount": "계정 삭제",
+      "confirmTitle": "계정을 삭제하시겠습니까?",
+      "confirmMessage": "PalsHub 계정과 라이브러리가 영구적으로 삭제됩니다. App Store 또는 Google Play에서 구매한 Pals는 스토어 계정으로 이 기기에서 계속 복원할 수 있습니다. 구매 기록은 법적 의무에 따라 익명 처리되어 보관됩니다.",
+      "confirmWithoutApple": "Apple 계정으로 확인하지 못했습니다. 그래도 계정을 삭제하시겠습니까?",
+      "deleted": "계정이 삭제되었습니다.",
+      "signInAgain": "다시 로그인해 주세요",
+      "creatorSupport": "크리에이터 계정은 고객지원팀에서 삭제해 드립니다: {{contact}}",
+      "failed": "삭제하지 못했습니다. 다시 시도해 주세요"
+    }
   },
   "storage": {
     "checkFailed": "저장공간 확인 실패",
@@ -1220,8 +1359,6 @@
       "download": "다운로드",
       "getFree": "무료로 얻기"
     },
-    "premiumPalDescription": "Palshub.ai 커뮤니티에서 제작된 프리미엄 Pal",
-    "premiumInfoText": "Palshub.ai를 방문하여 더 많은 Pal을 찾아보세요",
     "sortOptions": {
       "newest": "최신순",
       "oldest": "오래된순",
@@ -1245,15 +1382,48 @@
       "error": "오류",
       "failedToLoadDetails": "Pal 세부정보 로드에 실패함",
       "failedToDownload": "Pal 다운로드 실패",
-      "premiumPalMessage": "이 Pal은 프리미엄입니다.\n• 이미 Palshub 계정으로 잠금을 해제하셨다면, 간단히 로그인하여 접근할 수 있습니다.\n• 아직 잠금 해제하지 않으셨나요? palshub.ai 앱을 방문하여 자세히 알아보세요.",
-      "notAvailable": "비어있음",
-      "buyOnPalshub": "Palshub에서 구매하기",
-      "finalizingPurchase": "구매를 마무리하는 중…",
-      "processingPurchase": "처리 중 — 곧 잠금이 해제됩니다.",
-      "checkoutSessionExpired": "세션이 만료되었습니다. 계속하려면 다시 로그인해 주세요.",
-      "signInAgain": "다시 로그인하기",
-      "palNotAvailable": "이 Pal은 현재 구매할 수 없습니다.",
-      "checkoutFailed": "문제가 발생했습니다. 다시 시도해 주세요."
+      "notAvailable": "비어있음"
+    },
+    "purchase": {
+      "buy": "{{price}}",
+      "open": "열기",
+      "install": "설치",
+      "pending": "처리 중",
+      "unlocking": "잠금 해제 중",
+      "retry": "다시 시도",
+      "supportCode": "지원 코드: {{code}}",
+      "noLongerAvailable": "이 Pal은 더 이상 제공되지 않습니다. {{refundLink}}.",
+      "refundLink": "Apple에 환불을 요청할 수 있습니다",
+      "notCompleted": "구매를 완료하지 못했습니다. Google에서 환불해 드립니다.",
+      "withdrawnRefunding": "이 Pal은 제공이 중단되었습니다. 환불이 필요하시면 고객지원에 문의해 주세요.",
+      "invalid": "이 구매를 확인할 수 없습니다.",
+      "heldInvalid": "이 구매의 잠금을 해제할 수 없습니다. 이 코드와 함께 고객지원에 문의해 주세요.",
+      "recommendedModel": "추천 모델",
+      "sampleExchange": "예시 대화",
+      "signInLine": "이미 구매하셨나요? 로그인",
+      "licenseNotice": "이 Pal을 사용할 수 있는 라이선스를 구매합니다.",
+      "termsOfSale": "판매 약관",
+      "appleMediaTerms": "Apple 미디어 서비스 이용약관",
+      "linkPrompt": "다른 기기에서도 사용하려면 로그인하세요",
+      "linkSignIn": "로그인",
+      "dismiss": "나중에",
+      "linkConflict": "이 구매 항목은 다른 계정에 연결되어 있습니다.",
+      "restorePurchases": "구매 복원",
+      "badgePending": "처리 중",
+      "badgeUnlocking": "잠금 해제 중",
+      "badgeUpdate": "업데이트 있음",
+      "updatePrompt": "제작자가 올린 새 버전이 있습니다.",
+      "updatePromptWithNote": "제작자가 올린 새 버전이 있습니다: {{note}}.",
+      "updateButton": "업데이트",
+      "updateConfirmText": "제작자가 변경한 부분에 내가 수정한 내용은 덮어쓰기됩니다.",
+      "updateConfirm": "업데이트",
+      "updateCancel": "취소",
+      "modelStep": {
+        "download": "다운로드 · {{size}}",
+        "startChat": "채팅 시작",
+        "needsMemory": "이 Pal의 가장 작은 모델을 사용하려면 메모리가 {{size}} 이상인 기기가 필요합니다.",
+        "noModelFits": "이 기기는 이 Pal을 실행할 메모리가 부족합니다."
+      }
     }
   },
   "video": {
@@ -1397,7 +1567,11 @@
       "tr": "튀르키예어",
       "uk": "우크라이나어",
       "vi": "베트남어"
-    }
+    },
+    "engineChipPhonon": "Phonon",
+    "enginePhononTagline": "빠른 구동 속도. 적은 RAM 사용. 영어만 지원.",
+    "enginePhononCredit": "모델과 음성은 Gradium 제작 (Apache-2.0), Kyutai의 Mimi 기반.",
+    "engineTierNatural": "자연스러운 영어"
   },
   "htmlPreview": {
     "defaultTitle": "미리보기",
@@ -1418,11 +1592,11 @@
       "title": "당신의 Pal을 만나보세요.",
       "titleAccent": "Pal.",
       "body": "당신의 휴대폰 안에 사는 똑똑한 작은 친구들.\n설정을 시작해 보세요 - 시간이 잠시 걸립니다.",
-      "cta": "둘러볼게요",
-      "eyebrow": "PocketPal에 오신 걸 환영해요"
+      "cta": "둘러보기",
+      "eyebrow": "PocketPal에 오신 걸 환영합니다"
     },
     "screen2": {
-      "title": "언제나,\n어디서나.",
+      "title": "언제\n어디서나.",
       "body": "Pal은 여러분의 휴대폰 안에 살아요.\n인터넷도, 신호도 필요 없어요 - 비행기 안에서도, 오지에서도, 외딴 마을에서도 작동해요.",
       "highlight": "인터넷도, 신호도 필요 없어요",
       "cta": "다음",
@@ -1501,6 +1675,163 @@
   "downloadBanner": {
     "titleByPal": "{{name}}이 다운로드 중",
     "titleByModel": "{{name}}이 다운로드 중",
-    "extraInProgress": "+{{count}}개 추가 진행 중"
+    "extraInProgress": "+{{count}}개 추가 진행 중",
+    "failedTitle": "다운로드가 완료되지 않았습니다",
+    "retry": "다시 시도"
+  },
+  "voiceInput": {
+    "micLabel": "음성 입력",
+    "recordingLabel": "녹음 중",
+    "stopLabel": "중지하고 텍스트로 변환",
+    "cancelLabel": "음성 입력 취소",
+    "transcribingLabel": "텍스트로 변환 중…",
+    "setupLabel": "음성 입력 설정",
+    "settingTitle": "음성 입력",
+    "settingDescription": "채팅에서 마이크를 눌러 말하면, 음성이 기기에서 텍스트로 변환됩니다.",
+    "unsupportedDeviceHelper": "이 기기는 권장 사양에 미치지 못합니다. 음성 입력이 느리거나 실패할 수 있습니다.",
+    "spokenLanguageLabel": "말하는 언어",
+    "spokenLanguageAuto": "자동 감지",
+    "spokenLanguageDetected": "자동 감지됨: {{language}}",
+    "resetLanguageCta": "재설정",
+    "recordingLanguageAuto": "언어: 자동",
+    "recordingLanguage": "언어: {{code}} (눌러서 재설정)",
+    "waitingForChatLabel": "답변이 끝나면 텍스트로 변환합니다…",
+    "tierSizeLabel": "{{sizeMb}} MB",
+    "installCta": "다운로드",
+    "downloadingLabel": "다운로드 중…",
+    "retryCta": "다시 시도",
+    "removeCta": "삭제",
+    "errorPermissionDenied": "음성 입력을 사용하려면 마이크 접근 권한이 필요합니다.",
+    "errorPermissionBlocked": "마이크 접근 권한이 차단되어 있습니다. 설정에서 허용해 주세요.",
+    "errorTranscribeFailed": "텍스트로 변환하지 못했습니다. 다시 시도해 주세요.",
+    "errorNotInstalled": "음성 입력을 사용하려면 음성 모델을 다운로드해 주세요.",
+    "errorInsufficientMemory": "이 채팅 모델과 함께 음성 입력을 사용하기에는 메모리가 부족합니다. 더 작은 모델을 사용해 보세요.",
+    "errorMicUnavailable": "마이크가 응답하지 않습니다. 다시 시도하거나 더 작은 채팅 모델로 바꿔 보세요.",
+    "errorTranscriptPartial": "말한 내용 중 일부를 텍스트로 변환하지 못했습니다.",
+    "openSettingsLabel": "설정 열기",
+    "insufficientStorage": "저장 공간이 부족합니다. 이 모델을 설치하려면 {{requiredMb}} MB를 확보해 주세요 (사용 가능: {{freeMb}} MB).",
+    "setupSheetTitle": "음성 입력 설정",
+    "setupSheetBody": "한 번만 다운로드하면 오프라인에서도 말로 입력할 수 있습니다.",
+    "tierNameBase": "Base",
+    "tierNameSmall": "Small",
+    "tierNameLargeTurbo": "Large Turbo",
+    "tierHintBase": "기본, 빠름",
+    "tierHintSmall": "더 정확하지만 느림. 다른 언어에 더 적합",
+    "tierHintLargeTurbo": "대부분의 기기에서 매우 느림",
+    "useCta": "사용",
+    "inUseLabel": "사용 중",
+    "modelSectionHelper": "음성 입력과 핸즈프리 음성에서 사용됩니다.",
+    "memoryAlertTitle": "메모리 여유가 적습니다",
+    "memoryAlertBody": "음성 입력은 이 채팅 모델과 함께 메모리를 추가로 사용합니다. 매우 느려지거나 앱이 종료될 수 있습니다.",
+    "memoryAlertTryAnyway": "그래도 시도하기"
+  },
+  "plus": {
+    "eyebrow": "PocketPal Plus",
+    "headline": "온디바이스 AI를 한 걸음 더.",
+    "subline": "Plus는 PocketPal을 무료 오픈소스로 유지해 줍니다. 추가 기능은 저희의 감사 표시입니다.",
+    "unsupportedSubline": "Plus 기능은 아직 이 기기에서 실행되지 않습니다. 그래도 PocketPal을 후원할 수 있습니다.",
+    "thanksHeadline": "PocketPal을 계속 이어갈 수 있게 해 주셔서 감사합니다.",
+    "thanksSubline": "이 기기에서 Plus 잠금이 해제되었습니다.",
+    "features": {
+      "handsFreeVoice": "핸즈프리 음성",
+      "localApiServer": "로컬 API 서버"
+    },
+    "ready": "사용 가능",
+    "needsRam": "RAM {{gb}} GB 필요",
+    "comingSoon": "출시 예정",
+    "speedLine": "속도는 기기와 모델에 따라 달라집니다.",
+    "inDevelopment": "개발 중인 기능은 변경되거나 출시되지 않을 수 있습니다.",
+    "priceCaption": "원하는 금액을 선택하세요. 어떤 금액이든 기능은 모두 같습니다.",
+    "buyError": "구매를 완료하지 못했습니다. 다시 시도해 주세요.",
+    "getPlus": "Plus 구매 · {{price}}",
+    "getPlusAnyway": "그래도 Plus 구매 · {{price}}",
+    "loading": "로딩 중",
+    "pending": "처리 중",
+    "pendingTitle": "스토어에서 결제를 확인하는 중입니다.",
+    "pendingBody": "결제가 완료되면 Plus 잠금이 자동으로 해제됩니다. 이 화면은 닫아도 됩니다.",
+    "unavailableTitle": "지금은 구매할 수 없습니다.",
+    "unavailableBody": "스토어에 연결할 수 없습니다. 나중에 다시 시도하거나 이전 구매를 복원해 주세요.",
+    "done": "완료",
+    "oneTimePurchase": "1회 구매",
+    "restore": "복원",
+    "openSource": "오픈소스 ↗",
+    "licence": "Plus를 사용할 수 있는 라이선스를 1회 구매합니다.",
+    "terms": "약관",
+    "appleMediaTerms": "Apple 미디어 서비스 이용약관",
+    "noPurchaseFound": "Plus 구매 내역을 찾을 수 없습니다.",
+    "restoreFailed": "스토어에 연결할 수 없습니다. 다시 시도해 주세요.",
+    "sidebar": {
+      "title": "PocketPal Plus",
+      "unlocked": "잠금 해제됨",
+      "subtitleOne": "{{first}}",
+      "subtitleTwo": "{{first}}, {{second}}",
+      "subtitleMore": "{{first}}, {{second}} 등"
+    },
+    "optIn": "꺼짐",
+    "optInNote": "이 기기에서는 꺼져 있습니다. 용감하시다면 설정에서 켜 보세요.",
+    "offInSettingsNote": "설정에서 꺼져 있습니다.",
+    "chatStaysFree": "Plus는 선택 사항입니다. 채팅은 계속 무료입니다.",
+    "chooseAmount": "금액 선택"
+  },
+  "voiceMode": {
+    "settingTitle": "핸즈프리 음성",
+    "settingDescription": "채팅에서 모델과 대화하고 답변을 음성으로 들을 수 있습니다.",
+    "unsupportedDeviceHelper": "이 기기에서는 느릴 수 있습니다.",
+    "startingTitle": "시작 중",
+    "startingHint": "음성 인식과 음성을 불러오는 중입니다. 처음에는 조금 더 걸릴 수 있습니다.",
+    "startFailed": "음성 모드를 시작하지 못했습니다. 다시 시도해 주세요.",
+    "micFailed": "마이크를 사용할 수 없어 음성 모드를 종료했습니다.",
+    "listeningTitle": "듣는 중",
+    "listeningHint": "말을 마치면 잠시 멈추거나 구름을 탭해 전송하세요",
+    "thinkingTitle": "생각 중",
+    "thinkingHint": "취소하려면 구름을 탭하세요",
+    "speakingTitle": "말하는 중",
+    "speakingHint": "중단하려면 구름을 탭하세요",
+    "mutedTitle": "마이크 꺼짐",
+    "mutedHint": "다시 말하려면 마이크를 탭하세요",
+    "errorTranscribe": "잘 알아듣지 못했습니다. 다시 시도해 주세요.",
+    "errorReply": "답변을 받지 못했습니다. 다시 시도해 주세요.",
+    "errorSpeech": "답변을 음성으로 재생하지 못했습니다.",
+    "pullDownHint": "채팅을 보려면 아래로 당기세요",
+    "showChatLabel": "채팅 보기",
+    "swipeUpHint": "음성 화면을 보려면 위로 스와이프하세요",
+    "cloudLabel": "음성 모드 구름",
+    "openViewLabel": "음성 화면 열기",
+    "micSwitchLabel": "마이크",
+    "endLabel": "음성 모드 종료",
+    "setupTitle": "음성 모드 설정",
+    "setupBody": "작은 모델 두 개를 기기에서 실행해 오프라인으로도 대화할 수 있습니다.",
+    "sttRowTitle": "음성 인식",
+    "sttRowModel": "Whisper {{tier}} · {{size}}",
+    "sttProgress": "{{total}} 중 {{done}}",
+    "sttDownloadFailed": "다운로드에 실패했습니다. 다시 시도해 주세요.",
+    "installedLabel": "설치됨",
+    "voiceRowTitle": "음성",
+    "voiceRowReady": "{{voice}} · 사용 가능",
+    "voiceRowMissing": "자연스러운 음성을 선택해 주세요. 음성 모드에서는 시스템 음성을 사용할 수 없습니다.",
+    "chooseVoiceCta": "음성 선택",
+    "micNote": "다음 단계에서 마이크 접근 권한을 요청합니다.",
+    "micDenied": "음성 모드를 사용하려면 마이크 접근 권한이 필요합니다.",
+    "continueCta": "계속",
+    "memoryTightTitle": "메모리 여유가 적습니다",
+    "memoryTightBody": "음성 모드는 모델 세 개를 동시에 메모리에 올려 둡니다. 이 기기에서는 느려지거나 앱이 종료될 수 있습니다.",
+    "memoryWontFitTitle": "메모리가 부족합니다",
+    "memoryWontFitBody": "이 채팅 모델과 함께 음성 인식을 올릴 메모리가 부족합니다. 음성 모드를 사용하려면 더 작은 모델을 선택해 주세요.",
+    "memoryChatRow": "채팅 모델 · {{name}}",
+    "memorySttRowModel": "음성 인식 · Whisper {{tier}}",
+    "memoryVoiceRow": "음성 · {{name}}",
+    "memoryNeeded": "필요",
+    "continueAnywayCta": "그래도 계속",
+    "chooseSmallerModelCta": "더 작은 모델 선택",
+    "startLabel": "음성 모드 시작",
+    "startLockedLabel": "핸즈프리 음성, PocketPal Plus",
+    "startLockedHint": "짧은 미리보기가 열립니다. 텍스트 입력과 음성 입력은 계속 무료입니다.",
+    "teaserTitle": "음성 대화는 Plus 기능입니다",
+    "teaserBody": "핸즈프리로 대화하세요. 음성으로 답해 줍니다.",
+    "teaserGetPlus": "Plus 구매",
+    "teaserKeepTyping": "무료로 계속 입력하기",
+    "voiceRowFileMissing": "{{voice}} 음성은 아직 다운로드되지 않았습니다. 계속 버튼을 누르면 다운로드합니다.",
+    "voiceRowFileFailed": "{{voice}} 음성을 다운로드하지 못했습니다. 인터넷에 연결한 뒤 다시 시도해 주세요.",
+    "memoryNeededOfTotal": "이 기기의 {{total}} 중 {{needed}}"
   }
 }

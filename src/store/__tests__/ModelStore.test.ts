@@ -1,15 +1,32 @@
 jest.unmock('../../store');
-import {runInAction} from 'mobx';
-import {LlamaContext} from '../../services/llm';
-import {Alert, Platform} from 'react-native';
+import {reaction, runInAction} from 'mobx';
+import {
+  LlamaContext,
+  getBackendDevicesInfo,
+  initLlama as initializeLlama,
+  loadLlamaModelInfo,
+} from '../../services/llm';
+import {Alert, AppStateStatus, Platform} from 'react-native';
 
 import {
   downloadManager,
   DownloadCancelledError,
 } from '../../services/downloads';
 
-import {GGUFMetadata, Model, ModelOrigin, ModelType} from '../../utils/types';
+import {
+  CacheType,
+  DraftConfig,
+  GGUFMetadata,
+  Model,
+  ModelOrigin,
+  ModelType,
+  RemoteSessionBinding,
+  ServerConfig,
+} from '../../utils/types';
 import {getDisplayNameFromFilename} from '../../utils/formatters';
+import {getModelMemoryRequirement} from '../../utils/memoryEstimator';
+import {hasEnoughMemory} from '../../hooks/useMemoryCheck';
+import NativeHardwareInfo from '../../specs/NativeHardwareInfo';
 import {
   basicModel,
   createModel,
@@ -17,17 +34,23 @@ import {
   mockHFModel1,
 } from '../../../jest/fixtures/models';
 import * as RNFS from '@dr.pogodin/react-native-fs';
+import DeviceInfo from 'react-native-device-info';
 
 import {modelStore, uiStore, serverStore} from '..';
 import {LOOKIE_DEFAULT_MODEL} from '../builtinPalModels';
 import {classify} from '../../services/deviceRules/classify';
 import {getVisionModelSizeBreakdown} from '../../utils/multimodalHelpers';
 import {MODEL_LIST_VERSION} from '../ModelStore';
+import * as parseModule from '../../services/deviceRules/parse';
 import {parseDeviceRules} from '../../services/deviceRules/parse';
 import {fetchRules} from '../../services/deviceRules/rules';
 import {readDeviceSignals} from '../../services/deviceRules/signals';
 import androidBundledRules from '../bundledDeviceRules/rules.android.json';
 import iosBundledRules from '../bundledDeviceRules/rules.ios.json';
+import hfGemma3VisionRepos from '../../../jest/fixtures/hfGemma3VisionRepos.json';
+import {hfAsModel} from '../../utils';
+import {processHFSearchResults} from '../../utils/hf';
+import type {HuggingFaceModel, ModelFile} from '../../utils/types';
 import {t} from '../../locales';
 import {
   getCpuCoreCount,
@@ -103,6 +126,9 @@ const presetModelFixture: Model = createModel({
   params: 2614341888,
 }) as Model;
 
+const registeredDownloadCallbacks = (downloadManager.setCallbacks as jest.Mock)
+  .mock.calls[0][0];
+
 describe('ModelStore', () => {
   let showErrorSpy: jest.SpyInstance;
 
@@ -126,6 +152,199 @@ describe('ModelStore', () => {
 
   afterEach(() => {
     showErrorSpy.mockRestore();
+  });
+
+  describe('Hexagon load device resolution', () => {
+    const originalInitContext = modelStore.initContext;
+    const discover = getBackendDevicesInfo as jest.Mock;
+    const nativeInit = initializeLlama as jest.Mock;
+    const discovered = (names: string[]) =>
+      names.map(deviceName => ({deviceName, backend: 'HTP', type: 'accel'}));
+    let originalOS: typeof Platform.OS;
+    let originalSettings: typeof modelStore.contextInitParams;
+
+    beforeEach(() => {
+      originalOS = Platform.OS;
+      originalSettings = {...modelStore.contextInitParams};
+      Platform.OS = 'android';
+      modelStore.initContext = originalInitContext;
+      runInAction(() => {
+        modelStore.isContextLoading = false;
+        modelStore.benchmarkActive = false;
+        modelStore.modelLoadError = null;
+        modelStore.contextInitParams = {
+          ...originalSettings,
+          devices: ['HTP*'],
+          n_gpu_layers: 37,
+          flash_attn_type: 'on',
+          cache_type_k: CacheType.Q8_0,
+          cache_type_v: CacheType.F16,
+          use_mmap: 'false',
+          speculativeEnabled: false,
+        };
+      });
+      discover.mockReset().mockResolvedValue(discovered(['HTP2', 'HTP0']));
+      nativeInit.mockReset().mockResolvedValue({
+        release: jest.fn().mockResolvedValue(undefined),
+        isMultimodalEnabled: jest.fn().mockResolvedValue(false),
+      });
+    });
+
+    afterEach(() => {
+      Platform.OS = originalOS;
+      runInAction(() => {
+        modelStore.contextInitParams = originalSettings;
+        modelStore.context = undefined;
+        modelStore.activeModelId = undefined;
+      });
+      discover.mockReset().mockResolvedValue([]);
+    });
+
+    it.each([
+      ['HTP*'],
+      ['HTP0'],
+      ['HTP99'],
+      ['HTP0', 'HTP1'],
+      ['CPU', 'HTP*', 'Adreno'],
+    ])(
+      'resolves saved selection %j without rewriting preferences',
+      async (...devices) => {
+        modelStore.setDevices(devices);
+        const saved = JSON.parse(JSON.stringify(modelStore.contextInitParams));
+        await modelStore.initContext(basicModel);
+        expect(nativeInit).toHaveBeenCalledTimes(1);
+        expect(nativeInit.mock.calls[0][0]).toMatchObject({
+          devices: ['HTP2'],
+          n_gpu_layers: 37,
+          flash_attn_type: 'on',
+          cache_type_k: CacheType.Q8_0,
+          cache_type_v: CacheType.F16,
+        });
+        expect(modelStore.contextInitParams).toEqual(saved);
+      },
+    );
+
+    it('selects only the first of six discovered sessions', async () => {
+      discover.mockResolvedValue(
+        discovered(['HTP0', 'HTP1', 'HTP2', 'HTP3', 'HTP4', 'HTP5']),
+      );
+      await modelStore.initContext(basicModel);
+      expect(nativeInit.mock.calls[0][0].devices).toEqual(['HTP0']);
+    });
+
+    it('preserves an explicit zero GPU-layer setting', async () => {
+      modelStore.setNGPULayers(0);
+      await modelStore.initContext(basicModel);
+      expect(nativeInit.mock.calls[0][0]).toMatchObject({
+        devices: ['HTP2'],
+        n_gpu_layers: 0,
+      });
+    });
+
+    it.each(['empty', 'missing', 'rejected'])(
+      'falls back on %s discovery and recovers on a later load',
+      async failure => {
+        const warning = jest
+          .spyOn(console, 'warn')
+          .mockImplementation(() => {});
+        if (failure === 'rejected') {
+          discover.mockRejectedValueOnce(new Error('Discovery failed'));
+        } else {
+          discover.mockResolvedValueOnce(failure === 'empty' ? [] : undefined);
+        }
+        const saved = JSON.parse(JSON.stringify(modelStore.contextInitParams));
+        await modelStore.initContext(basicModel);
+        expect(nativeInit.mock.calls[0][0]).toMatchObject({
+          devices: ['CPU'],
+          n_gpu_layers: 0,
+          flash_attn_type: 'on',
+          cache_type_k: CacheType.Q8_0,
+        });
+        expect(modelStore.contextInitParams).toEqual(saved);
+        await modelStore.releaseContext();
+        await modelStore.initContext(basicModel);
+        expect(nativeInit.mock.calls[1][0]).toMatchObject({
+          devices: ['HTP2'],
+          n_gpu_layers: 37,
+        });
+        expect(modelStore.contextInitParams).toEqual(saved);
+        warning.mockRestore();
+      },
+    );
+
+    it.each([{devices: undefined}, {devices: []}, {devices: ['CPU']}])(
+      'loads Android CPU selection $devices without accelerator offloading',
+      async ({devices}) => {
+        modelStore.setDevices(devices);
+        const saved = {...modelStore.contextInitParams};
+        await modelStore.initContext(basicModel);
+        expect(nativeInit).toHaveBeenCalledTimes(1);
+        expect(nativeInit.mock.calls[0][0]).toMatchObject({
+          devices: ['CPU'],
+          n_gpu_layers: 0,
+        });
+        expect(modelStore.contextInitParams).toEqual(saved);
+        expect(discover).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      {os: 'android', devices: ['Adreno']},
+      {os: 'ios', devices: undefined},
+      {os: 'ios', devices: ['Metal']},
+      {os: 'ios', devices: ['CPU']},
+      {os: 'ios', devices: ['HTP*']},
+    ])(
+      'preserves $os selection $devices without discovery',
+      async ({os, devices}) => {
+        Platform.OS = os as typeof Platform.OS;
+        modelStore.setDevices(devices);
+        await modelStore.initContext(basicModel);
+        expect(nativeInit.mock.calls[0][0].devices).toEqual(devices);
+        expect(nativeInit.mock.calls[0][0].n_gpu_layers).toBe(37);
+        expect(discover).not.toHaveBeenCalled();
+      },
+    );
+
+    it('uses one coherent selection and layer snapshot while discovery is pending', async () => {
+      let finishDiscovery!: (devices: ReturnType<typeof discovered>) => void;
+      let startedDiscovery!: () => void;
+      const started = new Promise<void>(resolve => {
+        startedDiscovery = resolve;
+      });
+      discover.mockImplementationOnce(() => {
+        startedDiscovery();
+        return new Promise(resolve => {
+          finishDiscovery = resolve;
+        });
+      });
+      const loading = modelStore.initContext(basicModel);
+      await started;
+      modelStore.setDevices(['CPU']);
+      modelStore.setNGPULayers(0);
+      finishDiscovery(discovered(['HTP3']));
+      await loading;
+      expect(nativeInit.mock.calls[0][0]).toMatchObject({
+        devices: ['HTP3'],
+        n_gpu_layers: 37,
+        flash_attn_type: 'on',
+        cache_type_k: CacheType.Q8_0,
+      });
+      expect(modelStore.contextInitParams).toMatchObject({
+        devices: ['CPU'],
+        n_gpu_layers: 0,
+      });
+    });
+
+    it('reports native initialization failure without retrying', async () => {
+      nativeInit.mockRejectedValueOnce(new Error('Native init failed'));
+      await expect(modelStore.initContext(basicModel)).rejects.toThrow(
+        'Native init failed',
+      );
+      expect(nativeInit).toHaveBeenCalledTimes(1);
+      expect(modelStore.modelLoadError).not.toBeNull();
+      expect(modelStore.contextInitParams.devices).toEqual(['HTP*']);
+    });
   });
 
   describe('mergeModelLists', () => {
@@ -202,6 +421,322 @@ describe('ModelStore', () => {
     });
   });
 
+  describe('healDraftVisionClassification', () => {
+    it('strips the vision classification a draft acquired before draft detection', async () => {
+      const staleDraft = {
+        ...presetModelFixture,
+        id: 'ggml-org/gemma-4-E2B-it-GGUF/mtp-gemma-4-E2B-it-Q8_0.gguf',
+        filename: 'mtp-gemma-4-E2B-it-Q8_0.gguf',
+        origin: ModelOrigin.HF,
+        isDownloaded: true,
+        hfModel: mockHFModel1,
+        ggufMetadata: {
+          architecture: 'gemma4-assistant',
+          nextn_predict_layers: 4,
+        } as any,
+        supportsMultimodal: true,
+        capabilities: ['vision' as const],
+        compatibleProjectionModels: [
+          'ggml-org/gemma-4-E2B-it-GGUF/mmproj.gguf',
+        ],
+        defaultProjectionModel: 'ggml-org/gemma-4-E2B-it-GGUF/mmproj.gguf',
+        visionEnabled: true,
+      };
+      const visionModel = {
+        ...presetModelFixture,
+        id: 'hf/repo/vision.gguf',
+        filename: 'vision.gguf',
+        origin: ModelOrigin.HF,
+        isDownloaded: true,
+        hfModel: mockHFModel1,
+        supportsMultimodal: true,
+        capabilities: ['vision' as const],
+      };
+      const mmprojId = 'ggml-org/gemma-4-E2B-it-GGUF/mmproj.gguf';
+      const mmproj = {
+        ...presetModelFixture,
+        id: mmprojId,
+        filename: 'mmproj.gguf',
+        origin: ModelOrigin.HF,
+        modelType: ModelType.PROJECTION,
+        isDownloaded: true,
+        hfModel: mockHFModel1,
+      };
+      modelStore.models = [staleDraft, visionModel, mmproj];
+      const existsMock = RNFS.exists as jest.Mock;
+      const statefulExists = existsMock.getMockImplementation();
+      existsMock.mockResolvedValue(false);
+
+      modelStore.healDraftVisionClassification();
+      // The heal records the orphaned mmproj in the persisted queue; the
+      // per-launch drain performs the deletion.
+      expect(modelStore.pendingProjectionCleanupIds).toEqual([mmprojId]);
+      await modelStore.drainPendingProjectionCleanup();
+      existsMock.mockImplementation(statefulExists);
+
+      const healed = modelStore.models.find(m => m.id === staleDraft.id);
+      expect(healed?.supportsMultimodal).toBe(false);
+      expect(healed?.capabilities).toEqual([]);
+      expect(healed?.defaultProjectionModel).toBeUndefined();
+      const untouched = modelStore.models.find(m => m.id === visionModel.id);
+      expect(untouched?.supportsMultimodal).toBe(true);
+      expect(untouched?.capabilities).toEqual(['vision']);
+      // The pairing auto-downloaded the mmproj; once the heal removes the
+      // pairing the projection model has no UI left, so it must be orphan-
+      // cleaned rather than stranded.
+      const cleaned = modelStore.models.find(m => m.id === mmprojId);
+      expect(cleaned?.isDownloaded).toBe(false);
+      expect(modelStore.pendingProjectionCleanupIds).toEqual([]);
+    });
+
+    it('keeps a queued id while its download is in flight, drops a shared one', async () => {
+      const inFlightId = 'a/b/mmproj-downloading.gguf';
+      const sharedId = 'a/b/mmproj-shared.gguf';
+      modelStore.models = [
+        {
+          ...presetModelFixture,
+          id: inFlightId,
+          filename: 'mmproj-downloading.gguf',
+          modelType: ModelType.PROJECTION,
+          isDownloaded: false,
+        },
+        {
+          ...presetModelFixture,
+          id: sharedId,
+          filename: 'mmproj-shared.gguf',
+          modelType: ModelType.PROJECTION,
+          isDownloaded: true,
+        },
+        {
+          ...presetModelFixture,
+          id: 'hf/repo/still-vision.gguf',
+          filename: 'still-vision.gguf',
+          isDownloaded: true,
+          supportsMultimodal: true,
+          defaultProjectionModel: sharedId,
+        },
+      ];
+      runInAction(() => {
+        modelStore.pendingProjectionCleanupIds = [inFlightId, sharedId];
+      });
+      (downloadManager.isDownloading as jest.Mock).mockImplementation(
+        (id: string) => id === inFlightId,
+      );
+
+      await modelStore.drainPendingProjectionCleanup();
+
+      // In-flight: wait for the download; a later launch collects the file.
+      // Shared: another vision model still uses it — never delete, stop
+      // tracking.
+      expect(modelStore.pendingProjectionCleanupIds).toEqual([inFlightId]);
+      expect(modelStore.models.find(m => m.id === sharedId)?.isDownloaded).toBe(
+        true,
+      );
+      (downloadManager.isDownloading as jest.Mock).mockReturnValue(false);
+    });
+
+    it('defers a downloaded record until its header has been read', async () => {
+      // Only the filename says draft; the header could veto but has not been
+      // fetched yet. Stripping now would repeat the R1 damage class inside
+      // the metadata-missing window — wait for the backfill instead.
+      const pendingMetadata = {
+        ...presetModelFixture,
+        id: 'x/y/mtp-something.gguf',
+        filename: 'mtp-something.gguf',
+        origin: ModelOrigin.HF,
+        isDownloaded: true,
+        hfModel: mockHFModel1,
+        ggufMetadata: undefined,
+        supportsMultimodal: true,
+        capabilities: ['vision' as const],
+        visionEnabled: true,
+      };
+      modelStore.models = [pendingMetadata];
+
+      await modelStore.healDraftVisionClassification();
+
+      expect(modelStore.models[0].supportsMultimodal).toBe(true);
+      expect(modelStore.models[0].capabilities).toEqual(['vision']);
+    });
+
+    it('does not strip a chat model whose filename merely contains assistant', async () => {
+      const openAssistant = {
+        ...presetModelFixture,
+        id: 'hf/repo/openassistant-llama2-13b-orca-8k-3319.Q4_K_M.gguf',
+        filename: 'openassistant-llama2-13b-orca-8k-3319.Q4_K_M.gguf',
+        origin: ModelOrigin.HF,
+        isDownloaded: true,
+        hfModel: mockHFModel1,
+        supportsMultimodal: true,
+        capabilities: ['vision' as const],
+        ggufMetadata: {architecture: 'llama'} as any,
+      };
+      modelStore.models = [openAssistant];
+
+      await modelStore.healDraftVisionClassification();
+
+      expect(modelStore.models[0].supportsMultimodal).toBe(true);
+      expect(modelStore.models[0].capabilities).toEqual(['vision']);
+    });
+  });
+
+  describe('healShadowedVisionClassification', () => {
+    const projectorId = 'ggml-org/gemma-3-4b-it-GGUF/mmproj-model-f16.gguf';
+    const projector = (): Model => ({
+      ...presetModelFixture,
+      id: projectorId,
+      filename: 'mmproj-model-f16.gguf',
+      origin: ModelOrigin.HF,
+      modelType: ModelType.PROJECTION,
+      isDownloaded: false,
+    });
+    const bugShape = (overrides: Partial<Model> = {}): Model => ({
+      ...presetModelFixture,
+      id: 'ggml-org/gemma-3-4b-it-GGUF/gemma-3-4b-it-Q4_K_M.gguf',
+      filename: 'gemma-3-4b-it-Q4_K_M.gguf',
+      origin: ModelOrigin.HF,
+      isRulePreset: true,
+      isDownloaded: true,
+      hfModel: mockHFModel1,
+      ggufMetadata: {architecture: 'gemma3'} as GGUFMetadata,
+      capabilities: ['questionAnswering'],
+      completionSettings: {
+        ...presetModelFixture.completionSettings,
+        temperature: 0.42,
+      },
+      supportsMultimodal: false,
+      modelType: undefined,
+      visionEnabled: undefined,
+      compatibleProjectionModels: [projectorId],
+      defaultProjectionModel: projectorId,
+      ...overrides,
+    });
+    const snapshot = (value: unknown) => JSON.parse(JSON.stringify(value));
+
+    it('marks a bug-shaped record vision and keeps everything else', () => {
+      const record = bugShape();
+      modelStore.models = [record, projector()];
+      const before = snapshot(modelStore.models[0]);
+
+      modelStore.healShadowedVisionClassification();
+
+      const healed = modelStore.models[0];
+      expect(snapshot(healed)).toEqual({
+        ...before,
+        supportsMultimodal: true,
+        modelType: ModelType.VISION,
+        capabilities: ['questionAnswering', 'vision'],
+        visionEnabled: true,
+      });
+      expect(downloadManager.startDownload).not.toHaveBeenCalled();
+    });
+
+    it('keeps a persisted Vision-off choice', () => {
+      modelStore.models = [bugShape({visionEnabled: false}), projector()];
+
+      modelStore.healShadowedVisionClassification();
+
+      expect(modelStore.models[0]).toMatchObject({
+        supportsMultimodal: true,
+        visionEnabled: false,
+      });
+    });
+
+    it('is idempotent across launches', () => {
+      modelStore.models = [bugShape(), projector()];
+
+      modelStore.healShadowedVisionClassification();
+      const once = snapshot(modelStore.models);
+      modelStore.healShadowedVisionClassification();
+
+      expect(snapshot(modelStore.models)).toEqual(once);
+    });
+
+    it.each([
+      [
+        'a draft-only record by its header',
+        {ggufMetadata: {architecture: 'gemma4-assistant'} as GGUFMetadata},
+      ],
+      [
+        'a draft-only record by its filename',
+        {filename: 'mtp-gemma-3-4b-it-Q8_0.gguf', ggufMetadata: undefined},
+      ],
+      ['a DRAFT stub', {modelType: ModelType.DRAFT}],
+      [
+        'an untouched preset',
+        {
+          compatibleProjectionModels: undefined,
+          defaultProjectionModel: undefined,
+        },
+      ],
+      [
+        'an already-vision record',
+        {
+          supportsMultimodal: true,
+          modelType: ModelType.VISION,
+          visionEnabled: false,
+        },
+      ],
+      [
+        'a record whose default projector record is missing',
+        {defaultProjectionModel: 'ggml-org/gemma-3-4b-it-GGUF/gone.gguf'},
+      ],
+    ])('leaves %s alone', (_label, overrides) => {
+      modelStore.models = [
+        bugShape({isDownloaded: false, ...overrides}),
+        projector(),
+      ];
+      const before = snapshot(modelStore.models);
+
+      modelStore.healShadowedVisionClassification();
+
+      expect(snapshot(modelStore.models)).toEqual(before);
+    });
+
+    it('leaves a projection record alone', () => {
+      modelStore.models = [projector()];
+      const before = snapshot(modelStore.models);
+
+      modelStore.healShadowedVisionClassification();
+
+      expect(snapshot(modelStore.models)).toEqual(before);
+    });
+
+    it('waits for the header of a downloaded record, then repairs it', () => {
+      modelStore.models = [bugShape({ggufMetadata: undefined}), projector()];
+
+      modelStore.healShadowedVisionClassification();
+      expect(modelStore.models[0].supportsMultimodal).toBe(false);
+
+      runInAction(() => {
+        modelStore.models[0].ggufMetadata = {
+          architecture: 'gemma3',
+        } as GGUFMetadata;
+      });
+      modelStore.healShadowedVisionClassification();
+      expect(modelStore.models[0].supportsMultimodal).toBe(true);
+    });
+
+    it('repairs at launch before the download sync', async () => {
+      runInAction(() => {
+        modelStore.models = [bugShape(), projector()];
+        modelStore.version = MODEL_LIST_VERSION;
+        modelStore.availableMemoryCeiling = 1;
+      });
+      let visionAtSync: boolean | undefined;
+      (downloadManager.syncWithActiveDownloads as jest.Mock).mockImplementation(
+        async (models: Model[]) => {
+          visionAtSync = models[0].supportsMultimodal;
+        },
+      );
+
+      await modelStore.initializeStore();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(visionAtSync).toBe(true);
+    });
+  });
+
   describe('resolvePresetModels', () => {
     let savedOS: typeof Platform.OS;
     beforeAll(() => {
@@ -219,7 +754,7 @@ describe('ModelStore', () => {
     };
 
     const makeRules = (models: any[]) => ({
-      schemaVersion: '1.2.0-draft',
+      schemaVersion: '2.0.0',
       platform: 'android',
       rulesVersion: '2026-06-10.1',
       classifier: midOnlyClassifier,
@@ -416,7 +951,7 @@ describe('ModelStore', () => {
 
     it('android: parses + classifies non-low and resolves origin:HF presets', () => {
       Platform.OS = 'android';
-      const rules = parseDeviceRules(androidBundledRules);
+      const rules = parseDeviceRules(androidBundledRules, '1.17.3');
       const signals = {ramBytes: 16 * 1e9, socModel: 'SM8850'};
       const tier = classify(signals as any, rules.classifier, 'android');
       expect(tier).not.toBe('low');
@@ -432,7 +967,7 @@ describe('ModelStore', () => {
 
     it('ios: parses + classifies non-low and resolves origin:HF presets', () => {
       Platform.OS = 'ios';
-      const rules = parseDeviceRules(iosBundledRules);
+      const rules = parseDeviceRules(iosBundledRules, '1.17.3');
       const signals = {ramBytes: 8 * 1e9, machine: 'iPhone16,1'};
       const tier = classify(signals as any, rules.classifier, 'ios');
       expect(tier).not.toBe('low');
@@ -456,7 +991,7 @@ describe('ModelStore', () => {
         ['ios', iosBundledRules],
       ] as const) {
         Platform.OS = os;
-        const rules = parseDeviceRules(raw);
+        const rules = parseDeviceRules(raw, '1.17.3');
         const signals = {
           ramBytes: 16 * 1e9,
           socModel: 'SM8850',
@@ -476,7 +1011,7 @@ describe('ModelStore', () => {
 
     it('android: resolved LLMs defer oid/lfs to download (none baked)', () => {
       Platform.OS = 'android';
-      const rules = parseDeviceRules(androidBundledRules);
+      const rules = parseDeviceRules(androidBundledRules, '1.17.3');
       const signals = {ramBytes: 16 * 1e9, socModel: 'SM8850'};
       const presets = modelStore.resolvePresetModels(rules, signals as any);
       const llms = presets.filter(m => !isProjection(m.id));
@@ -489,14 +1024,14 @@ describe('ModelStore', () => {
     });
 
     it('all four tiers parse to a non-empty, origin:HF model set on android', () => {
-      const rules = parseDeviceRules(androidBundledRules);
+      const rules = parseDeviceRules(androidBundledRules, '1.17.3');
       for (const tier of ['low', 'mid', 'high', 'flagship'] as const) {
         expect(rules.tiers[tier].models.length).toBeGreaterThan(0);
       }
     });
 
     it('all four tiers parse to a non-empty, origin:HF model set on ios', () => {
-      const rules = parseDeviceRules(iosBundledRules);
+      const rules = parseDeviceRules(iosBundledRules, '1.17.3');
       for (const tier of ['low', 'mid', 'high', 'flagship'] as const) {
         expect(rules.tiers[tier].models.length).toBeGreaterThan(0);
       }
@@ -846,6 +1381,64 @@ describe('ModelStore', () => {
       expect(modelStore.rulesVersion).toBeTruthy();
     });
 
+    describe('with the running app version from DeviceInfo', () => {
+      const getVersion = DeviceInfo.getVersion as jest.Mock;
+      let defaultGetVersion: (() => string) | undefined;
+      beforeEach(() => {
+        defaultGetVersion = getVersion.getMockImplementation();
+        getVersion.mockReturnValue('4.5.6');
+      });
+      afterEach(() => {
+        getVersion.mockImplementation(defaultGetVersion);
+      });
+
+      it('parses the bundled floor with it', async () => {
+        const parseSpy = jest.spyOn(parseModule, 'parseDeviceRules');
+        try {
+          await (modelStore as any).resolvePresets();
+          expect(parseSpy).toHaveBeenCalledTimes(1);
+          expect(parseSpy).toHaveBeenCalledWith(expect.anything(), '4.5.6');
+        } finally {
+          parseSpy.mockRestore();
+        }
+      });
+
+      it('fetches the online rules with it', async () => {
+        await (modelStore as any).upgradeToFetchedRules();
+        expect(fetchRules).toHaveBeenCalledWith('4.5.6');
+      });
+
+      it('drops only the gated floor presets when the app version is unknown', async () => {
+        const gatedIds = new Set(
+          Object.values(
+            androidBundledRules.tiers as Record<
+              string,
+              {
+                candidates: Array<{
+                  hf_repo: string;
+                  hf_filename: string;
+                  min_app_version?: string;
+                }>;
+              }
+            >,
+          ).flatMap(tier =>
+            tier.candidates
+              .filter(c => c.min_app_version !== undefined)
+              .map(c => `${c.hf_repo}/${c.hf_filename}`),
+          ),
+        );
+        const known: Model[] = await (modelStore as any).resolvePresets();
+        getVersion.mockReturnValue('unknown');
+        const unknown: Model[] = await (modelStore as any).resolvePresets();
+        const knownIds = known.map(m => m.id);
+        expect(knownIds.some(id => gatedIds.has(id))).toBe(true);
+        expect(unknown.length).toBeGreaterThan(0);
+        expect(unknown.map(m => m.id)).toEqual(
+          knownIds.filter(id => !gatedIds.has(id)),
+        );
+      });
+    });
+
     it('returns [] and completes when bundled parse throws (startup not bricked)', async () => {
       (readDeviceSignals as jest.Mock).mockRejectedValue(
         new Error('signals exploded'),
@@ -854,28 +1447,31 @@ describe('ModelStore', () => {
     });
 
     it('upgrades to fetched rules and reconciles when newer rules arrive', async () => {
-      const fetchedRules = parseDeviceRules({
-        schema_version: '1.2.0-draft',
-        platform: 'android',
-        rules_version: '2999-01-01.1',
-        classifier: {
-          ram_bands: [{id: 'all', max_bytes: null}],
-          tier_matrix: [{ram_band: 'all', soc_class: 'mid', tier: 'mid'}],
-          soc_model_to_class: {SM8850: 'mid'},
-        },
-        tiers: {
-          mid: {
-            candidates: [
-              {
-                model: 'fetched',
-                hf_repo: 'ggml-org/fetched-repo',
-                hf_filename: 'fetched.gguf',
-                size_bytes: 500,
-              },
-            ],
+      const fetchedRules = parseDeviceRules(
+        {
+          schema_version: '2.0.0',
+          platform: 'android',
+          rules_version: '2999-01-01.1',
+          classifier: {
+            ram_bands: [{id: 'all', max_bytes: null}],
+            tier_matrix: [{ram_band: 'all', soc_class: 'mid', tier: 'mid'}],
+            soc_model_to_class: {SM8850: 'mid'},
+          },
+          tiers: {
+            mid: {
+              candidates: [
+                {
+                  model: 'fetched',
+                  hf_repo: 'ggml-org/fetched-repo',
+                  hf_filename: 'fetched.gguf',
+                  size_bytes: 500,
+                },
+              ],
+            },
           },
         },
-      });
+        '1.17.3',
+      );
       (fetchRules as jest.Mock).mockResolvedValue(fetchedRules);
 
       await (modelStore as any).upgradeToFetchedRules();
@@ -1493,6 +2089,68 @@ describe('ModelStore', () => {
     });
   });
 
+  describe('deleteModel clears stale global draft selection', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      (RNFS as any).__resetMockState?.();
+      modelStore.models = [];
+      modelStore.context = undefined;
+      modelStore.activeModelId = undefined;
+      modelStore.setSelectedDraftModel(undefined);
+    });
+
+    it('clears selectedDraftModelId when the deleted model was the global draft pick', async () => {
+      const draftModel = {
+        ...presetModelFixture,
+        id: 'test-draft-model',
+        modelType: ModelType.DRAFT,
+        isDownloaded: true,
+        fullPath: '/path/to/test-draft-model.gguf',
+        isLocal: true,
+        origin: ModelOrigin.LOCAL,
+      };
+      modelStore.models = [draftModel];
+      modelStore.setSelectedDraftModel(draftModel.id);
+      expect(modelStore.contextInitParams.selectedDraftModelId).toBe(
+        draftModel.id,
+      );
+
+      await modelStore.deleteModel(draftModel);
+
+      // No dangling id should persist.
+      expect(modelStore.contextInitParams.selectedDraftModelId).toBeUndefined();
+    });
+
+    it('leaves selectedDraftModelId alone when a different model is deleted', async () => {
+      const draftModel = {
+        ...presetModelFixture,
+        id: 'test-draft-model',
+        modelType: ModelType.DRAFT,
+        isDownloaded: true,
+        fullPath: '/path/to/test-draft-model.gguf',
+        isLocal: true,
+        origin: ModelOrigin.LOCAL,
+      };
+      const otherModel = {
+        ...presetModelFixture,
+        id: 'test-other-model',
+        isDownloaded: true,
+        fullPath: '/path/to/test-other-model.gguf',
+        isLocal: true,
+        origin: ModelOrigin.LOCAL,
+      };
+      modelStore.models = [draftModel, otherModel];
+      modelStore.setSelectedDraftModel(draftModel.id);
+
+      await modelStore.deleteModel(otherModel);
+
+      // The global draft pick is unrelated to the deleted model — keep it.
+      expect(modelStore.contextInitParams.selectedDraftModelId).toBe(
+        draftModel.id,
+      );
+    });
+  });
+
   describe('context management', () => {
     beforeEach(() => {
       jest.clearAllMocks();
@@ -1558,6 +2216,482 @@ describe('ModelStore', () => {
       await modelStore.handleAppStateChange('active');
 
       expect(mockInitContext).toHaveBeenCalledWith(model);
+    });
+  });
+
+  describe('auto-release across a quick app switch', () => {
+    const originalInitContext = modelStore.initContext;
+    const initLlama = initializeLlama as jest.Mock;
+    const localModel = (name: string) =>
+      ({
+        ...basicModel,
+        id: `author/repo-${name}/${name}.gguf`,
+        name,
+        isDownloaded: true,
+        isLocal: true,
+        origin: ModelOrigin.LOCAL,
+        fullPath: `/path/to/${name}.gguf`,
+      }) as Model;
+    const modelA = localModel('a');
+    const modelB = localModel('b');
+    const hasEnoughMemoryMock = hasEnoughMemory as jest.Mock;
+    const getAvailableMemory =
+      NativeHardwareInfo.getAvailableMemory as jest.Mock;
+
+    let events: string[];
+    let loaded: Array<{path: string; release: jest.Mock}>;
+    let releaseHeld: () => void;
+    let logSpy: jest.SpyInstance | undefined;
+    let alertSpy: jest.SpyInstance | undefined;
+    let initGate: Promise<void> | undefined;
+    let openInitGate: () => void;
+    let availableMemoryImpl: ReturnType<
+      typeof getAvailableMemory.getMockImplementation
+    >;
+    let hasEnoughMemoryImpl: ReturnType<
+      typeof hasEnoughMemoryMock.getMockImplementation
+    >;
+    let calibration: {
+      largestSuccessfulLoad: number | undefined;
+      availableMemoryCeiling: number | undefined;
+    };
+
+    const mutex = (): Promise<void> =>
+      (modelStore as any).contextOperationMutex;
+
+    const drainMutex = async () => {
+      for (let i = 0; i < 20; i++) {
+        const tail = mutex();
+        await tail;
+        if (tail === mutex()) {
+          return;
+        }
+      }
+      throw new Error('context mutex did not drain');
+    };
+
+    const settle = async (...handlers: Promise<unknown>[]) => {
+      await Promise.all(handlers);
+      await drainMutex();
+    };
+
+    const holdReleaseOfA = () => {
+      const held = new Promise<void>(resolve => {
+        releaseHeld = resolve;
+      });
+      runInAction(() => {
+        modelStore.context = {
+          release: jest.fn(() =>
+            held.then(() => {
+              events.push('release:a');
+            }),
+          ),
+          isMultimodalEnabled: jest.fn().mockResolvedValue(false),
+        } as any;
+        modelStore.activeModelId = modelA.id;
+      });
+    };
+
+    const flushTicks = async () => {
+      for (let i = 0; i < 50; i++) {
+        await new Promise(setImmediate);
+      }
+    };
+
+    const waitUntil = async (cond: () => boolean) => {
+      for (let i = 0; i < 100 && !cond(); i++) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      expect(cond()).toBe(true);
+    };
+
+    const holdNextInit = () => {
+      initGate = new Promise<void>(resolve => {
+        openInitGate = resolve;
+      });
+    };
+
+    const startQuickSwitch = async (leave: AppStateStatus[]) => {
+      const handlers = [...leave, 'active' as const].map(state =>
+        modelStore.handleAppStateChange(state),
+      );
+      await flushTicks();
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(hasEnoughMemoryMock).not.toHaveBeenCalled();
+      expect(initLlama).not.toHaveBeenCalled();
+      return handlers;
+    };
+
+    beforeEach(() => {
+      modelStore.initContext = originalInitContext;
+      events = [];
+      loaded = [];
+      releaseHeld = () => {};
+      initGate = undefined;
+      openInitGate = () => {};
+      availableMemoryImpl = getAvailableMemory.getMockImplementation();
+      hasEnoughMemoryImpl = hasEnoughMemoryMock.getMockImplementation();
+      calibration = {
+        largestSuccessfulLoad: modelStore.largestSuccessfulLoad,
+        availableMemoryCeiling: modelStore.availableMemoryCeiling,
+      };
+      hasEnoughMemoryMock.mockClear();
+      runInAction(() => {
+        modelStore.useAutoRelease = true;
+        modelStore.benchmarkActive = false;
+        modelStore.appState = 'active';
+        modelStore.wasAutoReleased = false;
+        modelStore.lastAutoReleasedModelId = undefined;
+        modelStore.modelLoadError = null;
+        modelStore.isContextLoading = false;
+        modelStore.models = [modelA, modelB];
+        (modelStore as any).autoReleaseDisabledReasons.clear();
+      });
+      expect(modelStore.isAutoReleaseEnabled).toBe(true);
+      initLlama.mockReset();
+      initLlama.mockImplementation(async ({model}: {model: string}) => {
+        await initGate;
+        events.push(`init:${model}`);
+        const ctx = {
+          release: jest.fn().mockResolvedValue(undefined),
+          isMultimodalEnabled: jest.fn().mockResolvedValue(false),
+        };
+        loaded.push({path: model, release: ctx.release});
+        return ctx;
+      });
+    });
+
+    afterEach(async () => {
+      modelStore.initContext = originalInitContext;
+      logSpy?.mockRestore();
+      logSpy = undefined;
+      alertSpy?.mockRestore();
+      alertSpy = undefined;
+      openInitGate();
+      releaseHeld();
+      await drainMutex();
+      hasEnoughMemoryMock.mockReset();
+      hasEnoughMemoryMock.mockImplementation(hasEnoughMemoryImpl);
+      getAvailableMemory.mockReset();
+      getAvailableMemory.mockImplementation(availableMemoryImpl);
+      (modelStore as any).contextOperationMutex = Promise.resolve();
+      (modelStore as any).pendingModelId = null;
+      runInAction(() => {
+        modelStore.largestSuccessfulLoad = calibration.largestSuccessfulLoad;
+        modelStore.availableMemoryCeiling = calibration.availableMemoryCeiling;
+        modelStore.isContextLoading = false;
+        modelStore.context = undefined;
+        modelStore.engine = undefined;
+        modelStore.activeModelId = undefined;
+        modelStore.activeRemoteBinding = undefined;
+        serverStore.servers = [];
+        modelStore.wasAutoReleased = false;
+        modelStore.lastAutoReleasedModelId = undefined;
+        modelStore.appState = 'active';
+      });
+      initLlama.mockReset();
+    });
+
+    it.each([
+      ['android', ['background']],
+      ['ios', ['inactive', 'background']],
+    ] as Array<[string, AppStateStatus[]]>)(
+      '%s sequence reloads the model only after the in-flight release finishes',
+      async (_platform, leave) => {
+        holdReleaseOfA();
+
+        const handlers = await startQuickSwitch(leave);
+
+        releaseHeld();
+        await settle(...handlers);
+
+        expect(events).toEqual(['release:a', `init:${modelA.fullPath}`]);
+        expect(initLlama).toHaveBeenCalledTimes(1);
+        expect(modelStore.appState).toBe('active');
+        expect(modelStore.wasAutoReleased).toBe(false);
+        expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+      },
+    );
+
+    it('slow return reloads the model after the finished release', async () => {
+      holdReleaseOfA();
+      releaseHeld();
+
+      await modelStore.handleAppStateChange('background');
+      await settle(modelStore.handleAppStateChange('active'));
+
+      expect(events).toEqual(['release:a', `init:${modelA.fullPath}`]);
+      expect(initLlama).toHaveBeenCalledTimes(1);
+      expect(modelStore.appState).toBe('active');
+    });
+
+    it('late release keeps the last app state received', async () => {
+      holdReleaseOfA();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      releaseHeld();
+      await settle(...handlers);
+
+      expect(modelStore.appState).toBe('active');
+    });
+
+    it('model loaded by hand after a quick switch is released and reloaded on the next trip', async () => {
+      holdReleaseOfA();
+      const trip = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      releaseHeld();
+      await settle(...trip);
+
+      const initCallsBeforeSelect = initLlama.mock.calls.length;
+      await modelStore.selectModel(modelB);
+
+      logSpy = jest.spyOn(console, 'log');
+      await modelStore.handleAppStateChange('background');
+
+      expect(logSpy).toHaveBeenCalledWith(
+        'App state change: active → background',
+      );
+      expect(
+        loaded.find(ctx => ctx.path === modelB.fullPath)?.release,
+      ).toHaveBeenCalled();
+      expect(modelStore.wasAutoReleased).toBe(true);
+      expect(modelStore.lastAutoReleasedModelId).toBe(modelB.id);
+
+      await settle(modelStore.handleAppStateChange('active'));
+
+      const pathsSinceSelect = initLlama.mock.calls
+        .slice(initCallsBeforeSelect)
+        .map(([params]) => params.model);
+      expect(pathsSinceSelect).toEqual([modelB.fullPath, modelB.fullPath]);
+      expect(modelStore.appState).toBe('active');
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+    });
+
+    it('leaving again while the reload is loading keeps the reload owed', async () => {
+      holdReleaseOfA();
+      holdNextInit();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      releaseHeld();
+      await waitUntil(() => initLlama.mock.calls.length === 1);
+      handlers.push(modelStore.handleAppStateChange('background'));
+      openInitGate();
+      await settle(...handlers);
+
+      expect(initLlama).toHaveBeenCalledTimes(1);
+      expect(loaded[0].release).toHaveBeenCalled();
+      expect(modelStore.wasAutoReleased).toBe(true);
+      expect(modelStore.lastAutoReleasedModelId).toBe(modelA.id);
+      expect(modelStore.appState).toBe('background');
+    });
+
+    it('failed reload is not retried on a return with nothing new released', async () => {
+      runInAction(() => {
+        modelStore.wasAutoReleased = true;
+        modelStore.lastAutoReleasedModelId = modelA.id;
+        modelStore.appState = 'background';
+      });
+      const initContext = jest.fn().mockRejectedValue(new Error('load failed'));
+      modelStore.initContext = initContext;
+
+      await expect(modelStore.handleAppStateChange('active')).rejects.toThrow(
+        'load failed',
+      );
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+
+      await modelStore.handleAppStateChange('background');
+      await modelStore.handleAppStateChange('active');
+
+      expect(initContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('quick return checks memory after the release raises the ceiling', async () => {
+      (loadLlamaModelInfo as jest.Mock).mockReset();
+      const req = getModelMemoryRequirement(
+        modelA,
+        undefined,
+        modelStore.memoryEstimateSettings,
+      );
+      runInAction(() => {
+        modelStore.largestSuccessfulLoad = req / 2;
+        modelStore.availableMemoryCeiling = req / 2;
+      });
+      getAvailableMemory.mockResolvedValueOnce(req * 2);
+      hasEnoughMemoryMock.mockImplementation(
+        jest.requireActual('../../hooks/useMemoryCheck').hasEnoughMemory,
+      );
+      alertSpy = jest
+        .spyOn(Alert, 'alert')
+        .mockImplementation((_title, _message, buttons) =>
+          buttons?.[1]?.onPress?.(),
+        );
+      holdReleaseOfA();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      await flushTicks();
+      releaseHeld();
+      await settle(...handlers);
+
+      expect(alertSpy).not.toHaveBeenCalled();
+      expect(hasEnoughMemoryMock).toHaveBeenCalledTimes(1);
+      expect(events).toEqual(['release:a', `init:${modelA.fullPath}`]);
+      expect(initLlama).toHaveBeenCalledTimes(1);
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+    });
+
+    it('leaving again during the release leaves the reload to the next return', async () => {
+      holdReleaseOfA();
+
+      const handlers = (['background', 'active', 'background'] as const).map(
+        state => modelStore.handleAppStateChange(state),
+      );
+      releaseHeld();
+      await settle(...handlers);
+
+      expect(initLlama).not.toHaveBeenCalled();
+      expect(modelStore.wasAutoReleased).toBe(true);
+      expect(modelStore.lastAutoReleasedModelId).toBe(modelA.id);
+      expect(modelStore.appState).toBe('background');
+
+      await settle(modelStore.handleAppStateChange('active'));
+
+      expect(initLlama.mock.calls.map(([params]) => params.model)).toEqual([
+        modelA.fullPath,
+      ]);
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+      expect(modelStore.appState).toBe('active');
+    });
+
+    it('model picked during the release wins over the reload', async () => {
+      holdReleaseOfA();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      const pick = modelStore.selectModel(modelB);
+      releaseHeld();
+      await settle(...handlers, pick);
+
+      expect(initLlama.mock.calls.map(([params]) => params.model)).toEqual([
+        modelB.fullPath,
+      ]);
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+      expect(modelStore.activeModelId).toBe(modelB.id);
+    });
+
+    it('remote pick during the release wins over the reload', async () => {
+      const remote = {
+        id: 'srv-1/llama-7b',
+        name: 'llama-7b',
+        origin: ModelOrigin.REMOTE,
+        serverId: 'srv-1',
+        remoteModelId: 'llama-7b',
+      } as any;
+      runInAction(() => {
+        serverStore.servers = [
+          {id: 'srv-1', name: 'LM Studio', url: 'http://localhost:1234'},
+        ];
+      });
+      holdReleaseOfA();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      const pick = modelStore.selectModel(remote);
+      releaseHeld();
+      await settle(...handlers, pick);
+
+      expect(initLlama).not.toHaveBeenCalled();
+      expect(hasEnoughMemoryMock).not.toHaveBeenCalled();
+      expect(modelStore.activeModelId).toBe(remote.id);
+      expect(modelStore.activeRemoteBinding?.modelId).toBe(remote.id);
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+    });
+
+    it('eject during the release wins over the reload', async () => {
+      holdReleaseOfA();
+
+      const handlers = [
+        modelStore.handleAppStateChange('background'),
+        modelStore.handleAppStateChange('active'),
+      ];
+      const eject = modelStore.manualReleaseContext();
+      releaseHeld();
+      await settle(...handlers, eject);
+
+      expect(initLlama).not.toHaveBeenCalled();
+      expect(hasEnoughMemoryMock).not.toHaveBeenCalled();
+      expect(modelStore.context).toBeUndefined();
+      expect(modelStore.activeModelId).toBeUndefined();
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.lastAutoReleasedModelId).toBeUndefined();
+    });
+
+    it('eject while a manual load awaits its memory check cancels the load', async () => {
+      let answer: (enough: boolean) => void = () => {};
+      hasEnoughMemoryMock.mockImplementation(
+        () =>
+          new Promise<boolean>(resolve => {
+            answer = resolve;
+          }),
+      );
+      const load = modelStore.initContext(modelB);
+      await waitUntil(() => hasEnoughMemoryMock.mock.calls.length > 0);
+      const eject = modelStore.manualReleaseContext();
+      answer(true);
+      await settle(load, eject);
+
+      expect(initLlama).not.toHaveBeenCalled();
+      expect(modelStore.activeModelId).toBeUndefined();
+    });
+
+    it('remote pick while a manual load awaits its memory check cancels the load', async () => {
+      const remote = {
+        id: 'srv-1/llama-7b',
+        name: 'llama-7b',
+        origin: ModelOrigin.REMOTE,
+        serverId: 'srv-1',
+        remoteModelId: 'llama-7b',
+      } as any;
+      runInAction(() => {
+        serverStore.servers = [
+          {id: 'srv-1', name: 'LM Studio', url: 'http://localhost:1234'},
+        ];
+      });
+      let answer: (enough: boolean) => void = () => {};
+      hasEnoughMemoryMock.mockImplementation(
+        () =>
+          new Promise<boolean>(resolve => {
+            answer = resolve;
+          }),
+      );
+      const load = modelStore.initContext(modelB);
+      await waitUntil(() => hasEnoughMemoryMock.mock.calls.length > 0);
+      await modelStore.selectModel(remote);
+      answer(true);
+      await settle(load);
+
+      expect(initLlama).not.toHaveBeenCalled();
+      expect(modelStore.activeModelId).toBe(remote.id);
     });
   });
 
@@ -1671,28 +2805,25 @@ describe('ModelStore', () => {
       expect(model.progress).toBe(0);
     });
 
-    it('should update model state on download error', () => {
-      const model = presetModelFixture;
+    it('keeps the progress the native side kept when a download fails', () => {
+      const model = {...presetModelFixture, progress: 42, isDownloaded: false};
       modelStore.models = [model];
 
-      // Set up callbacks directly
-      const callbacks = {
-        onError: (modelId: string) => {
-          const _model = modelStore.models.find(m => m.id === modelId);
-          if (_model) {
-            runInAction(() => {
-              _model.progress = 0;
-              model.isDownloaded = false;
-            });
-          }
-        },
-      };
+      registeredDownloadCallbacks.onError(model.id, new Error('stalled'), 40);
 
-      // Trigger error callback
-      callbacks.onError(model.id);
+      expect(modelStore.models[0].progress).toBe(40);
+      expect(modelStore.models[0].isDownloaded).toBe(false);
+      expect(modelStore.downloadError?.metadata?.modelId).toBe(model.id);
+    });
 
-      expect(model.progress).toBe(0);
-      expect(model.isDownloaded).toBe(false);
+    it('resets progress when a failed download kept no bytes', () => {
+      const model = {...presetModelFixture, progress: 42, isDownloaded: false};
+      modelStore.models = [model];
+
+      registeredDownloadCallbacks.onError(model.id, new Error('Network'));
+
+      expect(modelStore.models[0].progress).toBe(0);
+      expect(modelStore.downloadError?.metadata?.modelId).toBe(model.id);
     });
 
     it('should not set downloadError when a download is cancelled', async () => {
@@ -1842,6 +2973,23 @@ describe('ModelStore', () => {
       expect(modelStore.context).toBeUndefined();
       expect(modelStore.activeModelId).toBeUndefined();
     });
+
+    it('releases the multimodal context first when one is active', async () => {
+      const releaseMultimodal = jest.fn();
+      modelStore.context = {
+        release: jest.fn(),
+        releaseMultimodal,
+      } as any;
+      modelStore.activeModelId = 'test-id';
+      runInAction(() => {
+        modelStore.isMultimodalActive = true;
+      });
+
+      await modelStore.manualReleaseContext();
+
+      expect(releaseMultimodal).toHaveBeenCalled();
+      expect(modelStore.isMultimodalActive).toBe(false);
+    });
   });
 
   // Add tests for HF model handling
@@ -1926,6 +3074,520 @@ describe('ModelStore', () => {
       consoleErrorSpy.mockRestore();
       alertSpy.mockRestore();
       modelStore.addHFModel = originalAddHFModel;
+    });
+  });
+
+  describe('HF search add of a file that is also a text-only rule preset', () => {
+    type Repo = keyof typeof hfGemma3VisionRepos;
+
+    // Verbatim HF captures (/api/models/<repo>, /tree/main) put through the
+    // normalization and file-detail merge the search screen applies.
+    const searchModel = (repo: Repo): HuggingFaceModel => {
+      const {model, tree} = hfGemma3VisionRepos[repo];
+      const [processed] = processHFSearchResults([
+        model as unknown as HuggingFaceModel,
+      ]);
+      return {
+        ...processed,
+        specs: {gguf: model.gguf},
+        siblings: processed.siblings.map(file => {
+          const details = tree.find(d => d.path === file.rfilename);
+          return details
+            ? {...file, size: details.size, oid: details.oid, lfs: details.lfs}
+            : file;
+        }),
+      } as unknown as HuggingFaceModel;
+    };
+
+    const fileOf = (hfModel: HuggingFaceModel, rfilename: string): ModelFile =>
+      hfModel.siblings.find(s => s.rfilename === rfilename)!;
+
+    const cases = [
+      {
+        platform: 'ios' as const,
+        rules: iosBundledRules,
+        signals: {ramBytes: 8 * 1024 ** 3, machine: 'iPhone16,1'},
+        repo: 'ggml-org/gemma-3-4b-it-GGUF' as Repo,
+        filename: 'gemma-3-4b-it-Q4_K_M.gguf',
+        projector: 'ggml-org/gemma-3-4b-it-GGUF/mmproj-model-f16.gguf',
+      },
+      {
+        platform: 'android' as const,
+        rules: androidBundledRules,
+        signals: {ramBytes: 16 * 1e9, socModel: 'SM8850'},
+        repo: 'unsloth/gemma-3-4b-it-GGUF' as Repo,
+        filename: 'gemma-3-4b-it-Q4_0.gguf',
+        projector: 'unsloth/gemma-3-4b-it-GGUF/mmproj-BF16.gguf',
+      },
+    ];
+
+    let savedOS: typeof Platform.OS;
+    let originalExists: any;
+
+    beforeEach(() => {
+      savedOS = Platform.OS;
+      originalExists = (RNFS.exists as jest.Mock).getMockImplementation();
+      (RNFS.exists as jest.Mock).mockResolvedValue(false);
+    });
+
+    afterEach(async () => {
+      // downloadHFModel leaves an unawaited checkSpaceAndDownload chain.
+      await new Promise(resolve => setTimeout(resolve, 50));
+      runInAction(() => {
+        modelStore.models = [];
+      });
+      Platform.OS = savedOS;
+      if (originalExists) {
+        (RNFS.exists as jest.Mock).mockImplementation(originalExists);
+      }
+    });
+
+    const seedPresets = (c: (typeof cases)[number]) => {
+      Platform.OS = c.platform;
+      const rules = parseDeviceRules(c.rules, '1.22.1');
+      expect(['high', 'flagship']).toContain(
+        classify(c.signals as any, rules.classifier, c.platform),
+      );
+      const presets = modelStore.resolvePresetModels(rules, c.signals as any);
+      runInAction(() => {
+        modelStore.models = presets;
+      });
+      const preset = modelStore.models.find(
+        m => m.id === `${c.repo}/${c.filename}`,
+      );
+      expect(preset).toMatchObject({isRulePreset: true});
+      expect(preset?.supportsMultimodal).toBeFalsy();
+      expect(preset?.compatibleProjectionModels).toBeUndefined();
+      return preset!;
+    };
+
+    const downloadedIds = () =>
+      (downloadManager.startDownload as jest.Mock).mock.calls.map(
+        ([m]) => m.id,
+      );
+
+    // A preset already downloaded from the recommended list, header read.
+    const markDownloaded = (preset: Model) => {
+      runInAction(() => {
+        preset.isDownloaded = true;
+        preset.ggufMetadata = {architecture: 'gemma3'} as GGUFMetadata;
+      });
+      (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
+        path.endsWith(`/${preset.filename}`),
+      );
+    };
+
+    describe.each(cases)('$platform: $repo/$filename', c => {
+      it('baseline: with no preset, a search download is vision and fetches the projector', async () => {
+        Platform.OS = c.platform;
+        const hfModel = searchModel(c.repo);
+        await modelStore.downloadHFModel(hfModel, fileOf(hfModel, c.filename), {
+          enableVision: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const record = modelStore.models.find(
+          m => m.id === `${c.repo}/${c.filename}`,
+        );
+        expect(record).toMatchObject({
+          supportsMultimodal: true,
+          modelType: ModelType.VISION,
+          defaultProjectionModel: c.projector,
+        });
+        expect(downloadedIds()).toEqual([
+          `${c.repo}/${c.filename}`,
+          c.projector,
+        ]);
+      });
+
+      it('a search download over the text-only preset is vision and fetches the projector', async () => {
+        const preset = seedPresets(c);
+        const hfModel = searchModel(c.repo);
+        const modelFile = fileOf(hfModel, c.filename);
+        const fresh = hfAsModel(hfModel, modelFile);
+
+        await modelStore.downloadHFModel(hfModel, modelFile, {
+          enableVision: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const record = modelStore.models.find(m => m.id === preset.id);
+        expect(record).toMatchObject({
+          supportsMultimodal: true,
+          modelType: ModelType.VISION,
+          capabilities: ['vision'],
+          compatibleProjectionModels: fresh.compatibleProjectionModels,
+          defaultProjectionModel: c.projector,
+        });
+        expect(fresh.defaultProjectionModel).toBe(c.projector);
+        expect(downloadedIds()).toEqual([preset.id, c.projector]);
+      });
+
+      it('a bookmark (addHFModel) over the text-only preset is vision', async () => {
+        const preset = seedPresets(c);
+        const hfModel = searchModel(c.repo);
+
+        await modelStore.addHFModel(hfModel, fileOf(hfModel, c.filename));
+
+        const record = modelStore.models.find(m => m.id === preset.id);
+        expect(record).toMatchObject({
+          supportsMultimodal: true,
+          modelType: ModelType.VISION,
+          defaultProjectionModel: c.projector,
+        });
+        expect(
+          modelStore.models.find(m => m.id === c.projector)?.modelType,
+        ).toBe(ModelType.PROJECTION);
+      });
+
+      it('tapping the preset in the recommended list stays text-only', async () => {
+        const preset = seedPresets(c);
+
+        await modelStore.checkSpaceAndDownload(preset.id);
+
+        expect(
+          modelStore.models.find(m => m.id === preset.id)?.supportsMultimodal,
+        ).toBeFalsy();
+        expect(downloadedIds()).toEqual([preset.id]);
+      });
+
+      it('a Vision-off search download over the loaded preset keeps Vision off without a reload', async () => {
+        const preset = seedPresets(c);
+        markDownloaded(preset);
+        runInAction(() => {
+          modelStore.activeModelId = preset.id;
+          modelStore.context = new LlamaContext(mockLlamaContextParams);
+        });
+        const originalInitContext = modelStore.initContext;
+        const initContextSpy = jest.fn().mockResolvedValue(undefined);
+        modelStore.initContext = initContextSpy;
+        const hfModel = searchModel(c.repo);
+
+        await modelStore.downloadHFModel(hfModel, fileOf(hfModel, c.filename), {
+          enableVision: false,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+        modelStore.initContext = originalInitContext;
+
+        expect(modelStore.models.find(m => m.id === preset.id)).toMatchObject({
+          supportsMultimodal: true,
+          visionEnabled: false,
+        });
+        expect(initContextSpy).not.toHaveBeenCalled();
+        expect(downloadedIds()).toEqual([]);
+      });
+
+      it('a search download over a preset downloaded from the recommended list queues only the projector', async () => {
+        const preset = seedPresets(c);
+        markDownloaded(preset);
+        const before = {
+          settings: preset.defaultCompletionSettings,
+          template: preset.chatTemplate,
+          ggufMetadata: preset.ggufMetadata,
+        };
+        const hfModel = searchModel(c.repo);
+        const modelFile = fileOf(hfModel, c.filename);
+
+        await modelStore.downloadHFModel(hfModel, modelFile, {
+          enableVision: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const record = modelStore.models.find(m => m.id === preset.id);
+        expect(record).toMatchObject({
+          isDownloaded: true,
+          supportsMultimodal: true,
+          defaultProjectionModel: c.projector,
+          hfModelFile: expect.objectContaining({oid: modelFile.oid}),
+        });
+        expect(record?.defaultCompletionSettings).toEqual(before.settings);
+        expect(record?.chatTemplate).toEqual(before.template);
+        expect(record?.ggufMetadata).toEqual(before.ggufMetadata);
+        expect(downloadedIds()).toEqual([c.projector]);
+      });
+    });
+
+    describe('addHFModel over an existing record', () => {
+      const ios = cases[0];
+      const snapshot = (value: unknown) => JSON.parse(JSON.stringify(value));
+      const projectorIds = () =>
+        modelStore.models
+          .filter(
+            m =>
+              m.modelType === ModelType.PROJECTION &&
+              m.id.startsWith(`${ios.repo}/`),
+          )
+          .map(m => m.id);
+
+      const seedRecord = (record: Model, downloaded = false) => {
+        runInAction(() => {
+          modelStore.models = [record];
+        });
+        if (downloaded) {
+          (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
+            path.endsWith(`/${record.filename}`),
+          );
+        }
+        return modelStore.models[0];
+      };
+
+      it('upgrades a preset stub and keeps its identity and settings', async () => {
+        const preset = seedPresets(ios);
+        runInAction(() => {
+          preset.capabilities = ['questionAnswering'];
+          preset.completionSettings = {
+            ...preset.completionSettings,
+            temperature: 0.42,
+          };
+        });
+        const before = snapshot(preset);
+        const hfModel = searchModel(ios.repo);
+        const modelFile = fileOf(hfModel, ios.filename);
+
+        await modelStore.addHFModel(hfModel, modelFile);
+
+        const record = modelStore.models.find(m => m.id === preset.id);
+        expect(record).toMatchObject({
+          id: before.id,
+          name: before.name,
+          origin: before.origin,
+          isRulePreset: true,
+          isDownloaded: false,
+          supportsMultimodal: true,
+          modelType: ModelType.VISION,
+          capabilities: ['questionAnswering', 'vision'],
+          visionEnabled: true,
+          defaultProjectionModel: ios.projector,
+          compatibleProjectionModels: [ios.projector],
+          hfModelFile: expect.objectContaining({oid: modelFile.oid}),
+        });
+        expect(record?.hfModel?.siblings).toEqual(hfModel.siblings);
+        expect(snapshot(record?.completionSettings)).toEqual(
+          before.completionSettings,
+        );
+        expect(snapshot(record?.chatTemplate)).toEqual(before.chatTemplate);
+        expect(projectorIds()).toEqual([ios.projector]);
+      });
+
+      it('leaves the record unchanged when the repo ships no mmproj', async () => {
+        const preset = seedPresets(ios);
+        const before = snapshot(modelStore.models);
+        const searched = searchModel(ios.repo);
+        const hfModel = {
+          ...searched,
+          siblings: searched.siblings.filter(
+            f => !f.rfilename.includes('mmproj'),
+          ),
+        };
+
+        await modelStore.addHFModel(hfModel, fileOf(hfModel, ios.filename));
+
+        expect(snapshot(modelStore.models)).toEqual(before);
+        expect(modelStore.models.find(m => m.id === preset.id)).toBe(preset);
+      });
+
+      it('leaves an onboarding entry (no siblings) text-only', async () => {
+        const preset = seedPresets(ios);
+        const before = snapshot(modelStore.models);
+        const hfModel = {...searchModel(ios.repo), siblings: []};
+
+        await modelStore.addHFModel(hfModel, {rfilename: ios.filename});
+
+        expect(snapshot(modelStore.models)).toEqual(before);
+        expect(preset.supportsMultimodal).toBeFalsy();
+      });
+
+      it('leaves a draft-only file next to an mmproj text-only', async () => {
+        const searched = searchModel(ios.repo);
+        const draftFile = {rfilename: 'mtp-gemma-3-4b-it-Q8_0.gguf'};
+        const hfModel = {
+          ...searched,
+          siblings: [...searched.siblings, draftFile],
+        };
+        const record = seedRecord({
+          ...hfAsModel(hfModel, draftFile),
+          modelType: undefined,
+        });
+        const before = snapshot(record);
+
+        await modelStore.addHFModel(hfModel, draftFile);
+
+        expect(snapshot(record)).toEqual(before);
+        expect(record.compatibleProjectionModels).toBeUndefined();
+        expect(record.defaultProjectionModel).toBeUndefined();
+      });
+
+      it('writes no projector fields onto a draft-only record by its header', async () => {
+        const hfModel = searchModel(ios.repo);
+        const modelFile = fileOf(hfModel, ios.filename);
+        const record = seedRecord(
+          {
+            ...hfAsModel({...hfModel, siblings: []}, modelFile),
+            isDownloaded: true,
+            ggufMetadata: {architecture: 'gemma3-assistant'} as GGUFMetadata,
+          },
+          true,
+        );
+        const before = snapshot(record);
+
+        await modelStore.addHFModel(hfModel, modelFile);
+
+        expect(snapshot(record)).toEqual(before);
+        expect(record.supportsMultimodal).toBe(false);
+        expect(record.compatibleProjectionModels).toBeUndefined();
+        expect(record.defaultProjectionModel).toBeUndefined();
+      });
+
+      it('writes no projector fields onto a DRAFT stub', async () => {
+        const hfModel = searchModel(ios.repo);
+        const modelFile = fileOf(hfModel, ios.filename);
+        const record = seedRecord({
+          ...hfAsModel({...hfModel, siblings: []}, modelFile),
+          modelType: ModelType.DRAFT,
+        });
+        const before = snapshot(record);
+
+        await modelStore.addHFModel(hfModel, modelFile);
+
+        expect(snapshot(record)).toEqual(before);
+        expect(record.modelType).toBe(ModelType.DRAFT);
+      });
+
+      it('refreshes the projector list of a vision record and keeps the user pick', async () => {
+        const android = cases[1];
+        const hfModel = searchModel(android.repo);
+        const modelFile = fileOf(hfModel, android.filename);
+        const userPick = `${android.repo}/mmproj-F32.gguf`;
+        const record = seedRecord({
+          ...hfAsModel(hfModel, modelFile),
+          compatibleProjectionModels: [userPick],
+          defaultProjectionModel: userPick,
+        });
+
+        await modelStore.addHFModel(hfModel, modelFile);
+
+        expect(record.compatibleProjectionModels).toEqual([
+          `${android.repo}/mmproj-BF16.gguf`,
+          `${android.repo}/mmproj-F16.gguf`,
+          userPick,
+        ]);
+        expect(record.defaultProjectionModel).toBe(userPick);
+      });
+
+      it('keeps the user pick on a vision record that has no modelType', async () => {
+        const android = cases[1];
+        const hfModel = searchModel(android.repo);
+        const modelFile = fileOf(hfModel, android.filename);
+        const userPick = `${android.repo}/mmproj-F32.gguf`;
+        const record = seedRecord({
+          ...hfAsModel(hfModel, modelFile),
+          modelType: undefined,
+          visionEnabled: false,
+          compatibleProjectionModels: [userPick],
+          defaultProjectionModel: userPick,
+        });
+
+        await modelStore.addHFModel(hfModel, modelFile, {enableVision: true});
+
+        expect(record.defaultProjectionModel).toBe(userPick);
+        expect(record.modelType).toBeUndefined();
+        expect(record.visionEnabled).toBe(false);
+      });
+
+      it('takes projector ids only from mmproj .gguf siblings', async () => {
+        const preset = seedPresets(ios);
+        const searched = searchModel(ios.repo);
+        const hfModel = {
+          ...searched,
+          siblings: [
+            ...searched.siblings,
+            {rfilename: 'mmproj-evil.bin'},
+            {rfilename: 'notes-mmproj.txt'},
+            {rfilename: 'mmproj-model-f16.gguf.part'},
+            {rfilename: 'mmproj.gguf'},
+          ],
+        };
+
+        await modelStore.addHFModel(hfModel, fileOf(hfModel, ios.filename));
+
+        expect(preset.compatibleProjectionModels).toEqual([ios.projector]);
+        expect(projectorIds()).toEqual([ios.projector]);
+      });
+
+      it('a Vision-off download over a preset stub keeps Vision off and fetches only the LLM', async () => {
+        const preset = seedPresets(ios);
+        const hfModel = searchModel(ios.repo);
+
+        await modelStore.downloadHFModel(
+          hfModel,
+          fileOf(hfModel, ios.filename),
+          {enableVision: false},
+        );
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(preset).toMatchObject({
+          supportsMultimodal: true,
+          visionEnabled: false,
+        });
+        expect(downloadedIds()).toEqual([preset.id]);
+      });
+    });
+
+    describe('search download over a downloaded record', () => {
+      const repo: Repo = 'ggml-org/gemma-3-4b-it-GGUF';
+      const filename = 'gemma-3-4b-it-Q4_K_M.gguf';
+      const projector = `${repo}/mmproj-model-f16.gguf`;
+
+      const seedDownloaded = (overrides: Partial<Model>) => {
+        const hfModel = searchModel(repo);
+        const record = {
+          ...hfAsModel(hfModel, fileOf(hfModel, filename)),
+          isDownloaded: true,
+          ggufMetadata: {architecture: 'gemma3'} as GGUFMetadata,
+          ...overrides,
+        };
+        runInAction(() => {
+          modelStore.models = [record];
+        });
+        (RNFS.exists as jest.Mock).mockImplementation(async (path: string) =>
+          path.endsWith(`/${filename}`),
+        );
+        return hfModel;
+      };
+
+      it('queues only the missing projector of an already-vision record with Vision on', async () => {
+        const hfModel = seedDownloaded({});
+
+        await modelStore.downloadHFModel(hfModel, fileOf(hfModel, filename), {
+          enableVision: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(downloadedIds()).toEqual([projector]);
+      });
+
+      it('queues nothing for a text-only record still waiting for its header', async () => {
+        const hfModel = seedDownloaded({
+          supportsMultimodal: false,
+          modelType: undefined,
+          capabilities: undefined,
+          compatibleProjectionModels: undefined,
+          defaultProjectionModel: undefined,
+          visionEnabled: undefined,
+          ggufMetadata: undefined,
+        });
+
+        await modelStore.downloadHFModel(hfModel, fileOf(hfModel, filename), {
+          enableVision: true,
+        });
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(modelStore.models[0]).toMatchObject({
+          supportsMultimodal: false,
+          defaultProjectionModel: undefined,
+        });
+        expect(downloadedIds()).toEqual([]);
+      });
     });
   });
 
@@ -2234,6 +3896,360 @@ describe('ModelStore', () => {
     });
   });
 
+  describe('speculative / MTP capability resolution', () => {
+    const mtpMeta = (over: Partial<GGUFMetadata> = {}): GGUFMetadata =>
+      ({
+        architecture: 'qwen3',
+        n_layers: 28,
+        n_embd: 1024,
+        n_head: 16,
+        n_head_kv: 8,
+        n_vocab: 151936,
+        n_embd_head_k: 64,
+        n_embd_head_v: 64,
+        ...over,
+      }) as GGUFMetadata;
+
+    const localModel = (over = {}): Model =>
+      createModel({
+        isDownloaded: true,
+        isLocal: true,
+        origin: ModelOrigin.LOCAL,
+        fullPath: '/tmp/model.gguf',
+        ...over,
+      }) as Model;
+
+    const resolve = (model: Model) =>
+      (modelStore as any).resolveDraftConfig(model) as Promise<DraftConfig>;
+
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.contextInitParams.speculativeEnabled = false;
+        modelStore.contextInitParams.selectedDraftModelId = undefined;
+        modelStore.contextInitParams.spec_draft_n_max = undefined;
+        modelStore.models = [];
+      });
+    });
+
+    describe('resolveDraftConfig', () => {
+      it('off when speculative is disabled', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = false;
+        });
+        const target = localModel({
+          id: 'target',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1}),
+        });
+        await expect(resolve(target)).resolves.toEqual({mode: 'off'});
+      });
+
+      it('embedded when the target is MTP-capable and no draft', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+        });
+        const target = localModel({
+          id: 'target',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1}),
+        });
+        await expect(resolve(target)).resolves.toEqual({mode: 'embedded'});
+      });
+
+      it('paired when a valid MTP draft matches the target width', async () => {
+        const draft = localModel({
+          id: 'draft',
+          fullPath: '/tmp/draft.gguf',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: mtpMeta({n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        await expect(resolve(target)).resolves.toEqual({
+          mode: 'paired',
+          resolvedDraftPath: '/tmp/draft.gguf',
+          draftModel: draft,
+        });
+      });
+
+      it('off when speculative is on but the target is not MTP-capable and no draft', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+        });
+        const target = localModel({id: 'target', ggufMetadata: mtpMeta()});
+        await expect(resolve(target)).resolves.toEqual({mode: 'off'});
+      });
+
+      it('not paired for a plain (non-MTP) draft → off when target not capable', async () => {
+        const draft = localModel({
+          id: 'draft',
+          ggufMetadata: mtpMeta({n_embd: 1024}), // no nextn → not MTP
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: mtpMeta({n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        await expect(resolve(target)).resolves.toEqual({mode: 'off'});
+      });
+
+      it('not paired on a width mismatch → falls through to embedded when target capable', async () => {
+        const draft = localModel({
+          id: 'draft',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 2048}),
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        await expect(resolve(target)).resolves.toEqual({mode: 'embedded'});
+      });
+
+      it('not paired when the draft width is unknown (unknown ⇒ not paired)', async () => {
+        const draft = localModel({
+          id: 'draft',
+          // MTP-capable but NO width metadata → width unknown.
+          ggufMetadata: undefined,
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: mtpMeta({n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        // draft has no nextn KV either, so it isn't even MTP-capable → off.
+        await expect(resolve(target)).resolves.toEqual({mode: 'off'});
+      });
+
+      it('not paired when an MTP-capable draft has unknown width (the crash guard)', async () => {
+        // MTP-capable (nextn>0) but NO width KV → nEmbdOut undefined. The width
+        // gate must decline paired even though the draft itself is MTP-capable
+        // (unknown ⇒ not paired); a paired init on an unreadable width would
+        // SIGABRT uncatchably. Target is also non-MTP → falls through to off.
+        const draft = localModel({
+          id: 'draft',
+          ggufMetadata: {nextn_predict_layers: 1} as GGUFMetadata,
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: mtpMeta({n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        await expect(resolve(target)).resolves.toEqual({mode: 'off'});
+      });
+
+      it('not paired when the target width is unknown even for an MTP-capable draft', async () => {
+        // Draft is a valid MTP draft with a known width, but the TARGET width is
+        // unreadable → the equality is unknown → decline paired. Target is also
+        // MTP-capable here, so it falls through to embedded (still never paired).
+        const draft = localModel({
+          id: 'draft',
+          fullPath: '/tmp/draft.gguf',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'draft',
+          ggufMetadata: {nextn_predict_layers: 1} as GGUFMetadata,
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.models = [draft, target];
+        });
+        // target width unknown ⇒ not paired; target MTP-capable ⇒ embedded.
+        await expect(resolve(target)).resolves.toEqual({mode: 'embedded'});
+      });
+
+      it('honours per-target defaultDraftModel over the global selectedDraftModelId', async () => {
+        const perTargetDraft = localModel({
+          id: 'per-target',
+          fullPath: '/tmp/per-target.gguf',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        });
+        const globalDraft = localModel({
+          id: 'global',
+          fullPath: '/tmp/global.gguf',
+          ggufMetadata: mtpMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        });
+        const target = localModel({
+          id: 'target',
+          defaultDraftModel: 'per-target',
+          ggufMetadata: mtpMeta({n_embd: 1024}),
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.speculativeEnabled = true;
+          modelStore.contextInitParams.selectedDraftModelId = 'global';
+          modelStore.models = [perTargetDraft, globalDraft, target];
+        });
+        await expect(resolve(target)).resolves.toEqual({
+          mode: 'paired',
+          resolvedDraftPath: '/tmp/per-target.gguf',
+          draftModel: perTargetDraft,
+        });
+      });
+    });
+
+    describe('getEffectiveContextInitParams activator + n_max', () => {
+      it('emits spec_type=draft-mtp for embedded mode', async () => {
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {
+            mode: 'embedded',
+          },
+        );
+        expect(params.spec_type).toBe('draft-mtp');
+      });
+
+      it('emits spec_type=draft-mtp and model_draft for paired mode', async () => {
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {
+            mode: 'paired',
+            resolvedDraftPath: '/tmp/draft.gguf',
+            draftModel: localModel({id: 'draft'}),
+          },
+        );
+        expect(params.spec_type).toBe('draft-mtp');
+        expect(params.model_draft).toBe('/tmp/draft.gguf');
+      });
+
+      it('defaults the embedded draft cache to F16 unless flash attn is forced on', async () => {
+        // llama.cpp refuses a quantized draft V cache whenever flash
+        // attention resolves off, and `auto` resolves per backend AFTER init
+        // (off on Android CPU) — so Q8_0 is only safe when the user forced
+        // flash attention on.
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = undefined;
+        });
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {mode: 'embedded'},
+        );
+        expect(params.spec_draft_cache_type_k).toBe(CacheType.F16);
+        expect(params.spec_draft_cache_type_v).toBe(CacheType.F16);
+
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = 'on';
+        });
+        const withFa = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {mode: 'embedded'},
+        );
+        expect(withFa.spec_draft_cache_type_k).toBe(CacheType.Q8_0);
+        expect(withFa.spec_draft_cache_type_v).toBe(CacheType.Q8_0);
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = undefined;
+        });
+      });
+
+      it('clamps an explicit quantized draft V cache when flash attn is off', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = 'off';
+          modelStore.contextInitParams.spec_draft_cache_type_v = CacheType.Q8_0;
+          modelStore.contextInitParams.spec_draft_cache_type_k = CacheType.Q8_0;
+        });
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {mode: 'embedded'},
+        );
+        // V would make the native context refuse to load; K is legal.
+        expect(params.spec_draft_cache_type_v).toBe(CacheType.F16);
+        expect(params.spec_draft_cache_type_k).toBe(CacheType.Q8_0);
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = undefined;
+          modelStore.contextInitParams.spec_draft_cache_type_v = undefined;
+          modelStore.contextInitParams.spec_draft_cache_type_k = undefined;
+        });
+      });
+
+      it('emits nothing speculative for off mode', async () => {
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {
+            mode: 'off',
+          },
+        );
+        expect(params.spec_type).toBeUndefined();
+        expect(params.model_draft).toBeUndefined();
+        expect(params.spec_draft_n_max).toBeUndefined();
+      });
+
+      it('coerces a user-set spec_draft_n_max of 0 up to 1', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.spec_draft_n_max = 0;
+        });
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {
+            mode: 'embedded',
+          },
+        );
+        expect(params.spec_draft_n_max).toBe(1);
+        runInAction(() => {
+          modelStore.contextInitParams.spec_draft_n_max = undefined;
+        });
+      });
+
+      it('omits spec_draft_n_max when the user has not set it (inherits cpp default)', async () => {
+        runInAction(() => {
+          modelStore.contextInitParams.spec_draft_n_max = undefined;
+        });
+        const params = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {
+            mode: 'embedded',
+          },
+        );
+        expect(params.spec_draft_n_max).toBeUndefined();
+      });
+    });
+
+    describe('state checkpoint budget', () => {
+      afterEach(() => {
+        runInAction(() => {
+          modelStore.deviceTier = null;
+        });
+      });
+
+      it.each([
+        ['low', 64],
+        [null, 64],
+        ['mid', 160],
+        ['high', 160],
+        ['flagship', 160],
+      ] as const)(
+        'sends state_cache_budget_mb for tier %s as %i',
+        async (tier, budget) => {
+          runInAction(() => {
+            modelStore.deviceTier = tier;
+          });
+          const params = await modelStore.getEffectiveContextInitParams();
+          expect(params.state_cache_budget_mb).toBe(budget);
+        },
+      );
+    });
+  });
+
   // Add tests for auto-release functionality
   describe('auto-release functionality', () => {
     beforeEach(() => {
@@ -2282,48 +4298,302 @@ describe('ModelStore', () => {
       modelStore.isMultimodalActive = false;
     });
 
-    it('should return true for isMultimodalEnabled when cached flag is true', async () => {
-      modelStore.isMultimodalActive = true;
-      const result = await modelStore.isMultimodalEnabled();
-      expect(result).toBe(true);
-    });
-
-    it('should return false for isMultimodalEnabled when no context', async () => {
-      modelStore.context = undefined;
-      const result = await modelStore.isMultimodalEnabled();
-      expect(result).toBe(false);
-    });
-
-    it('should check context and update cached flag for isMultimodalEnabled', async () => {
-      const mockContext = {
-        isMultimodalEnabled: jest.fn().mockResolvedValue(true),
+    describe('remote model vision (server /props self-report)', () => {
+      const setRemoteActive = (supportsVision?: boolean) => {
+        runInAction(() => {
+          modelStore.context = undefined;
+          modelStore.isMultimodalActive = false;
+          modelStore.models = [
+            {
+              id: 'srv-1/remote-model',
+              origin: ModelOrigin.REMOTE,
+              serverId: 'srv-1',
+            } as any,
+          ];
+          modelStore.activeModelId = 'srv-1/remote-model';
+          serverStore.servers = [
+            {
+              id: 'srv-1',
+              name: 'llama',
+              url: 'http://localhost:8080',
+              serverType: 'llama.cpp',
+            },
+          ];
+          serverStore.remoteCaps =
+            supportsVision === undefined
+              ? {}
+              : {
+                  'srv-1/remote-model': {
+                    supportsVision,
+                    probedUrl: 'http://localhost:8080',
+                  },
+                };
+          modelStore.activeRemoteBinding = {
+            modelId: 'srv-1/remote-model',
+            serverId: 'srv-1',
+            remoteModelId: 'remote-model',
+            url: 'http://localhost:8080',
+            serverType: 'llama.cpp',
+          };
+        });
       };
-      modelStore.context = mockContext as any;
 
-      const result = await modelStore.isMultimodalEnabled();
-      expect(result).toBe(true);
-      expect(mockContext.isMultimodalEnabled).toHaveBeenCalled();
-      expect(modelStore.isMultimodalActive).toBe(true);
+      afterEach(() => {
+        runInAction(() => {
+          serverStore.servers = [];
+          serverStore.remoteCaps = {};
+          modelStore.models = [];
+          modelStore.activeModelId = undefined;
+          modelStore.activeRemoteBinding = undefined;
+        });
+      });
+
+      it('is vision-active when the probe reported vision', () => {
+        setRemoteActive(true);
+        expect(modelStore.activeModelCaps.visionActive).toBe(true);
+      });
+
+      it('is not vision-active when the probe reported no vision', () => {
+        setRemoteActive(false);
+        expect(modelStore.activeModelCaps.vision).toBe('no');
+        expect(modelStore.activeModelCaps.visionActive).toBe(false);
+      });
+
+      it('is not vision-active when the capability is unprobed', () => {
+        setRemoteActive(undefined);
+        expect(modelStore.activeModelCaps.vision).toBe('unknown');
+        expect(modelStore.activeModelCaps.visionActive).toBe(false);
+      });
+
+      it('is not vision-active when the capabilities describe another backend', () => {
+        setRemoteActive(true);
+        runInAction(() => {
+          serverStore.remoteCaps['srv-1/remote-model'].probedUrl =
+            'http://localhost:9090';
+        });
+
+        // The session still posts to :8080; a capability read from :9090 says
+        // nothing about it, so vision stays unknown and fails closed.
+        expect(modelStore.activeModelCaps.vision).toBe('unknown');
+        expect(modelStore.activeModelCaps.visionActive).toBe(false);
+      });
     });
 
-    it('should handle error in isMultimodalEnabled', async () => {
-      const mockContext = {
-        isMultimodalEnabled: jest
-          .fn()
-          .mockRejectedValue(new Error('Test error')),
-      };
-      modelStore.context = mockContext as any;
+    describe('capability resolution', () => {
+      afterEach(() => {
+        runInAction(() => {
+          serverStore.servers = [];
+          serverStore.remoteCaps = {};
+          modelStore.models = [];
+          modelStore.activeModelId = undefined;
+          modelStore.activeRemoteBinding = undefined;
+          modelStore.isMultimodalActive = false;
+        });
+      });
 
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      describe('server sampler defaults', () => {
+        const bindingOf = (
+          serverType: RemoteSessionBinding['serverType'],
+          url = 'http://localhost:8080',
+        ): RemoteSessionBinding => ({
+          modelId: 'srv-1/remote-model',
+          serverId: 'srv-1',
+          remoteModelId: 'remote-model',
+          url,
+          serverType,
+        });
 
-      const result = await modelStore.isMultimodalEnabled();
-      expect(result).toBe(false);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Error checking multimodal capability:',
-        expect.any(Error),
-      );
+        const activateRemoteModel = (
+          binding: RemoteSessionBinding = bindingOf('llama.cpp'),
+        ) => {
+          runInAction(() => {
+            modelStore.models = [
+              {
+                id: 'srv-1/remote-model',
+                origin: ModelOrigin.REMOTE,
+                serverId: 'srv-1',
+              } as any,
+            ];
+            modelStore.activeModelId = 'srv-1/remote-model';
+            modelStore.activeRemoteBinding = binding;
+          });
+        };
 
-      consoleErrorSpy.mockRestore();
+        const reportDefaults = () => {
+          runInAction(() => {
+            serverStore.remoteCaps = {
+              'srv-1/remote-model': {
+                samplerDefaults: {top_k: 40, temperature: 0.8},
+                probedUrl: 'http://localhost:8080',
+              },
+            };
+          });
+        };
+
+        it('exposes what the active model backend reported', () => {
+          activateRemoteModel();
+          reportDefaults();
+
+          expect(modelStore.activeSamplerDefaults).toEqual({
+            top_k: 40,
+            temperature: 0.8,
+          });
+        });
+
+        it('is empty on a llama.cpp session that reported nothing yet', () => {
+          activateRemoteModel();
+
+          expect(modelStore.activeSamplerDefaults).toEqual({});
+        });
+
+        it('is undefined when no model is active', () => {
+          runInAction(() => {
+            serverStore.remoteCaps = {
+              'srv-1/remote-model': {samplerDefaults: {top_k: 40}},
+            };
+          });
+
+          expect(modelStore.activeSamplerDefaults).toBeUndefined();
+        });
+
+        it('is undefined for a local model', () => {
+          runInAction(() => {
+            modelStore.models = [
+              {id: 'local-model', origin: ModelOrigin.PRESET} as any,
+            ];
+            modelStore.activeModelId = 'local-model';
+          });
+
+          expect(modelStore.activeSamplerDefaults).toBeUndefined();
+        });
+
+        it.each(['OpenAI', 'Ollama', 'LM Studio', 'vLLM', 'unknown'] as const)(
+          'is undefined on a %s session, even with a matching entry',
+          serverType => {
+            activateRemoteModel(bindingOf(serverType));
+            reportDefaults();
+
+            expect(modelStore.activeSamplerDefaults).toBeUndefined();
+          },
+        );
+
+        it('follows the type the session was built with, not a later edit', () => {
+          activateRemoteModel();
+          reportDefaults();
+          runInAction(() => {
+            serverStore.servers = [
+              {
+                id: 'srv-1',
+                name: 'Server',
+                url: 'http://localhost:8080',
+                serverType: 'OpenAI',
+              },
+            ];
+          });
+
+          expect(modelStore.activeSamplerDefaults).toEqual({
+            top_k: 40,
+            temperature: 0.8,
+          });
+        });
+
+        it('is empty when the entry describes another backend', () => {
+          activateRemoteModel(bindingOf('llama.cpp', 'http://localhost:9090'));
+          reportDefaults();
+
+          expect(modelStore.activeSamplerDefaults).toEqual({});
+        });
+      });
+
+      it('resolves an active remote model against the stored capabilities', () => {
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'srv-1/remote-model',
+              origin: ModelOrigin.REMOTE,
+              serverId: 'srv-1',
+            } as any,
+          ];
+          modelStore.activeModelId = 'srv-1/remote-model';
+          serverStore.remoteCaps = {
+            'srv-1/remote-model': {supportsVision: true, contextLength: 8192},
+          };
+        });
+
+        expect(modelStore.activeModelCaps).toEqual({
+          vision: 'yes',
+          visionActive: true,
+          contextLength: 8192,
+          effectiveContextLength: 8192,
+        });
+      });
+
+      it('does not report another model as vision-active', () => {
+        const other = {
+          id: 'other-local',
+          origin: ModelOrigin.PRESET,
+          supportsMultimodal: true,
+        } as any;
+        runInAction(() => {
+          modelStore.models = [
+            {id: 'active-local', origin: ModelOrigin.PRESET} as any,
+            other,
+          ];
+          modelStore.activeModelId = 'active-local';
+          modelStore.isMultimodalActive = true;
+          modelStore.activeContextSettings = {n_ctx: 4096} as any;
+        });
+
+        expect(modelStore.capsFor(other).vision).toBe('yes');
+        expect(modelStore.capsFor(other).visionActive).toBe(false);
+        expect(
+          modelStore.capsFor(other).effectiveContextLength,
+        ).toBeUndefined();
+        expect(modelStore.activeModelCaps.effectiveContextLength).toBe(4096);
+      });
+
+      it('notifies no observer when a list read brings the same rows', () => {
+        const listed = (nCtx: number) => [
+          {id: 'remote-model', object: 'model', meta: {n_ctx: nCtx}} as any,
+        ];
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'srv-1/remote-model',
+              origin: ModelOrigin.REMOTE,
+              serverId: 'srv-1',
+              remoteModelId: 'remote-model',
+            } as any,
+          ];
+          modelStore.activeModelId = 'srv-1/remote-model';
+          serverStore.servers = [
+            {
+              id: 'srv-1',
+              name: 'Server',
+              url: 'http://localhost:8080',
+              serverType: 'llama.cpp',
+            },
+          ];
+          serverStore.serverModels.set('srv-1', listed(4096));
+        });
+        const seen: unknown[] = [];
+        const dispose = reaction(
+          () => modelStore.activeModelCaps,
+          caps => seen.push(caps),
+        );
+
+        runInAction(() => serverStore.serverModels.set('srv-1', listed(4096)));
+        const afterSameRows = seen.length;
+        runInAction(() => serverStore.serverModels.set('srv-1', listed(8192)));
+        dispose();
+        runInAction(() => {
+          serverStore.serverModels.delete('srv-1');
+          serverStore.servers = [];
+        });
+
+        expect(afterSameRows).toBe(0);
+        expect(seen).toHaveLength(1);
+      });
     });
 
     it('should get compatible projection models from explicit list', () => {
@@ -2997,6 +5267,43 @@ describe('ModelStore', () => {
       modelStore.context = undefined;
       modelStore.inferencing = false;
       modelStore.isStreaming = false;
+      runInAction(() => {
+        modelStore.isMultimodalActive = true;
+        modelStore.engine = {
+          completion: jest.fn(),
+          stopCompletion: jest.fn(),
+        } as any;
+      });
+    });
+
+    afterEach(() => {
+      runInAction(() => {
+        modelStore.isMultimodalActive = false;
+        modelStore.engine = undefined;
+      });
+    });
+
+    it('skips the frame while another generation holds the lease', async () => {
+      const mockContext = {
+        completion: jest.fn().mockResolvedValue({text: 'Response text'}),
+      };
+      modelStore.context = mockContext as any;
+      const held = await modelStore.acquireGeneration();
+      const onComplete = jest.fn();
+      const onError = jest.fn();
+
+      await modelStore.startImageCompletion({
+        prompt: 'Test prompt',
+        image_path: '/path/to/image.jpg',
+        onComplete,
+        onError,
+      });
+
+      expect(mockContext.completion).not.toHaveBeenCalled();
+      expect(onComplete).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+      expect(modelStore.inferencing).toBe(false);
+      held!.end();
     });
 
     it('should throw error when no context available', async () => {
@@ -3011,10 +5318,10 @@ describe('ModelStore', () => {
     });
 
     it('should throw error when multimodal is not enabled', async () => {
-      const mockContext = {
-        isMultimodalEnabled: jest.fn().mockResolvedValue(false),
-      };
-      modelStore.context = mockContext as any;
+      modelStore.context = {} as any;
+      runInAction(() => {
+        modelStore.isMultimodalActive = false;
+      });
 
       await expect(
         modelStore.startImageCompletion({
@@ -3025,32 +5332,20 @@ describe('ModelStore', () => {
     });
 
     it('should call onError when no images provided', async () => {
-      const mockContext = {
-        isMultimodalEnabled: jest.fn().mockResolvedValue(true),
-      };
-      modelStore.context = mockContext as any;
-
-      // Mock the isMultimodalEnabled method on the store to return true
-      const originalIsMultimodalEnabled = modelStore.isMultimodalEnabled;
-      modelStore.isMultimodalEnabled = jest.fn().mockResolvedValue(true);
+      modelStore.context = {} as any;
 
       const onError = jest.fn();
 
-      try {
-        await modelStore.startImageCompletion({
-          prompt: 'Test prompt',
-          onError,
-        });
+      await modelStore.startImageCompletion({
+        prompt: 'Test prompt',
+        onError,
+      });
 
-        expect(onError).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: 'No images provided for multimodal completion',
-          }),
-        );
-      } finally {
-        // Restore original method
-        modelStore.isMultimodalEnabled = originalIsMultimodalEnabled;
-      }
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'No images provided for multimodal completion',
+        }),
+      );
     });
 
     it('should handle single image completion successfully', async () => {
@@ -3424,6 +5719,90 @@ describe('ModelStore', () => {
 
       // initLlama should only be called once (first call only)
       expect(initLlamaMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('records a calibration estimate without the checkpoint budget', async () => {
+      const model = {
+        ...basicModel,
+        ggufMetadata: {
+          architecture: 'gemma3',
+          n_layers: 26,
+          n_embd: 1152,
+          n_head: 4,
+          n_head_kv: 1,
+          n_vocab: 262144,
+          n_embd_head_k: 256,
+          n_embd_head_v: 256,
+          sliding_window: 512,
+        },
+      };
+      initLlamaMock.mockReset();
+      initLlamaMock.mockResolvedValue({
+        release: jest.fn(),
+      } as unknown as LlamaContext);
+      runInAction(() => {
+        modelStore.deviceTier = 'low';
+        modelStore.largestSuccessfulLoad = undefined;
+      });
+
+      await modelStore.initContext(model);
+
+      const settings = modelStore.activeContextSettings!;
+      expect(settings).not.toHaveProperty('state_cache_budget_mb');
+      expect(modelStore.largestSuccessfulLoad).toBe(
+        getModelMemoryRequirement(model, undefined, {
+          ...settings,
+          state_cache_budget_mb: 0,
+        }),
+      );
+      expect(initLlamaMock.mock.calls[0][0].state_cache_budget_mb).toBe(64);
+      runInAction(() => {
+        modelStore.deviceTier = null;
+      });
+    });
+
+    it('keeps the loaded model estimate, with checkpoints, until release', async () => {
+      const model = {
+        ...basicModel,
+        ggufMetadata: {
+          architecture: 'gemma3',
+          n_layers: 26,
+          n_embd: 1152,
+          n_head: 4,
+          n_head_kv: 1,
+          n_vocab: 262144,
+          n_embd_head_k: 256,
+          n_embd_head_v: 256,
+          sliding_window: 512,
+        },
+      };
+      initLlamaMock.mockReset();
+      initLlamaMock.mockResolvedValue({
+        release: jest.fn().mockResolvedValue(undefined),
+      } as unknown as LlamaContext);
+      runInAction(() => {
+        modelStore.deviceTier = 'low';
+      });
+
+      await modelStore.initContext(model);
+
+      expect(modelStore.loadedModelBytes).toBe(
+        getModelMemoryRequirement(
+          model,
+          undefined,
+          modelStore.memoryEstimateSettings,
+        ),
+      );
+      expect(modelStore.loadedModelBytes).toBeGreaterThan(
+        modelStore.largestSuccessfulLoad!,
+      );
+
+      await modelStore.releaseContext();
+
+      expect(modelStore.loadedModelBytes).toBeUndefined();
+      runInAction(() => {
+        modelStore.deviceTier = null;
+      });
     });
 
     it('should clear isContextLoading after successful init', async () => {
@@ -4110,7 +6489,7 @@ describe('ModelStore', () => {
 
       await modelStore.setRemoteModel(remoteModel);
 
-      expect((modelStore.engine as any).timeoutMs).toBe(600000);
+      expect((modelStore.engine as any).endpoint.timeoutMs).toBe(600000);
     });
 
     it('builds the engine with undefined timeout for a server without the field', async () => {
@@ -4122,7 +6501,7 @@ describe('ModelStore', () => {
 
       await modelStore.setRemoteModel(remoteModel);
 
-      expect((modelStore.engine as any).timeoutMs).toBeUndefined();
+      expect((modelStore.engine as any).endpoint.timeoutMs).toBeUndefined();
     });
 
     it('rebuilds the engine with an updated timeout on re-selection', async () => {
@@ -4137,7 +6516,7 @@ describe('ModelStore', () => {
         ];
       });
       await modelStore.setRemoteModel(remoteModel);
-      expect((modelStore.engine as any).timeoutMs).toBe(30000);
+      expect((modelStore.engine as any).endpoint.timeoutMs).toBe(30000);
 
       // User edits the timeout, then re-selects the model.
       runInAction(() => {
@@ -4145,7 +6524,7 @@ describe('ModelStore', () => {
       });
       await modelStore.setRemoteModel(remoteModel);
 
-      expect((modelStore.engine as any).timeoutMs).toBe(600000);
+      expect((modelStore.engine as any).endpoint.timeoutMs).toBe(600000);
     });
 
     it('builds the engine carrying the saved serverType', async () => {
@@ -4162,13 +6541,506 @@ describe('ModelStore', () => {
 
       await modelStore.setRemoteModel(remoteModel);
 
-      expect((modelStore.engine as any).serverType).toBe('Ollama');
+      expect((modelStore.engine as any).endpoint.serverType).toBe('Ollama');
+    });
+  });
+
+  describe('setRemoteModel capability probe', () => {
+    const remoteModel = {
+      id: 'srv-1/llama-7b',
+      name: 'llama-7b',
+      origin: ModelOrigin.REMOTE,
+      serverId: 'srv-1',
+      remoteModelId: 'llama-7b',
+    } as any;
+
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.context = undefined;
+        serverStore.servers = [
+          {id: 'srv-1', name: 'llama', url: 'http://localhost:8080'},
+        ];
+      });
+    });
+
+    it('probes the activated model, forwarding the key resolved for the engine', async () => {
+      const getApiKey = jest
+        .spyOn(serverStore, 'getApiKey')
+        .mockResolvedValue('sk-test');
+      const probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockResolvedValue(undefined);
+
+      await modelStore.setRemoteModel(remoteModel);
+
+      expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b', 'sk-test');
+      expect(getApiKey).toHaveBeenCalledTimes(1);
+      probe.mockRestore();
+      getApiKey.mockRestore();
+    });
+
+    it('forwards undefined for a keyless server', async () => {
+      const getApiKey = jest
+        .spyOn(serverStore, 'getApiKey')
+        .mockResolvedValue(undefined);
+      const probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockResolvedValue(undefined);
+
+      await modelStore.setRemoteModel(remoteModel);
+
+      // Nothing is forwarded when there is no key, so the probe falls back to
+      // its own Keychain read — the common local llama.cpp case.
+      expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b', undefined);
+      probe.mockRestore();
+      getApiKey.mockRestore();
+    });
+
+    it('resolves without waiting on a probe that never settles', async () => {
+      let release: () => void = () => {};
+      const probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockReturnValue(
+          new Promise<void>(resolve => {
+            release = resolve;
+          }),
+        );
+
+      await modelStore.setRemoteModel(remoteModel);
+
+      // The engine is live and the model active while the probe is pending, so
+      // a lazily-starting server can never delay a send.
+      expect(modelStore.activeModelId).toBe('srv-1/llama-7b');
+      expect(modelStore.engine).toBeTruthy();
+      release();
+      probe.mockRestore();
+    });
+
+    it('survives a probe that rejects', async () => {
+      const probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockRejectedValue(new Error('boom'));
+
+      await expect(
+        modelStore.setRemoteModel(remoteModel),
+      ).resolves.toBeUndefined();
+      await new Promise(setImmediate);
+      probe.mockRestore();
+    });
+  });
+
+  describe('post-completion capability re-probe', () => {
+    let probe: jest.SpyInstance;
+    const URL = 'http://localhost:8080';
+    const bindingFor = (remoteModelId: string) => ({
+      modelId: `srv-1/${remoteModelId}`,
+      serverId: 'srv-1',
+      remoteModelId,
+      url: URL,
+      serverType: 'llama.cpp' as const,
+    });
+    const record = (fields: Partial<ServerConfig> = {}): ServerConfig => ({
+      id: 'srv-1',
+      name: 'llama',
+      url: URL,
+      serverType: 'llama.cpp',
+      ...fields,
+    });
+    const select = (remoteModelId: string) => {
+      runInAction(() => {
+        modelStore.activeModelId = `srv-1/${remoteModelId}`;
+        modelStore.activeRemoteBinding = bindingFor(remoteModelId);
+      });
+    };
+    const answered = {samplerDefaults: {top_k: 40}, probedUrl: URL};
+    const mainEra = {contextLength: 8192, probedUrl: URL};
+
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.context = undefined;
+        modelStore.engine = undefined;
+        modelStore.models = [];
+        (modelStore as any).postCompletionProbeFor = undefined;
+        serverStore.servers = [record()];
+        serverStore.serverModels.set('srv-1', [
+          {id: 'llama-7b', object: 'model', owned_by: 'system'},
+          {id: 'other', object: 'model', owned_by: 'system'},
+        ]);
+        serverStore.userSelectedModels = [
+          {serverId: 'srv-1', remoteModelId: 'llama-7b'},
+        ];
+        serverStore.remoteCaps = {};
+      });
+      select('llama-7b');
+      probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+      probe.mockRestore();
+      runInAction(() => {
+        modelStore.activeModelId = undefined;
+        modelStore.activeRemoteBinding = undefined;
+        (modelStore as any).postCompletionProbeFor = undefined;
+        serverStore.servers = [];
+        serverStore.serverModels.clear();
+        serverStore.userSelectedModels = [];
+        serverStore.remoteCaps = {};
+      });
+    });
+
+    // A router only proxies /props to a resident model, so the probe fired at
+    // selection time answers nothing until the model has actually run.
+    it('probes once for a binding whose capabilities never landed', () => {
+      modelStore.reprobeRemoteCapsAfterCompletion();
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).toHaveBeenCalledTimes(1);
+      expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b');
+    });
+
+    it('issues no probe when an entry already answers the session', () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = answered;
+      });
+
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it('probes for an entry that carries no sampler defaults', () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = mainEra;
+      });
+
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps its retry while the server points elsewhere', () => {
+      runInAction(() => {
+        serverStore.servers = [record({url: 'http://localhost:9090'})];
+      });
+      modelStore.reprobeRemoteCapsAfterCompletion();
+      expect(probe).not.toHaveBeenCalled();
+
+      runInAction(() => {
+        serverStore.servers = [record()];
+      });
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).toHaveBeenCalledTimes(1);
+    });
+
+    it('probes again for the next binding on the same server', () => {
+      modelStore.reprobeRemoteCapsAfterCompletion();
+      select('other');
+
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).toHaveBeenCalledTimes(2);
+      expect(probe).toHaveBeenLastCalledWith('srv-1', 'other');
+    });
+
+    it('probes again when the user comes back to a model still unanswered', () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = mainEra;
+        serverStore.remoteCaps['srv-1/other'] = answered;
+      });
+      modelStore.reprobeRemoteCapsAfterCompletion();
+      select('other');
+      modelStore.reprobeRemoteCapsAfterCompletion();
+      expect(probe).toHaveBeenCalledTimes(1);
+
+      select('llama-7b');
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).toHaveBeenCalledTimes(2);
+      expect(probe).toHaveBeenLastCalledWith('srv-1', 'llama-7b');
+    });
+
+    it('issues no probe without a remote session', () => {
+      runInAction(() => {
+        modelStore.activeRemoteBinding = undefined;
+      });
+
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it('issues no probe once the server is removed', () => {
+      runInAction(() => {
+        serverStore.servers = [];
+      });
+
+      modelStore.reprobeRemoteCapsAfterCompletion();
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['a server type without /props', {serverType: 'OpenAI' as const}],
+      ['a record stored before the type existed', {serverType: undefined}],
+    ])(
+      'keeps its retry on %s, which would issue no request',
+      (_label, fields) => {
+        runInAction(() => {
+          serverStore.servers = [record(fields)];
+        });
+        modelStore.reprobeRemoteCapsAfterCompletion();
+        expect(probe).not.toHaveBeenCalled();
+
+        runInAction(() => {
+          serverStore.servers = [record()];
+        });
+        modelStore.reprobeRemoteCapsAfterCompletion();
+
+        expect(probe).toHaveBeenCalledTimes(1);
+      },
+    );
+  });
+
+  describe('foreground capability re-probe', () => {
+    let probe: jest.SpyInstance;
+
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.context = undefined;
+        modelStore.engine = undefined;
+        modelStore.activeRemoteBinding = {
+          modelId: 'srv-1/llama-7b',
+          serverId: 'srv-1',
+          remoteModelId: 'llama-7b',
+          url: 'http://localhost:8080',
+          serverType: 'llama.cpp',
+        };
+        modelStore.appState = 'background';
+        modelStore.activeModelId = 'srv-1/llama-7b';
+        modelStore.models = [];
+        serverStore.servers = [
+          {
+            id: 'srv-1',
+            name: 'llama',
+            url: 'http://localhost:8080',
+            serverType: 'llama.cpp',
+          },
+        ];
+        serverStore.serverModels.set('srv-1', [
+          {id: 'llama-7b', object: 'model', owned_by: 'system'},
+        ]);
+        serverStore.userSelectedModels = [
+          {serverId: 'srv-1', remoteModelId: 'llama-7b'},
+        ];
+        serverStore.remoteCaps = {};
+      });
+      probe = jest
+        .spyOn(serverStore, 'fetchRemoteModelCaps')
+        .mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+      probe.mockRestore();
+      runInAction(() => {
+        modelStore.activeModelId = undefined;
+        modelStore.engine = undefined;
+        modelStore.activeRemoteBinding = undefined;
+        serverStore.servers = [];
+        serverStore.serverModels.clear();
+        serverStore.userSelectedModels = [];
+        serverStore.remoteCaps = {};
+      });
+    });
+
+    it('probes once for an active remote model with no capabilities', async () => {
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).toHaveBeenCalledTimes(1);
+      expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b');
+    });
+
+    it('probes again on a later foreground while caps stay unknown', async () => {
+      await modelStore.handleAppStateChange('active');
+      runInAction(() => {
+        modelStore.appState = 'background';
+      });
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).toHaveBeenCalledTimes(2);
+    });
+
+    it('probes for an entry that carries no sampler defaults', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = {contextLength: 8192};
+      });
+
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).toHaveBeenCalledTimes(1);
+    });
+
+    it('issues no probe when an entry already answers the session', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = {
+          contextLength: 8192,
+          samplerDefaults: {top_k: 40},
+        };
+      });
+
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it('issues no probe on a record stored before the type existed', async () => {
+      runInAction(() => {
+        serverStore.servers = [
+          {id: 'srv-1', name: 'llama', url: 'http://localhost:8080'},
+        ];
+      });
+
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it('probes again when the stored capabilities describe another backend', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/llama-7b'] = {
+          contextLength: 8192,
+          samplerDefaults: {top_k: 40},
+          probedUrl: 'http://localhost:9090',
+        };
+      });
+
+      await modelStore.handleAppStateChange('active');
+
+      // Populated is not the same as usable: that entry is unusable for this
+      // session, and the server still serves the url the session is bound to.
+      expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b');
+    });
+
+    it('issues no probe for an active local model', async () => {
+      const model = {...presetModelFixture, isDownloaded: true};
+      runInAction(() => {
+        modelStore.models = [model];
+        modelStore.activeModelId = model.id;
+        modelStore.activeRemoteBinding = undefined;
+      });
+
+      await modelStore.handleAppStateChange('active');
+
+      expect(probe).not.toHaveBeenCalled();
+    });
+
+    it('keeps a remote model across a quick switch and probes on return', async () => {
+      runInAction(() => {
+        modelStore.useAutoRelease = true;
+        modelStore.appState = 'active';
+        modelStore.engine = {stopCompletion: jest.fn()} as any;
+        modelStore.wasAutoReleased = false;
+        modelStore.lastAutoReleasedModelId = undefined;
+        (modelStore as any).autoReleaseDisabledReasons.clear();
+      });
+      const engine = modelStore.engine;
+      expect(modelStore.isAutoReleaseEnabled).toBe(true);
+      expect(modelStore.activeModel?.origin).toBe(ModelOrigin.REMOTE);
+      const originalReleaseContext = modelStore.releaseContext;
+      const originalInitContext = modelStore.initContext;
+      const releaseContext = jest.fn(originalReleaseContext);
+      const initContext = jest.fn(originalInitContext);
+      modelStore.releaseContext = releaseContext;
+      modelStore.initContext = initContext;
+
+      try {
+        const leaving = modelStore.handleAppStateChange('background');
+        await modelStore.handleAppStateChange('active');
+        await leaving;
+      } finally {
+        modelStore.releaseContext = originalReleaseContext;
+        modelStore.initContext = originalInitContext;
+      }
+
+      expect(releaseContext).not.toHaveBeenCalled();
+      expect(initContext).not.toHaveBeenCalled();
+      expect(modelStore.wasAutoReleased).toBe(false);
+      expect(modelStore.engine).toBe(engine);
+      expect(probe).toHaveBeenCalledTimes(1);
+    });
+
+    it('survives a re-probe that rejects', async () => {
+      probe.mockRejectedValue(new Error('boom'));
+
+      await expect(
+        modelStore.handleAppStateChange('active'),
+      ).resolves.toBeUndefined();
+      await new Promise(setImmediate);
+    });
+
+    describe('after an in-session url edit', () => {
+      const remoteModel = {
+        id: 'srv-1/llama-7b',
+        name: 'llama-7b',
+        origin: ModelOrigin.REMOTE,
+        serverId: 'srv-1',
+        remoteModelId: 'llama-7b',
+      } as any;
+
+      // Activate for real so the binding is built from the url of the moment,
+      // the way updateServer leaves it.
+      const activateThenBackground = async () => {
+        await modelStore.setRemoteModel(remoteModel);
+        runInAction(() => {
+          modelStore.appState = 'background';
+          serverStore.remoteCaps = {};
+        });
+        probe.mockClear();
+      };
+
+      it('issues no probe while the session is bound to the old url', async () => {
+        await activateThenBackground();
+        serverStore.updateServer('srv-1', {url: 'http://localhost:9090'});
+
+        await modelStore.handleAppStateChange('active');
+
+        // The session still posts to :8080, so :9090 cannot answer for it.
+        expect(modelStore.activeRemoteBinding?.url).toBe(
+          'http://localhost:8080',
+        );
+        expect(probe).not.toHaveBeenCalled();
+        expect(serverStore.remoteCaps['srv-1/llama-7b']).toBeUndefined();
+      });
+
+      it('probes when the edit left the url untouched', async () => {
+        await activateThenBackground();
+        serverStore.updateServer('srv-1', {requestTimeoutMs: 30000});
+
+        await modelStore.handleAppStateChange('active');
+
+        expect(probe).toHaveBeenCalledWith('srv-1', 'llama-7b');
+      });
+
+      it('probes again once the model is re-selected on the new url', async () => {
+        await activateThenBackground();
+        serverStore.updateServer('srv-1', {url: 'http://localhost:9090'});
+
+        await modelStore.setRemoteModel(remoteModel);
+
+        expect(modelStore.activeRemoteBinding?.url).toBe(
+          'http://localhost:9090',
+        );
+        expect(probe.mock.calls.at(-1)?.slice(0, 2)).toEqual([
+          'srv-1',
+          'llama-7b',
+        ]);
+      });
     });
   });
 
   describe('fetchAndPersistGGUFMetadata error handling', () => {
-    const {loadLlamaModelInfo} = require('../../services/llm');
-
     beforeEach(() => {
       (loadLlamaModelInfo as jest.Mock).mockReset();
     });
@@ -4327,6 +7199,840 @@ describe('ModelStore', () => {
       modelStore.setReasoningOverride('server-1/remote-m', cap);
       expect(spy).toHaveBeenCalledWith('server-1/remote-m', cap);
       spy.mockRestore();
+    });
+  });
+
+  describe('speculative decoding', () => {
+    // MTP-capable GGUF metadata helper. nextn_predict_layers marks MTP capability;
+    // n_embd is the width the paired gate compares.
+    const specMeta = (over: Partial<GGUFMetadata> = {}): GGUFMetadata =>
+      ({
+        architecture: 'qwen3',
+        n_layers: 28,
+        n_embd: 1024,
+        n_head: 16,
+        n_head_kv: 8,
+        n_vocab: 151936,
+        n_embd_head_k: 64,
+        n_embd_head_v: 64,
+        ...over,
+      }) as GGUFMetadata;
+
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.contextInitParams = {
+          ...modelStore.contextInitParams,
+          speculativeEnabled: false,
+          flash_attn_type: undefined,
+          spec_draft_n_max: undefined,
+          spec_draft_n_min: undefined,
+          spec_draft_p_min: undefined,
+          spec_draft_p_split: undefined,
+          spec_draft_n_gpu_layers: undefined,
+          spec_draft_cache_type_k: undefined,
+          spec_draft_cache_type_v: undefined,
+        };
+      });
+    });
+
+    const pairedTo = (path: string): DraftConfig => ({
+      mode: 'paired',
+      resolvedDraftPath: path,
+      draftModel: {...basicModel, id: 'c/d/dr.gguf'} as Model,
+    });
+
+    describe('getEffectiveContextInitParams speculative mode', () => {
+      it('embedded mode: speculative on, no draft → MTP defaults, no model_draft', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        const params: any = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {mode: 'embedded'},
+        );
+
+        expect(params.model_draft).toBeUndefined();
+        // f16 unless flash attn is forced on: `auto` resolves per backend
+        // after init and a quantized V draft cache is fatal when it lands off.
+        expect(params.spec_draft_cache_type_k).toBe('f16');
+        expect(params.spec_draft_cache_type_v).toBe('f16');
+        expect(params.flash_attn_type).toBe('auto');
+      });
+
+      it('paired mode: downloaded draft → model_draft set, paired defaults', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        const params: any = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          pairedTo('/path/to/draft.gguf'),
+        );
+
+        expect(params.model_draft).toBe('/path/to/draft.gguf');
+        expect(params.is_model_draft_asset).toBe(false);
+        expect(params.spec_draft_cache_type_k).toBe('f16');
+        expect(params.spec_draft_cache_type_v).toBe('f16');
+        expect(params.spec_draft_n_gpu_layers).toBe(99);
+        expect(params.flash_attn_type).toBe('off');
+      });
+
+      it('off mode: no draftConfig → zero spec_draft_*, no model_draft', async () => {
+        const params: any =
+          await modelStore.getEffectiveContextInitParams(undefined);
+
+        expect(params.model_draft).toBeUndefined();
+        expect(params.spec_draft_cache_type_k).toBeUndefined();
+        expect(params.spec_draft_n_gpu_layers).toBeUndefined();
+      });
+
+      it('does not overwrite an explicit user-set spec_draft value with a mode default', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSpecDraftCacheTypeK('q4_0' as any);
+
+        const params: any = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          pairedTo('/path/to/draft.gguf'),
+        );
+
+        // Paired mode default is f16, but the user explicitly chose q4_0.
+        expect(params.spec_draft_cache_type_k).toBe('q4_0');
+      });
+
+      it('an explicit user flash_attn_type survives both speculative modes', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        // User explicitly chose 'on'; neither paired ('off' default) nor
+        // embedded ('auto' default) may overwrite it.
+        modelStore.setFlashAttnType('on');
+
+        const paired: any = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          pairedTo('/path/to/draft.gguf'),
+        );
+        expect(paired.flash_attn_type).toBe('on');
+
+        const embedded: any = await modelStore.getEffectiveContextInitParams(
+          undefined,
+          {mode: 'embedded'},
+        );
+        expect(embedded.flash_attn_type).toBe('on');
+      });
+    });
+
+    describe('resolveDraftConfig', () => {
+      it('returns off when speculative is disabled', async () => {
+        modelStore.setSpeculativeEnabled(false);
+        const target = {id: 'a/b/t.gguf', defaultDraftModel: 'c/d/dr.gguf'};
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+        expect(cfg.mode).toBe('off');
+      });
+
+      it('draft not downloaded, non-MTP target → off (no draft, no embedded), no error', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'c/d/dr.gguf',
+              isDownloaded: false,
+              modelType: ModelType.DRAFT,
+            } as any,
+          ];
+          modelStore.modelLoadError = null;
+        });
+        // Target carries no MTP metadata → not embedded-capable → resolves off.
+        const target = {id: 'a/b/t.gguf', defaultDraftModel: 'c/d/dr.gguf'};
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('off');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+        expect(modelStore.modelLoadError).toBeNull();
+      });
+
+      it('draft not downloaded but target is MTP-capable → embedded, no error', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'c/d/dr.gguf',
+              isDownloaded: false,
+              modelType: ModelType.DRAFT,
+            } as any,
+          ];
+          modelStore.modelLoadError = null;
+        });
+        const target = {
+          id: 'a/b/t.gguf',
+          defaultDraftModel: 'c/d/dr.gguf',
+          ggufMetadata: specMeta({nextn_predict_layers: 1}),
+        };
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('embedded');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+        expect(modelStore.modelLoadError).toBeNull();
+      });
+
+      it('paired when a downloaded MTP draft matches the target width', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'c/d/dr.gguf',
+              isDownloaded: true,
+              origin: ModelOrigin.LOCAL,
+              fullPath: '/path/to/dr.gguf',
+              modelType: ModelType.DRAFT,
+              ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+            } as any,
+          ];
+        });
+        const target = {
+          id: 'a/b/t.gguf',
+          defaultDraftModel: 'c/d/dr.gguf',
+          ggufMetadata: specMeta({n_embd: 1024}),
+        };
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('paired');
+        expect(cfg.resolvedDraftPath).toBe('/path/to/dr.gguf');
+        expect(cfg.draftModel?.id).toBe('c/d/dr.gguf');
+      });
+    });
+
+    describe('single-writer setters', () => {
+      it('setSpeculativeEnabled is the sole writer of the master switch', () => {
+        modelStore.setSpeculativeEnabled(true);
+        expect(modelStore.contextInitParams.speculativeEnabled).toBe(true);
+        modelStore.setSpeculativeEnabled(false);
+        expect(modelStore.contextInitParams.speculativeEnabled).toBe(false);
+      });
+
+      it('spec_draft_* setters update only their own field', () => {
+        modelStore.setSpecDraftNGpuLayers(10);
+        expect(modelStore.contextInitParams.spec_draft_n_gpu_layers).toBe(10);
+        expect(modelStore.contextInitParams.spec_draft_n_max).toBeUndefined();
+      });
+
+      it('setSelectedDraftModel is the sole writer of the global pick', () => {
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        expect(modelStore.contextInitParams.selectedDraftModelId).toBe(
+          'c/d/dr.gguf',
+        );
+        modelStore.setSelectedDraftModel(undefined);
+        expect(
+          modelStore.contextInitParams.selectedDraftModelId,
+        ).toBeUndefined();
+      });
+    });
+
+    describe('global draft pick precedence (resolveDraftConfig)', () => {
+      // A valid MTP draft: own nextn layers + a width matching the target below.
+      const downloadedDraft = (id: string, fullPath: string) =>
+        ({
+          id,
+          isDownloaded: true,
+          origin: ModelOrigin.LOCAL,
+          fullPath,
+          modelType: ModelType.DRAFT,
+          ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+        }) as any;
+
+      // Target with a width matching the drafts (so the paired width gate passes).
+      const widthTarget = (over = {}) => ({
+        id: 'a/b/t.gguf',
+        ggufMetadata: specMeta({n_embd: 1024}),
+        ...over,
+      });
+
+      it('global pick, no per-target draft → paired with the global draft', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            downloadedDraft('user/global/dr.gguf', '/path/global.gguf'),
+          ];
+        });
+        modelStore.setSelectedDraftModel('user/global/dr.gguf');
+
+        const target = widthTarget();
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('paired');
+        expect(cfg.resolvedDraftPath).toBe('/path/global.gguf');
+        expect(cfg.draftModel?.id).toBe('user/global/dr.gguf');
+      });
+
+      it('per-target draft overrides the global pick', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            downloadedDraft('rules/draft.gguf', '/path/rules.gguf'),
+            downloadedDraft('user/other.gguf', '/path/other.gguf'),
+          ];
+        });
+        modelStore.setSelectedDraftModel('user/other.gguf');
+
+        const target = widthTarget({defaultDraftModel: 'rules/draft.gguf'});
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('paired');
+        expect(cfg.resolvedDraftPath).toBe('/path/rules.gguf');
+        expect(cfg.draftModel?.id).toBe('rules/draft.gguf');
+      });
+
+      it('a model picked as its own draft never pairs with itself', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        const self = downloadedDraft('a/b/t.gguf', '/path/t.gguf');
+        runInAction(() => {
+          modelStore.models = [self];
+        });
+        modelStore.setSelectedDraftModel('a/b/t.gguf');
+
+        const cfg = await (modelStore as any).resolveDraftConfig(self);
+
+        // It carries its own MTP layers, so it runs embedded — never twice.
+        expect(cfg.mode).toBe('embedded');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+        expect(cfg.draftModel).toBeUndefined();
+      });
+
+      it('a per-target defaultDraftModel pointing at itself never pairs', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        const self = downloadedDraft('a/b/t.gguf', '/path/t.gguf');
+        self.defaultDraftModel = 'a/b/t.gguf';
+        runInAction(() => {
+          modelStore.models = [self];
+        });
+
+        const cfg = await (modelStore as any).resolveDraftConfig(self);
+
+        expect(cfg.mode).toBe('embedded');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+      });
+
+      it('global pick not downloaded, non-MTP target → off, no error', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'user/global/dr.gguf',
+              isDownloaded: false,
+              modelType: ModelType.DRAFT,
+            } as any,
+          ];
+          modelStore.modelLoadError = null;
+        });
+        modelStore.setSelectedDraftModel('user/global/dr.gguf');
+
+        // Target has no MTP metadata → resolves off (not embedded).
+        const target = {id: 'a/b/t.gguf'};
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('off');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+        expect(modelStore.modelLoadError).toBeNull();
+      });
+
+      it('load-time off: nothing picked, non-MTP target → off (migrated record loads identically to pre-feature)', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        runInAction(() => {
+          modelStore.models = [];
+        });
+
+        const target = {id: 'a/b/t.gguf'};
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('off');
+        expect(cfg.resolvedDraftPath).toBeUndefined();
+      });
+
+      it('speculative off → off before reading the global pick', async () => {
+        modelStore.setSpeculativeEnabled(false);
+        modelStore.setSelectedDraftModel('user/global/dr.gguf');
+        runInAction(() => {
+          modelStore.models = [
+            downloadedDraft('user/global/dr.gguf', '/path/global.gguf'),
+          ];
+        });
+
+        const target = {id: 'a/b/t.gguf'};
+        const cfg = await (modelStore as any).resolveDraftConfig(target);
+
+        expect(cfg.mode).toBe('off');
+      });
+    });
+
+    describe('effectiveDraftMode / effectiveDraftCacheDefaults', () => {
+      const draft = (over = {}) =>
+        ({
+          id: 'c/d/dr.gguf',
+          isDownloaded: true,
+          origin: ModelOrigin.LOCAL,
+          fullPath: '/path/dr.gguf',
+          modelType: ModelType.DRAFT,
+          ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+          ...over,
+        }) as any;
+
+      const activeTarget = (over = {}) =>
+        ({
+          id: 'a/b/t.gguf',
+          isDownloaded: true,
+          ggufMetadata: specMeta({n_embd: 1024}),
+          ...over,
+        }) as any;
+
+      const activate = (models: any[]) =>
+        runInAction(() => {
+          modelStore.models = models;
+          modelStore.activeModelId = 'a/b/t.gguf';
+        });
+
+      afterEach(() => {
+        runInAction(() => {
+          modelStore.activeModelId = undefined;
+          modelStore.models = [];
+        });
+      });
+
+      it('no active model, nothing picked → off with safe f16 cache defaults', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        runInAction(() => {
+          modelStore.activeModelId = undefined;
+        });
+
+        expect(modelStore.effectiveDraftMode).toBe('off');
+        expect(modelStore.effectiveDraftCacheDefaults).toEqual({
+          k: 'f16',
+          v: 'f16',
+        });
+      });
+
+      it('no active model, valid global pick → paired with f16 defaults', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        runInAction(() => {
+          modelStore.models = [draft()];
+          modelStore.activeModelId = undefined;
+        });
+
+        expect(modelStore.effectiveDraftMode).toBe('paired');
+        expect(modelStore.effectiveDraftCacheDefaults).toEqual({
+          k: 'f16',
+          v: 'f16',
+        });
+      });
+
+      it('no active model, picked draft not downloaded → off', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        runInAction(() => {
+          modelStore.models = [draft({isDownloaded: false})];
+          modelStore.activeModelId = undefined;
+        });
+
+        expect(modelStore.effectiveDraftMode).toBe('off');
+      });
+
+      it('no active model, picked draft without MTP layers → off', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        runInAction(() => {
+          modelStore.models = [draft({ggufMetadata: specMeta()})];
+          modelStore.activeModelId = undefined;
+        });
+
+        expect(modelStore.effectiveDraftMode).toBe('off');
+      });
+
+      it('a remote active model resolves against the global pick', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'server-1/remote.gguf',
+              isDownloaded: true,
+              origin: ModelOrigin.REMOTE,
+            } as any,
+            draft(),
+          ];
+          modelStore.activeModelId = 'server-1/remote.gguf';
+        });
+
+        expect(modelStore.effectiveDraftMode).toBe('paired');
+      });
+
+      it('speculative off → off even with a resolvable draft', () => {
+        modelStore.setSpeculativeEnabled(false);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        activate([activeTarget(), draft()]);
+
+        expect(modelStore.effectiveDraftMode).toBe('off');
+      });
+
+      it('MTP-capable active target, no draft → embedded; q8_0 only with forced flash attn', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        activate([
+          activeTarget({
+            ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+          }),
+        ]);
+
+        expect(modelStore.effectiveDraftMode).toBe('embedded');
+        // Flash attn unset resolves per backend after init, so the safe
+        // default is f16; forcing it on unlocks the quantized draft cache.
+        expect(modelStore.effectiveDraftCacheDefaults).toEqual({
+          k: 'f16',
+          v: 'f16',
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = 'on';
+        });
+        expect(modelStore.effectiveDraftCacheDefaults).toEqual({
+          k: 'q8_0',
+          v: 'q8_0',
+        });
+        runInAction(() => {
+          modelStore.contextInitParams.flash_attn_type = undefined;
+        });
+      });
+
+      it('width-compatible draft picked globally → paired with f16 defaults', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        activate([activeTarget(), draft()]);
+
+        expect(modelStore.effectiveDraftMode).toBe('paired');
+        expect(modelStore.effectiveDraftCacheDefaults).toEqual({
+          k: 'f16',
+          v: 'f16',
+        });
+      });
+
+      it('a defaultDraftModel on some other model does not pair the active one', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        activate([
+          activeTarget(),
+          {id: 'x/y/other.gguf', defaultDraftModel: 'c/d/dr.gguf'} as any,
+          draft(),
+        ]);
+
+        expect(modelStore.effectiveDraftMode).toBe('off');
+      });
+
+      it('width mismatch on a capable draft falls back to the target capability', () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        activate([
+          activeTarget({
+            ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+          }),
+          draft({
+            ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 2048}),
+          }),
+        ]);
+
+        expect(modelStore.effectiveDraftMode).toBe('embedded');
+      });
+
+      it('agrees with resolveDraftConfig for the active model', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('c/d/dr.gguf');
+        activate([activeTarget(), draft()]);
+
+        const cfg = await (modelStore as any).resolveDraftConfig(
+          modelStore.activeModel,
+        );
+
+        expect(cfg.mode).toBe(modelStore.effectiveDraftMode);
+      });
+    });
+
+    describe('draft auto-download', () => {
+      const makeDownloadPair = () => {
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'a/b/t.gguf',
+              filename: 't.gguf',
+              isDownloaded: false,
+              isLocal: false,
+              origin: ModelOrigin.HF,
+              author: 'a',
+              repo: 'b',
+              downloadUrl: 'https://huggingface.co/a/b/resolve/main/t.gguf',
+              defaultDraftModel: 'c/d/dr.gguf',
+            } as any,
+            {
+              id: 'c/d/dr.gguf',
+              filename: 'dr.gguf',
+              isDownloaded: false,
+              isLocal: false,
+              origin: ModelOrigin.HF,
+              author: 'c',
+              repo: 'd',
+              downloadUrl: 'https://huggingface.co/c/d/resolve/main/dr.gguf',
+              modelType: ModelType.DRAFT,
+            } as any,
+          ];
+        });
+      };
+
+      it('auto-downloads the paired draft when speculative is on', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        makeDownloadPair();
+
+        await modelStore.checkSpaceAndDownload('a/b/t.gguf');
+
+        const downloaded = (
+          downloadManager.startDownload as jest.Mock
+        ).mock.calls.map((c: any[]) => c[0].id);
+        expect(downloaded).toContain('c/d/dr.gguf');
+      });
+
+      it('does not auto-download the draft when speculative is off', async () => {
+        modelStore.setSpeculativeEnabled(false);
+        makeDownloadPair();
+
+        await modelStore.checkSpaceAndDownload('a/b/t.gguf');
+
+        const downloaded = (
+          downloadManager.startDownload as jest.Mock
+        ).mock.calls.map((c: any[]) => c[0].id);
+        expect(downloaded).not.toContain('c/d/dr.gguf');
+      });
+
+      it('a draft download failure does not reject the target download', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        makeDownloadPair();
+
+        (downloadManager.startDownload as jest.Mock).mockImplementation(
+          async (m: any) => {
+            if (m.id === 'c/d/dr.gguf') {
+              throw new Error('draft download failed');
+            }
+          },
+        );
+
+        await expect(
+          modelStore.checkSpaceAndDownload('a/b/t.gguf'),
+        ).resolves.not.toThrow();
+      });
+
+      it('auto-downloads a globally-picked draft when the target has no per-target draft', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'a/b/t.gguf',
+              filename: 't.gguf',
+              isDownloaded: false,
+              isLocal: false,
+              origin: ModelOrigin.HF,
+              author: 'a',
+              repo: 'b',
+              downloadUrl: 'https://huggingface.co/a/b/resolve/main/t.gguf',
+            } as any,
+            {
+              id: 'user/global/dr.gguf',
+              filename: 'dr.gguf',
+              isDownloaded: false,
+              isLocal: false,
+              origin: ModelOrigin.HF,
+              author: 'user',
+              repo: 'global',
+              downloadUrl:
+                'https://huggingface.co/user/global/resolve/main/dr.gguf',
+              modelType: ModelType.DRAFT,
+            } as any,
+          ];
+        });
+        modelStore.setSelectedDraftModel('user/global/dr.gguf');
+
+        await modelStore.checkSpaceAndDownload('a/b/t.gguf');
+
+        const downloaded = (
+          downloadManager.startDownload as jest.Mock
+        ).mock.calls.map((c: any[]) => c[0].id);
+        expect(downloaded).toContain('user/global/dr.gguf');
+      });
+
+      it('no draft id (no per-target, no global pick) → no draft download attempt', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel(undefined);
+        runInAction(() => {
+          modelStore.models = [
+            {
+              id: 'a/b/t.gguf',
+              filename: 't.gguf',
+              isDownloaded: false,
+              isLocal: false,
+              origin: ModelOrigin.HF,
+              author: 'a',
+              repo: 'b',
+              downloadUrl: 'https://huggingface.co/a/b/resolve/main/t.gguf',
+            } as any,
+          ];
+        });
+
+        await (modelStore as any)._downloadDraftModelIfNeeded(
+          modelStore.models[0],
+        );
+
+        expect(
+          downloadManager.startDownload as jest.Mock,
+        ).not.toHaveBeenCalled();
+      });
+
+      it('a DRAFT model does not recurse into its own draft download', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        modelStore.setSelectedDraftModel('user/global/dr.gguf');
+        const draft = {
+          id: 'user/global/dr.gguf',
+          filename: 'dr.gguf',
+          isDownloaded: false,
+          isLocal: false,
+          origin: ModelOrigin.HF,
+          // A real downloadUrl is required to actually exercise the DRAFT guard:
+          // without it, checkSpaceAndDownload's own !downloadUrl short-circuit
+          // would mask a missing recursion guard (the test would pass either
+          // way). With it present, removing the DRAFT guard would let the draft
+          // recurse into downloading itself, failing this assertion.
+          downloadUrl:
+            'https://huggingface.co/user/global/resolve/main/dr.gguf',
+          modelType: ModelType.DRAFT,
+        } as any;
+        runInAction(() => {
+          modelStore.models = [draft];
+        });
+
+        await (modelStore as any)._downloadDraftModelIfNeeded(draft);
+
+        expect(
+          downloadManager.startDownload as jest.Mock,
+        ).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('paired load through initContext', () => {
+      const setupPairedDownloadedModels = () => {
+        runInAction(() => {
+          modelStore.models = [
+            {
+              ...basicModel,
+              id: 'a/b/t.gguf',
+              name: 'target',
+              isDownloaded: true,
+              isLocal: true,
+              origin: ModelOrigin.LOCAL,
+              fullPath: '/path/to/t.gguf',
+              defaultDraftModel: 'c/d/dr.gguf',
+              // Target carries a known width so the draft's matching width passes
+              // the paired width gate.
+              ggufMetadata: specMeta({n_embd: 1024}),
+            } as any,
+            {
+              ...basicModel,
+              id: 'c/d/dr.gguf',
+              name: 'draft',
+              isDownloaded: true,
+              isLocal: true,
+              origin: ModelOrigin.LOCAL,
+              fullPath: '/path/to/dr.gguf',
+              modelType: ModelType.DRAFT,
+              // Valid MTP draft: own nextn layers + width matching the target.
+              ggufMetadata: specMeta({nextn_predict_layers: 1, n_embd: 1024}),
+            } as any,
+          ];
+          modelStore.context = undefined;
+          modelStore.activeModelId = undefined;
+          modelStore.isContextLoading = false;
+          modelStore.modelLoadError = null;
+        });
+      };
+
+      it('forwards the resolved draft path to initLlama when a paired draft loads', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        setupPairedDownloadedModels();
+
+        const {initLlama} = require('llama.rn');
+        (initLlama as jest.Mock).mockReset();
+        (initLlama as jest.Mock).mockResolvedValue({
+          release: jest.fn(),
+          isMultimodalEnabled: jest.fn().mockResolvedValue(false),
+        });
+
+        const target = modelStore.models.find(m => m.id === 'a/b/t.gguf')!;
+        await modelStore.initContext(target);
+
+        const params = (initLlama as jest.Mock).mock.calls[0][0];
+        expect(params.model_draft).toBe('/path/to/dr.gguf');
+        expect(params.is_model_draft_asset).toBe(false);
+      });
+
+      it('a draft-related init failure sets modelLoadError once and calls initLlama once — no auto-retry', async () => {
+        modelStore.setSpeculativeEnabled(true);
+        setupPairedDownloadedModels();
+
+        const {initLlama} = require('llama.rn');
+        (initLlama as jest.Mock).mockReset();
+        (initLlama as jest.Mock).mockRejectedValue(
+          new Error('draft init failed'),
+        );
+
+        const target = modelStore.models.find(m => m.id === 'a/b/t.gguf')!;
+        await expect(modelStore.initContext(target)).rejects.toThrow();
+
+        // Crash-loop guard: error surfaced exactly once, no auto-fallback
+        // re-init, no auto-retry → initLlama invoked exactly once.
+        expect(initLlama as jest.Mock).toHaveBeenCalledTimes(1);
+        expect(modelStore.modelLoadError).not.toBeNull();
+        // Failed load leaves no stale active draft.
+        expect(modelStore.context).toBeUndefined();
+      });
+    });
+
+    describe('main-context release path', () => {
+      it('clears activeProjectionModelId in the finally branch when a real context is released', async () => {
+        const releasedCtx = {
+          release: jest.fn().mockResolvedValue(undefined),
+          stopCompletion: jest.fn().mockResolvedValue(undefined),
+          isMultimodalEnabled: jest.fn().mockResolvedValue(false),
+        };
+        runInAction(() => {
+          modelStore.activeProjectionModelId = 'proj';
+          modelStore.context = releasedCtx as any;
+          modelStore.engine = {stopCompletion: jest.fn()} as any;
+          modelStore.inferencing = false;
+          modelStore.isStreaming = false;
+        });
+
+        await (modelStore as any)._releaseContextInternal(false);
+
+        expect(releasedCtx.release).toHaveBeenCalled();
+        expect(modelStore.activeProjectionModelId).toBeUndefined();
+      });
+    });
+
+    describe('remote-engine release path', () => {
+      it('clears the engine and its multimodal state when there is no context', async () => {
+        const stopCompletion = jest.fn().mockResolvedValue(undefined);
+        runInAction(() => {
+          modelStore.context = undefined;
+          modelStore.engine = {stopCompletion} as any;
+          modelStore.activeModelId = 'server-1/remote.gguf';
+          modelStore.isMultimodalActive = true;
+          modelStore.activeProjectionModelId = 'proj';
+        });
+
+        await (modelStore as any)._releaseContextInternal(true);
+
+        expect(stopCompletion).toHaveBeenCalled();
+        expect(modelStore.engine).toBeUndefined();
+        expect(modelStore.activeModelId).toBeUndefined();
+        expect(modelStore.isMultimodalActive).toBe(false);
+        expect(modelStore.activeProjectionModelId).toBeUndefined();
+      });
     });
   });
 });

@@ -2,9 +2,12 @@ import React, {useEffect, useState} from 'react';
 import DeviceInfo from 'react-native-device-info';
 import {L10nContext, formatBytes} from '../utils';
 import {t} from '../locales';
-import {Model, ContextInitParams} from '../utils/types';
+import {Model} from '../utils/types';
 import {isHighEndDevice} from '../utils/deviceCapabilities';
-import {getModelMemoryRequirement} from '../utils/memoryEstimator';
+import {
+  getModelMemoryRequirement,
+  MemoryEstimateSettings,
+} from '../utils/memoryEstimator';
 // Note: This creates a circular dependency with ModelStore (which imports hasEnoughMemory).
 // This is intentional and runtime-safe because:
 // 1. modelStore is instantiated after class definition
@@ -19,11 +22,13 @@ import {MemoryFitStatus} from '../utils/memoryDisplay';
  *
  * @param model - The model to check
  * @param projectionModel - Optional mmproj model for multimodal
+ * @param draftModel - Optional speculative draft model loaded alongside the target
  * @returns true if device has enough memory
  */
 export const hasEnoughMemory = async (
   model: Model,
   projectionModel?: Model,
+  draftModel?: Model,
 ): Promise<boolean> => {
   // Try to fetch GGUF metadata if not available but model is downloaded
   // After fetching, get the updated model from store (if it exists there)
@@ -65,7 +70,8 @@ export const hasEnoughMemory = async (
   const memoryRequirement = getModelMemoryRequirement(
     modelForCalc,
     projectionModel,
-    modelStore.contextInitParams,
+    modelStore.memoryEstimateSettings,
+    draftModel,
   );
 
   return memoryRequirement <= ceiling;
@@ -77,7 +83,8 @@ export const hasEnoughMemory = async (
 async function getMemoryFitDetails(
   model: Model,
   projectionModel: Model | undefined,
-  contextInitParams: ContextInitParams,
+  memoryEstimateSettings: MemoryEstimateSettings,
+  draftModel?: Model,
 ): Promise<{
   status: MemoryFitStatus;
   requiredBytes: number;
@@ -87,7 +94,8 @@ async function getMemoryFitDetails(
   const requiredBytes = getModelMemoryRequirement(
     model,
     projectionModel,
-    contextInitParams,
+    memoryEstimateSettings,
+    draftModel,
   );
 
   // Get device total memory
@@ -117,10 +125,12 @@ async function getMemoryFitDetails(
  *
  * @param model - The model to check (or a partial model with at least size)
  * @param projectionModel - Optional mmproj model for multimodal
+ * @param draftModel - Optional speculative draft model loaded alongside the target
  */
 export const useMemoryCheck = (
   model: Model | {size: number; supportsMultimodal?: boolean},
   projectionModel?: Model,
+  draftModel?: Model,
 ) => {
   const l10n = React.useContext(L10nContext);
   const [memoryWarning, setMemoryWarning] = useState('');
@@ -138,6 +148,7 @@ export const useMemoryCheck = (
   // Read context settings that affect memory estimation
   // This ensures the hook re-runs when user changes context size, cache types, etc.
   const contextInitParams = modelStore.contextInitParams;
+  const deviceTier = modelStore.deviceTier;
 
   useEffect(() => {
     const checkMemory = async () => {
@@ -152,7 +163,8 @@ export const useMemoryCheck = (
           await getMemoryFitDetails(
             model as Model,
             projectionModel,
-            contextInitParams,
+            modelStore.memoryEstimateSettings,
+            draftModel,
           );
 
         setFitStatus(status);
@@ -203,7 +215,15 @@ export const useMemoryCheck = (
     };
 
     checkMemory();
-  }, [model, projectionModel, l10n, calibrationCeiling, contextInitParams]);
+  }, [
+    model,
+    projectionModel,
+    draftModel,
+    l10n,
+    calibrationCeiling,
+    contextInitParams,
+    deviceTier,
+  ]);
 
   return {memoryWarning, shortMemoryWarning, multimodalWarning, fitStatus};
 };

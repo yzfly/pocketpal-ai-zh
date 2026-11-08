@@ -419,10 +419,18 @@ class ChatSessionRepository {
   async addMessageToSession(
     sessionId: string,
     message: MessageType.Any,
-  ): Promise<Message> {
+  ): Promise<Message | undefined> {
     let newMessage: any;
 
     await database.write(async () => {
+      const session = await database.collections
+        .get('chat_sessions')
+        .find(sessionId)
+        .catch(() => null);
+      if (!session) {
+        return;
+      }
+
       // Get the highest position
       const messages = await database.collections
         .get('messages')
@@ -483,7 +491,7 @@ class ChatSessionRepository {
         });
     });
 
-    return newMessage as unknown as Message;
+    return newMessage as unknown as Message | undefined;
   }
 
   // Update a message. Accepts either a Text-shaped partial (legacy) or
@@ -630,6 +638,21 @@ class ChatSessionRepository {
     await database.write(async () => {
       await session.update((record: any) => {
         record.title = newTitle;
+      });
+    });
+  }
+
+  // Set pinned status for a session.
+  // Deliberately does not swallow a missing record the way the sibling setters
+  // do: the store must not mirror a pin it could not persist.
+  async setSessionPinned(sessionId: string, pinned: boolean): Promise<void> {
+    const session = await database.collections
+      .get('chat_sessions')
+      .find(sessionId);
+
+    await database.write(async () => {
+      await session.update((record: any) => {
+        record.pinned = pinned;
       });
     });
   }

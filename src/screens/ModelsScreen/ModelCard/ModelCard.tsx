@@ -47,6 +47,9 @@ import {
   checkModelFileIntegrity,
   getModelSkills,
   formatNumber,
+  isMTPCapable,
+  isDraftOnlyModel,
+  formatBytes,
 } from '../../../utils';
 
 import {
@@ -59,6 +62,8 @@ import {
   XIcon,
   ChevronSelectorVerticalIcon,
   ChevronSelectorExpandedVerticalIcon,
+  DownloadIcon,
+  EyeOffIcon,
 } from '../../../assets/icons';
 
 type ChatScreenNavigationProp = DrawerNavigationProp<RootDrawerParamList>;
@@ -91,8 +96,7 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
     const [integrityError, setIntegrityError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Resolve projection model for memory check (same logic as ModelStore.checkMemoryAndConfirm)
-    // Resolve projection model for memory check (same logic as ModelStore.checkMemoryAndConfirm)
+    // Mirrors ModelStore.checkMemoryAndConfirm's projection-model resolution.
     const projectionModelForCheck = useMemo(
       () => {
         if (
@@ -121,18 +125,31 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
     );
 
     const isActiveModel = activeModelId === model.id;
+    const isDraftOnly = isDraftOnlyModel(model);
     const isDownloaded = model.isDownloaded;
     const isDownloading = modelStore.isDownloading(model.id);
     const isHfModel = model.origin === ModelOrigin.HF;
     const isRemoteModel = model.origin === ModelOrigin.REMOTE;
+    const cardId = model.filename || model.id;
+
+    const modelCaps = modelStore.capsFor(model);
+    const visionLabel =
+      modelCaps.vision === 'yes'
+        ? l10n.models.modelCard.labels.visionSupported
+        : modelCaps.vision === 'no'
+          ? l10n.models.modelCard.labels.visionNotSupported
+          : l10n.models.modelCard.labels.visionUnknown;
 
     // Check projection model status for downloaded vision models
     const projectionModelStatus = modelStore.getProjectionModelStatus(model);
-    const hasProjectionModelWarning =
+    const usesProjector =
       isDownloaded &&
       model.supportsMultimodal &&
-      modelStore.getModelVisionPreference(model) && // Only show warning when vision is enabled
-      projectionModelStatus.state === 'missing';
+      modelStore.getModelVisionPreference(model);
+    const hasProjectionModelWarning =
+      usesProjector && projectionModelStatus.state === 'missing';
+    const isProjectorDownloading =
+      usesProjector && projectionModelStatus.state === 'downloading';
 
     // Check integrity when model is downloaded (skip remote models — no local file)
     useEffect(() => {
@@ -280,7 +297,7 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
     // Helper function to get model type icon - updated sizes
     const getModelTypeIcon = () => {
-      if (model.supportsMultimodal) {
+      if (modelCaps.vision === 'yes') {
         return (
           <EyeIcon
             width={16}
@@ -391,6 +408,30 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
               accessibilityLabel={l10n.common.delete}>
               <TrashIcon width={16} height={16} stroke={theme.colors.error} />
             </TouchableOpacity>
+            <TouchableOpacity
+              testID="expand-details-button"
+              onPress={toggleExpanded}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isExpanded
+                  ? l10n.models.modelCard.accessibility.collapseDetails
+                  : l10n.models.modelCard.accessibility.expandDetails
+              }>
+              {isExpanded ? (
+                <ChevronSelectorExpandedVerticalIcon
+                  width={16}
+                  height={16}
+                  stroke={theme.colors.onSurfaceVariant}
+                />
+              ) : (
+                <ChevronSelectorVerticalIcon
+                  width={16}
+                  height={16}
+                  stroke={theme.colors.onSurfaceVariant}
+                />
+              )}
+            </TouchableOpacity>
           </View>
         );
       }
@@ -498,56 +539,63 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
       // Downloaded state - soft blue styling
       return (
-        <View style={styles.actionButtonsRow}>
-          {renderModelLoadButton()}
+        <>
+          <View style={styles.actionButtonsRow}>
+            {renderModelLoadButton()}
 
-          <TouchableOpacity
-            testID="settings-button"
-            onPress={onOpenSettings}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel={l10n.models.modelCard.buttons.settings}>
-            <SettingsIcon
-              width={16}
-              height={16}
-              stroke={theme.colors.onSurfaceVariant}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            testID="delete-button"
-            onPress={() => handleDelete()}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel={l10n.common.delete}>
-            <TrashIcon width={16} height={16} stroke={theme.colors.error} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            testID="expand-details-button"
-            onPress={toggleExpanded}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isExpanded
-                ? l10n.models.modelCard.accessibility.collapseDetails
-                : l10n.models.modelCard.accessibility.expandDetails
-            }>
-            {isExpanded ? (
-              <ChevronSelectorExpandedVerticalIcon
+            <TouchableOpacity
+              testID="settings-button"
+              onPress={onOpenSettings}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={l10n.models.modelCard.buttons.settings}>
+              <SettingsIcon
                 width={16}
                 height={16}
                 stroke={theme.colors.onSurfaceVariant}
               />
-            ) : (
-              <ChevronSelectorVerticalIcon
-                width={16}
-                height={16}
-                stroke={theme.colors.onSurfaceVariant}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="delete-button"
+              onPress={() => handleDelete()}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={l10n.common.delete}>
+              <TrashIcon width={16} height={16} stroke={theme.colors.error} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="expand-details-button"
+              onPress={toggleExpanded}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isExpanded
+                  ? l10n.models.modelCard.accessibility.collapseDetails
+                  : l10n.models.modelCard.accessibility.expandDetails
+              }>
+              {isExpanded ? (
+                <ChevronSelectorExpandedVerticalIcon
+                  width={16}
+                  height={16}
+                  stroke={theme.colors.onSurfaceVariant}
+                />
+              ) : (
+                <ChevronSelectorVerticalIcon
+                  width={16}
+                  height={16}
+                  stroke={theme.colors.onSurfaceVariant}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+          {isDraftOnly && (
+            <Text style={styles.draftOnlyHint}>
+              {l10n.models.modelCard.labels.draftOnlyReason}
+            </Text>
+          )}
+        </>
       );
     };
 
@@ -616,12 +664,25 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
         return theme.colors.btnPrimaryText;
       };
 
+      // llama.rn cannot open a draft as a context; loading one only ever fails.
+      if (isDraftOnly) {
+        return (
+          <Button
+            testID="draft-only-load-disabled"
+            accessibilityLabel={l10n.models.modelCard.labels.draftOnlyReason}
+            icon="play-circle-outline"
+            disabled
+            style={[styles.primaryActionButton, getButtonStyle()]}>
+            {getButtonText()}
+          </Button>
+        );
+      }
+
       return (
         <Button
           testID={isActiveModel ? 'offload-button' : 'load-button'}
           accessibilityLabel={isActiveModel ? 'Offload model' : 'Load model'}
           icon={isActiveModel ? 'eject' : 'play-circle-outline'}
-          //mode="contained-tonal"
           onPress={handlePress}
           style={[styles.primaryActionButton, getButtonStyle()]}
           textColor={getTextColor()}>
@@ -630,17 +691,86 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       );
     };
 
+    const renderProjectorOffer = () => {
+      const projectorOffer = l10n.models.modelCard.projectorOffer;
+      if (isProjectorDownloading) {
+        const progress = projectionModelStatus.projectionModel?.progress ?? 0;
+        return (
+          <View
+            testID="projector-download-progress"
+            style={styles.projectorProgress}>
+            <Text style={styles.projectorProgressText}>
+              {t(projectorOffer.downloading, {progress: Math.round(progress)})}
+            </Text>
+            <ProgressBar
+              progress={progress / 100}
+              color={theme.colors.tertiary}
+              style={styles.projectorProgressBar}
+            />
+          </View>
+        );
+      }
+      if (!hasProjectionModelWarning) {
+        return null;
+      }
+      const projectorSize = projectionModelStatus.projectionModel?.size
+        ? formatBytes(
+            projectionModelStatus.projectionModel.size,
+            0,
+            false,
+            true,
+          )
+        : undefined;
+      return (
+        <TouchableOpacity
+          testID="projection-warning-badge"
+          onPress={handleProjectionWarningPress}
+          style={styles.projectorOffer}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={
+            projectorSize
+              ? t(projectorOffer.a11yWithSize, {size: projectorSize})
+              : l10n.models.modelCard.labels.downloadProjectionModel
+          }>
+          <EyeOffIcon
+            width={16}
+            height={16}
+            stroke={theme.colors.iconModelTypeVision}
+          />
+          <Text style={styles.projectorOfferTitle}>
+            {projectorOffer.rowTitle}
+          </Text>
+          <View style={styles.projectorOfferAction}>
+            <DownloadIcon
+              width={16}
+              height={16}
+              stroke={theme.colors.primary}
+            />
+            <Text style={styles.projectorOfferActionText}>
+              {projectorSize ?? projectorOffer.download}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    };
+
     return (
       <>
-        <Card
-          elevation={0}
-          style={styles.card}
-          testID={`model-card-${model.filename}`}>
+        <Card elevation={0} style={styles.card} testID={`model-card-${cardId}`}>
           {/* Compact Header */}
           <View style={styles.compactHeader}>
             <View style={styles.headerContent}>
               <View style={styles.headerLeft}>
-                <View style={styles.modelTypeIcon}>{getModelTypeIcon()}</View>
+                <View
+                  style={styles.modelTypeIcon}
+                  {...(isRemoteModel && {
+                    accessible: true,
+                    accessibilityLabel: `${l10n.models.modelCard.labels.vision}: ${visionLabel}`,
+                    testID: `model-card-vision-${cardId}`,
+                  })}>
+                  {getModelTypeIcon()}
+                </View>
                 <Text
                   variant="titleSmall"
                   style={styles.compactModelName}
@@ -757,6 +887,7 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
             {/* Action Buttons Section */}
             <View style={styles.actionButtonsContainer}>
               {renderActionButtons()}
+              {renderProjectorOffer()}
             </View>
 
             {isExpanded && (
@@ -772,25 +903,32 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                 </View>
 
                 {/* Memory Requirement */}
-                {model.isDownloaded && (
+                {model.isDownloaded && !isRemoteModel && (
                   <MemoryRequirement
                     model={model}
                     projectionModel={projectionModelForCheck}
                   />
                 )}
 
-                {/* Description - matching updated React example */}
-                {model.capabilities && model.capabilities.length > 0 && (
+                {((model.capabilities && model.capabilities.length > 0) ||
+                  isMTPCapable(model)) && (
                   <View style={styles.descriptionContainer}>
                     <Text style={styles.descriptionText}>
-                      {getModelSkills(model)
-                        .map(
+                      {[
+                        ...getModelSkills(model).map(
                           skill =>
                             l10n.models.modelCapabilities[
                               skill.labelKey as keyof typeof l10n.models.modelCapabilities
                             ] || skill.labelKey,
-                        )
-                        .join(', ')}{' '}
+                        ),
+                        ...(isMTPCapable(model)
+                          ? [
+                              isDraftOnly
+                                ? l10n.models.modelCapabilities.mtpDraft
+                                : l10n.models.modelCapabilities.mtp,
+                            ]
+                          : []),
+                      ].join(', ')}{' '}
                       {l10n.models.modelCard.labels.capabilities}
                     </Text>
                   </View>
@@ -817,6 +955,8 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                         </Text>
                       </View>
                       <Switch
+                        testID="vision-toggle-switch"
+                        accessibilityLabel={l10n.models.modelCard.labels.vision}
                         value={modelStore.getModelVisionPreference(model)}
                         onValueChange={handleVisionToggle}
                         disabled={
@@ -864,17 +1004,15 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                   )}
 
                   {/* Context Length */}
-                  {(model.hfModel?.specs?.gguf?.context_length ||
-                    model.ggufMetadata?.context_length) && (
-                    <View style={styles.technicalDetailCard}>
+                  {modelCaps.contextLength && (
+                    <View
+                      style={styles.technicalDetailCard}
+                      testID={`model-card-context-length-${cardId}`}>
                       <Text style={styles.technicalDetailLabel}>
                         {l10n.models.modelCard.labels.contextLength}
                       </Text>
                       <Text style={styles.technicalDetailValue}>
-                        {(
-                          model.hfModel?.specs?.gguf?.context_length ||
-                          model.ggufMetadata?.context_length
-                        )?.toLocaleString()}
+                        {modelCaps.contextLength.toLocaleString()}
                       </Text>
                     </View>
                   )}
@@ -894,7 +1032,7 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                   )}
 
                   {/* Author */}
-                  {model.author && (
+                  {model.author && !isRemoteModel && (
                     <View style={styles.technicalDetailCard}>
                       <Text style={styles.technicalDetailLabel}>
                         {l10n.models.modelCard.labels.author}
@@ -904,20 +1042,23 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                       </Text>
                     </View>
                   )}
-                </View>
 
-                {/* Projection model warning */}
-                {hasProjectionModelWarning && (
-                  <TouchableOpacity
-                    testID="projection-warning-badge"
-                    onPress={handleProjectionWarningPress}
-                    style={styles.warningButton}
-                    activeOpacity={0.7}>
-                    <Text style={styles.warningButtonText}>
-                      {l10n.models.modelCard.labels.downloadProjectionModel}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                  {/* Vision */}
+                  {isRemoteModel && (
+                    <View
+                      style={styles.technicalDetailCard}
+                      testID={`model-card-vision-capability-${cardId}`}
+                      accessible={true}
+                      accessibilityLabel={`${l10n.models.modelCard.labels.vision}: ${visionLabel}`}>
+                      <Text style={styles.technicalDetailLabel}>
+                        {l10n.models.modelCard.labels.vision}
+                      </Text>
+                      <Text style={styles.technicalDetailValue}>
+                        {visionLabel}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 {/* HuggingFace Link */}
                 {model.hfUrl && (

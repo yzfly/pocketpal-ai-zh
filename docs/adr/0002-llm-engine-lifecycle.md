@@ -1,9 +1,20 @@
 # ADR-0002: LlmEngine 接管 context 生命周期，LlmBackend 成为后端接缝
 
-- 状态: 已采纳
+- 状态: 已撤回（2026-11-08，同步上游 v1.22.1 时）
 - 日期: 2026-07-02
 - 前置: ADR-0001（阶段一已落地）
 - 分支: chinese-v2
+
+## 撤回说明（2026-11-08）
+
+上游在 2026-07 之后用 `GenerationSlot` / generation lease 重写了 context
+生命周期（释放会中止并等待在途生成），与本 ADR 的 `LlmEngine` 覆盖同一块
+机制。继续保留分叉实现，每次同步上游都会在 `ModelStore` 上大面积冲突。
+因此撤回阶段二、三：删除 `engine.ts` / `backend.ts`，`ModelStore` 回到上游
+实现。ADR-0001 的 import 边界（只允许 `src/services/llm` 引入 `llama.rn`）
+继续保留。
+
+以下为原始记录。
 
 ## 背景
 

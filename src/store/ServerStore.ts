@@ -4,14 +4,79 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {makePersistable} from 'mobx-persist-store';
 import * as Keychain from 'react-native-keychain';
 
-import {fetchModels, testConnection, RemoteModelInfo} from '../api/openai';
-import {ServerConfig} from '../utils/types';
+import {fetchModelsWithHeaders, testConnection} from '../api/openai';
+import {fetchServerProps, PROPS_TIMEOUT_MS} from '../api/llamaServer/props';
+import {
+  ListDerivedCaps,
+  RemoteModelCaps,
+  RemoteModelInfo,
+  ServerConfig,
+} from '../utils/types';
 import {ReasoningCapability} from '../utils/reasoningCapability';
+import {toServerType} from '../utils/serverTypes';
+import {deriveListCapsMap} from '../api/servers';
+import {profileFor} from '../api/servers';
 
 const KEYCHAIN_SERVICE_PREFIX = 'pocketpal-server-';
 
 /** Minimum interval between auto-fetch cycles (ms) */
 const FETCH_THROTTLE_MS = 60000;
+
+/**
+ * The fields a `RemoteModelCaps` entry answers with — everything except the
+ * provenance it carries. A probe that resolves none of them said nothing.
+ */
+const CAPS_FIELDS = [
+  'contextLength',
+  'supportsVision',
+  'samplerDefaults',
+] as const;
+
+const isUnusableCaps = (caps: RemoteModelCaps) =>
+  CAPS_FIELDS.every(f => caps[f] === undefined);
+
+const shallowEqual = (
+  a: Record<string, unknown> | undefined,
+  b: Record<string, unknown> | undefined,
+): boolean => {
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length && keys.every(k => a[k] === b[k])
+  );
+};
+
+/**
+ * Shared by every path that invalidates per-model state, so a new map cannot
+ * be added to one and forgotten in the other.
+ */
+function dropServerEntries<T>(
+  map: Record<string, T>,
+  serverId: string,
+): Record<string, T> {
+  const prefix = `${serverId}/`;
+  return Object.fromEntries(
+    Object.entries(map).filter(([k]) => !k.startsWith(prefix)),
+  );
+}
+
+/**
+ * What the latest list read of one server established. Live-only: it describes
+ * a backend the app may not reach next launch.
+ */
+export interface ListRead {
+  /** `readSeq` after this read's start, so later-started reads compare higher. */
+  seq: number;
+  /** The body carried a top-level `models` key (a single-model server does). */
+  hasModelsKey: boolean;
+  /** The latest read failed and none has succeeded since. */
+  stale: boolean;
+}
 
 class ServerStore {
   servers: ServerConfig[] = [];
@@ -19,12 +84,18 @@ class ServerStore {
   // Remote Models are rebuilt each launch and not persisted, so their capability
   // lives here and persists with the store.
   remoteReasoning: Record<string, ReasoningCapability> = {};
+  // Server-reported capabilities keyed by the same full model id. /props
+  // answers per model on a multi-model server, so caps cannot live per server.
+  remoteCaps: Record<string, RemoteModelCaps> = {};
   serverModels: Map<string, RemoteModelInfo[]> = observable.map();
   userSelectedModels: Array<{serverId: string; remoteModelId: string}> = [];
   isLoading = false;
   error: string | null = null;
   privacyNoticeAcknowledged = false;
+  listReads: Record<string, ListRead> = {};
+  appActive = true;
 
+  private readCounter = 0;
   private lastFetchTime = 0;
   private appStateSubscription: any = null;
 
@@ -40,14 +111,33 @@ class ServerStore {
         'privacyNoticeAcknowledged',
         'userSelectedModels',
         'remoteReasoning',
+        'remoteCaps',
       ],
       storage: AsyncStorage,
     }).then(() => {
-      // After hydration, fetch models for all servers
-      this.fetchAllRemoteModels();
+      this.afterHydration();
     });
 
     this.setupAppStateListener();
+  }
+
+  /**
+   * makePersistable does not type-check what it restores, so a stored
+   * serverType can be a legacy empty string or a free string. Normalising it
+   * before the first fetch makes the declared type true for every reader.
+   */
+  async afterHydration(): Promise<void> {
+    for (const server of this.servers) {
+      if (server.serverType !== undefined) {
+        server.serverType = toServerType(server.serverType);
+      }
+    }
+    await this.fetchAllRemoteModels();
+  }
+
+  /** Counts every list read at its start, store-wide. */
+  get readSeq(): number {
+    return this.readCounter;
   }
 
   // Actions
@@ -57,33 +147,63 @@ class ServerStore {
       ...config,
       id,
     };
+    if (newServer.serverType !== undefined) {
+      newServer.serverType = toServerType(newServer.serverType);
+    }
     this.servers.push(newServer);
     return id;
   }
 
-  updateServer(id: string, updates: Partial<ServerConfig>): void {
+  updateServer(id: string, updates: Partial<ServerConfig>): boolean {
     const server = this.servers.find(s => s.id === id);
-    if (server) {
-      Object.assign(server, updates);
+    if (!server) {
+      return false;
     }
+    // Caps and the model list are both what the configured backend reported.
+    // Repointing the url or switching the server type makes them describe
+    // something else: resolveRemoteCaps has no way to tell, and a stale
+    // single-entry list would let servesOnlyModel clear the bare-retry gate
+    // against a router. Drop both and let the next probe / fetch repopulate.
+    // Reasoning state survives: it carries user declarations, and it is not
+    // server-reported.
+    const normalised =
+      updates.serverType !== undefined
+        ? {...updates, serverType: toServerType(updates.serverType)}
+        : updates;
+    // Both sides of the type comparison are normalised: a legacy row whose key
+    // is absent already means 'unknown', so saving 'unknown' over it changes
+    // nothing and must not discard what the server reported.
+    const invalidatesDiscovery =
+      (normalised.url !== undefined && normalised.url !== server.url) ||
+      (normalised.serverType !== undefined &&
+        normalised.serverType !== toServerType(server.serverType));
+
+    Object.assign(server, normalised);
+
+    if (invalidatesDiscovery) {
+      this.remoteCaps = dropServerEntries(this.remoteCaps, id);
+      this.dropList(id);
+    }
+    return invalidatesDiscovery;
   }
 
   removeServer(id: string): void {
     this.servers = this.servers.filter(s => s.id !== id);
-    this.serverModels.delete(id);
+    this.dropList(id);
     // Remove all user-selected models for this server
     this.userSelectedModels = this.userSelectedModels.filter(
       m => m.serverId !== id,
     );
-    // Drop remote reasoning entries keyed by this server's model ids.
-    const prefix = `${id}/`;
-    this.remoteReasoning = Object.fromEntries(
-      Object.entries(this.remoteReasoning).filter(
-        ([k]) => !k.startsWith(prefix),
-      ),
-    );
+    this.remoteReasoning = dropServerEntries(this.remoteReasoning, id);
+    this.remoteCaps = dropServerEntries(this.remoteCaps, id);
     // Clean up API key from keychain
     this.removeApiKey(id);
+  }
+
+  /** The list and the record of the read that produced it go together. */
+  private dropList(id: string): void {
+    this.serverModels.delete(id);
+    delete this.listReads[id];
   }
 
   addUserSelectedModel(serverId: string, remoteModelId: string): void {
@@ -132,6 +252,16 @@ class ServerStore {
     if (!hasModels) {
       this.removeServer(serverId);
     }
+  }
+
+  /**
+   * What the fetched model lists say about each model, keyed by full model id.
+   * A computed with no writer and no persistence: `serverModels` is already
+   * replaced by every fetch, dropped when a server url or type changes and
+   * dropped with the server, so these cannot outlive the url they came from.
+   */
+  get listCaps(): Record<string, ListDerivedCaps> {
+    return deriveListCapsMap(this.servers, this.serverModels);
   }
 
   getModelsNotYetAdded(serverId: string): RemoteModelInfo[] {
@@ -186,42 +316,186 @@ class ServerStore {
     }
   }
 
-  // Remote model fetching
-  async fetchModelsForServer(serverId: string): Promise<void> {
+  /**
+   * The only writer of `serverModels` and `listReads`. A response from a url
+   * the server has since left, or one overtaken by a later-started read,
+   * writes nothing: a late older answer must not settle against newer state.
+   */
+  async fetchModelsForServer(
+    serverId: string,
+  ): Promise<{ok: boolean; error?: string}> {
     const server = this.servers.find(s => s.id === serverId);
     if (!server) {
-      return;
+      return {ok: false};
     }
 
-    runInAction(() => {
-      this.isLoading = true;
-      this.error = null;
-    });
+    const seq = ++this.readCounter;
+    this.isLoading = true;
+    this.error = null;
 
+    const {url} = server;
     try {
       const apiKey = await this.getApiKey(serverId);
-      const models = await fetchModels(
-        server.url,
+      const {models, hasModelsKey} = await fetchModelsWithHeaders(
+        url,
         apiKey,
         server.requestTimeoutMs,
       );
 
       runInAction(() => {
-        this.serverModels.set(serverId, models);
         this.isLoading = false;
-
-        // Update lastConnected timestamp
-        const s = this.servers.find(sv => sv.id === serverId);
-        if (s) {
-          s.lastConnected = Date.now();
+        const current = this.servers.find(s => s.id === serverId);
+        if (current?.url !== url || this.isOvertaken(serverId, seq)) {
+          return;
+        }
+        this.serverModels.set(serverId, models);
+        this.listReads[serverId] = {
+          seq,
+          hasModelsKey: hasModelsKey === true,
+          stale: false,
+        };
+        current.lastConnected = Date.now();
+      });
+      return {ok: true};
+    } catch (error: any) {
+      const message: string = error.message || 'Failed to fetch models';
+      runInAction(() => {
+        this.isLoading = false;
+        const current = this.servers.find(s => s.id === serverId);
+        if (current?.url !== url) {
+          return;
+        }
+        this.error = message;
+        const read = this.listReads[serverId];
+        if (read && !this.isOvertaken(serverId, seq)) {
+          read.stale = true;
         }
       });
-    } catch (error: any) {
-      runInAction(() => {
-        this.error = error.message || 'Failed to fetch models';
-        this.isLoading = false;
-      });
+      return {ok: false, error: message};
     }
+  }
+
+  private isOvertaken(serverId: string, seq: number): boolean {
+    return (this.listReads[serverId]?.seq ?? 0) > seq;
+  }
+
+  /**
+   * Probe GET /props for one remote model and merge what it reports into
+   * remoteCaps. llama.cpp only; callers invoke it detached, and it never
+   * throws or rejects.
+   *
+   * At most two requests: the scoped one, and — only when the server is
+   * provably serving this one model — a bare retry, which is what a
+   * single-model llama-server has always answered correctly. On a multi-model
+   * server the bare form describes whichever model happens to be resident, so
+   * it is never issued there and the caps simply stay unknown.
+   *
+   * Merges field-wise within one backend: a response that resolves only one
+   * field must not blank a known other, and a probe that resolves nothing
+   * writes nothing. Across backends there is nothing to merge — an entry
+   * probed against another url is replaced, not blended.
+   *
+   * The written entry carries the url it was probed against, so a reader can
+   * tell whether it describes the backend a live session is bound to.
+   *
+   * A shorter server timeout is honoured, a longer one is not:
+   * `requestTimeoutMs` is a free numeric input, and detached work must stay
+   * bounded by `PROPS_TIMEOUT_MS` per request.
+   *
+   * `resolvedApiKey` undefined is indistinguishable from a keyless server, so
+   * the probe re-reads the Keychain in that case.
+   */
+  async fetchRemoteModelCaps(
+    serverId: string,
+    remoteModelId: string,
+    resolvedApiKey?: string,
+  ): Promise<void> {
+    const server = this.servers.find(s => s.id === serverId);
+    if (!server || !profileFor(server.serverType).hasProps) {
+      return;
+    }
+
+    // Snapshot: `server` is the live observable, so updateServer mutates it
+    // in place while the probe is in flight.
+    const probedUrl = server.url;
+    const probedType = server.serverType;
+
+    const timeoutMs = Math.min(
+      server.requestTimeoutMs ?? PROPS_TIMEOUT_MS,
+      PROPS_TIMEOUT_MS,
+    );
+
+    const apiKey = resolvedApiKey ?? (await this.getApiKey(serverId));
+    let caps = await fetchServerProps(
+      probedUrl,
+      apiKey,
+      timeoutMs,
+      remoteModelId,
+    );
+
+    if (isUnusableCaps(caps) && this.servesOnlyModel(serverId, remoteModelId)) {
+      caps = await fetchServerProps(probedUrl, apiKey, timeoutMs);
+    }
+
+    if (isUnusableCaps(caps)) {
+      return;
+    }
+
+    runInAction(() => {
+      // The probe is detached, so the server may have been removed or
+      // repointed while it was in flight. Both prune this key, and both make
+      // the answer describe a backend that is no longer configured — writing
+      // now would resurrect it.
+      const current = this.servers.find(s => s.id === serverId);
+      if (
+        !current ||
+        current.url !== probedUrl ||
+        current.serverType !== probedType
+      ) {
+        return;
+      }
+      const key = `${serverId}/${remoteModelId}`;
+      // Carried field by field rather than by spreading the hydrated entry: a
+      // field dropped from the schema would otherwise survive for the life of
+      // the entry, so its removal could never take effect.
+      const prior =
+        this.remoteCaps[key]?.probedUrl === probedUrl
+          ? this.remoteCaps[key]
+          : undefined;
+      const merged: RemoteModelCaps = {
+        ...(prior && {
+          contextLength: prior.contextLength,
+          supportsVision: prior.supportsVision,
+          samplerDefaults: prior.samplerDefaults,
+        }),
+        ...caps,
+        probedUrl,
+      };
+      // `samplerDefaults` is compared by content: a fresh object holding the
+      // same numbers is the same answer, and rewriting it would make an
+      // unchanged probe look like news to every observer.
+      const unchanged =
+        prior &&
+        prior.contextLength === merged.contextLength &&
+        prior.supportsVision === merged.supportsVision &&
+        shallowEqual(prior.samplerDefaults, merged.samplerDefaults);
+      if (!unchanged) {
+        this.remoteCaps[key] = merged;
+      }
+    });
+  }
+
+  /**
+   * True only when the server's model list is known and holds exactly this one
+   * model. The list is not persisted, so an absent one means unknown, and
+   * unknown does not pass: a genuine single-model server that was offline
+   * during the post-hydration fetch is skipped here too. Losing a bare retry
+   * costs nothing but an unknown capability; taking one on a multi-model
+   * server would attribute the resident model's props to this one.
+   */
+  private servesOnlyModel(serverId: string, remoteModelId: string): boolean {
+    const models = this.serverModels.get(serverId);
+    return models?.length === 1 && models[0].id === remoteModelId;
   }
 
   async fetchAllRemoteModels(): Promise<void> {
@@ -257,11 +531,15 @@ class ServerStore {
     this.appStateSubscription = AppState.addEventListener(
       'change',
       (nextAppState: AppStateStatus) => {
-        if (nextAppState === 'active') {
-          const now = Date.now();
-          if (now - this.lastFetchTime > FETCH_THROTTLE_MS) {
-            this.fetchAllRemoteModels();
-          }
+        runInAction(() => {
+          this.appActive = nextAppState === 'active';
+        });
+        if (nextAppState !== 'active') {
+          return;
+        }
+        const now = Date.now();
+        if (now - this.lastFetchTime > FETCH_THROTTLE_MS) {
+          this.fetchAllRemoteModels();
         }
       },
     );

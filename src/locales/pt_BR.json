@@ -31,7 +31,8 @@
     "ok": "OK",
     "close": "Fechar",
     "clear": "Limpar Tudo",
-    "gallery": "Galeria"
+    "gallery": "Galeria",
+    "noResults": "Nenhum resultado"
   },
   "settings": {
     "modelInitializationSettings": "Configurações de Inicialização do Modelo",
@@ -163,7 +164,89 @@
     "enterUrlManually": "Inserir URL manualmente",
     "manageServers": "Gerenciar Servidores",
     "serverType": "Tipo de Servidor",
-    "serverTypeHelp": "Detectado automaticamente; altere se estiver errado."
+    "serverTypeHelp": "Detectado automaticamente; altere se estiver errado.",
+    "internetSearch": {
+      "title": "Busca na internet",
+      "description": "Deixe os Pals pesquisarem na web com as próprias ferramentas. Use sua própria chave de API — o PocketPal nunca guarda suas chaves nem encaminha suas consultas.",
+      "providerLabel": "Provedor de busca",
+      "providerGated": "Em breve",
+      "keyLabel": "Chave de API",
+      "keyIsSet": "Chave configurada para {{provider}}.",
+      "keyNotSet": "Nenhuma chave configurada para {{provider}}.",
+      "setKeyButton": "Definir chave",
+      "updateKeyButton": "Atualizar chave",
+      "clearKeyButton": "Limpar chave",
+      "keyInputPlaceholder": "Cole sua chave de API do {{provider}}",
+      "keyUpdateError": "Não foi possível atualizar a chave. Tente novamente.",
+      "showKeyAccessibilityLabel": "Mostrar chave de API",
+      "hideKeyAccessibilityLabel": "Ocultar chave de API",
+      "resultCountLabel": "Resultados por busca",
+      "resultCountDescription": "Menos resultados deixam mais espaço no contexto do modelo.",
+      "consentTitle": "As buscas saem do seu dispositivo",
+      "consentDescription": "Quando um Pal faz uma busca na web, sua consulta é enviada ao provedor selecionado pela internet. Quando um Pal lê uma página, a URL e o conteúdo da página podem, em vez disso, ser enviados a um serviço de leitura padrão (r.jina.ai) caso o provedor selecionado não tenha um leitor nativo. Chaves e consultas nunca são enviadas ao PocketPal.",
+      "consentAccept": "Entendi",
+      "consentRequired": "Aceite o aviso acima para definir uma chave e ativar a busca.",
+      "consentGivenTitle": "A busca na web está ativada",
+      "consentGivenDescription": "As consultas e leituras de página podem sair do seu dispositivo, conforme descrito acima.",
+      "consentRevoke": "Revogar",
+      "keyOptional": "Não é preciso chave para {{provider}}. Adicione uma para ter limites maiores."
+    },
+    "languageSheetTitle": "Idioma",
+    "languageSearchPlaceholder": "Pesquisar idiomas",
+    "speculativeDecoding": "Decodificação Especulativa",
+    "speculativeDecodingDescription": "Use um pequeno modelo de rascunho (ou um modelo MTP embutido) para prever tokens e acelerar a geração. Experimental.",
+    "speculativeNotMTPCapable": "O modelo ativo não é compatível com decodificação especulativa e nenhum modelo de rascunho compatível está pareado, então isso permanece desativado para ele, sem efeito. É aplicado automaticamente a modelos compatíveis.",
+    "speculativeDraftModel": "Modelo de Rascunho",
+    "speculativeDraftModelDescription": "Rascunha tokens para o modelo ativo.",
+    "speculativeDraftModelNone": "Nenhum (MTP embutido)",
+    "speculativeDraftModelIgnoredOverridden": "O modelo ativo já vem com seu próprio modelo de rascunho, então esta escolha é ignorada.",
+    "speculativeDraftModelIgnoredIncompatible": "Este modelo de rascunho não é compatível com o modelo ativo, então é ignorado.",
+    "speculativeDraftModelIgnoredNotCapable": "Este modelo não possui camadas de rascunho, então não pode ser usado como modelo de rascunho.",
+    "speculativeDraftKeyCacheType": "Tipo de Cache de Chave do Rascunho",
+    "speculativeDraftValueCacheType": "Tipo de Cache de Valor do Rascunho",
+    "speculativeDraftNGpuLayers": "Camadas de GPU do Rascunho",
+    "speculativeDraftNGpuLayersDescription": "Número de camadas do modelo de rascunho a descarregar para a GPU.",
+    "speculativeDraftCacheTypeInactiveDescription": "Aplicado quando a decodificação especulativa estiver em execução.",
+    "purchases": {
+      "title": "Compras",
+      "statusOwned": "Comprado",
+      "statusUnlocking": "Desbloqueando",
+      "link": "Entre para usar em outros dispositivos"
+    },
+    "scanServerQr": "Escanear QR code do servidor",
+    "scanQrPermissionMessage": "Permita o acesso à câmera para escanear o QR code de um servidor. Você também pode digitar o endereço.",
+    "scanQrNotServer": "Não é um endereço de servidor",
+    "scanQrUnavailable": "Não é possível escanear aqui. Digite o endereço do servidor.",
+    "scanQrNotReady": "O leitor está quase pronto. Você também pode digitar o endereço.",
+    "routerModels": {
+      "cancel": "Cancelar",
+      "unloading": "Descarregando…",
+      "stateLoading": "Carregando",
+      "stateLoaded": "Carregado",
+      "loadingPercent": "Carregando, {{percent}} por cento",
+      "unloadModel": "Descarregar {{model}}",
+      "cancelLoadingModel": "Cancelar o carregamento de {{model}}",
+      "loadFailed": "Este modelo não carregou.",
+      "unloadNotReleased": "O servidor não liberou este modelo.",
+      "serverUnreachable": "Não foi possível acessar este servidor.",
+      "waitStopped": "Paramos de esperar por este modelo.",
+      "failureWithServerWords": "{{label}}\n\n“{{message}}”",
+      "dismiss": "Dispensar",
+      "unloadBoundTitle": "Descarregar este modelo?",
+      "unloadBoundBody": "Este chat está usando o modelo. Ele carrega de novo quando você enviar a próxima mensagem.",
+      "unloadBoundConfirm": "Descarregar"
+    },
+    "account": {
+      "title": "Conta",
+      "deleteAccount": "Excluir conta",
+      "confirmTitle": "Excluir conta?",
+      "confirmMessage": "Isso exclui permanentemente sua conta do PalsHub e a biblioteca dela. Você ainda pode restaurar os Pals comprados na App Store ou no Google Play neste dispositivo com a conta da sua loja. Os registros de compra são mantidos de forma anônima por motivos legais.",
+      "confirmWithoutApple": "Não foi possível confirmar com a Apple. Excluir sua conta mesmo assim?",
+      "deleted": "Sua conta foi excluída.",
+      "signInAgain": "Entre novamente",
+      "creatorSupport": "Contas de criador são excluídas pela nossa equipe de suporte: {{contact}}",
+      "failed": "Não foi possível excluir, tente novamente"
+    }
   },
   "memory": {
     "shortWarning": "Aviso de Memória",
@@ -359,7 +442,11 @@
         "author": "Autor",
         "requiresProjectionModel": "Requer modelo de projeção",
         "downloadProjectionModel": "Baixar modelo de projeção",
-        "viewModelCardOnHuggingFace": "Ver Ficha do Modelo no Hugging Face"
+        "viewModelCardOnHuggingFace": "Ver Ficha do Modelo no Hugging Face",
+        "visionSupported": "Compatível",
+        "visionNotSupported": "Não compatível",
+        "visionUnknown": "Desconhecido",
+        "draftOnlyReason": "Modelo apenas de rascunho. Selecione-o em Configurações → Decodificação especulativa."
       },
       "accessibility": {
         "expandDetails": "Expandir detalhes",
@@ -420,7 +507,9 @@
       "multilingual": "Multilíngue",
       "rewriting": "Reescrita",
       "creativity": "Escrita criativa",
-      "vision": "Visão"
+      "vision": "Visão",
+      "mtp": "Especulativo (MTP)",
+      "mtpDraft": "Rascunho especulativo"
     }
   },
   "completionParams": {
@@ -459,16 +548,16 @@
     "supportProject": "Apoie o Projeto",
     "supportProjectDescription": "Se você gosta de usar o PocketPal AI, considere apoiar o projeto:",
     "githubButton": "Dar uma estrela no GitHub",
-    "orText": "ou",
     "orBy": "ou",
-    "sponsorButton": "Tornar-se um Patrocinador",
     "versionCopiedTitle": "Versão copiada",
     "versionCopiedDescription": "As informações de versão foram copiadas para a área de transferência",
     "tour": "Tour",
     "tourDescription": "Reveja as telas de boas-vindas para ver o que o PocketPal AI oferece.",
     "showIntroButton": "Mostrar introdução novamente",
     "privacyPolicy": "Política de Privacidade",
-    "termsOfService": "Termos de Serviço"
+    "termsOfService": "Termos de Serviço",
+    "openSourceNotices": "Avisos de código aberto",
+    "phononNoticesCredit": "Modelo de voz e vozes Phonon, da Gradium, licenciados sob Apache-2.0. Construídos sobre o Pocket TTS e o codec Mimi da Kyutai."
   },
   "feedback": {
     "title": "Enviar Feedback",
@@ -517,7 +606,10 @@
       "tokensPerSec": "{{value}} tokens/seg",
       "ttft": "{{value}}ms TTFT",
       "interrupted": "Interrompido",
-      "truncated": "Cortado — provavelmente o contexto está cheio"
+      "truncated": "Cortado — provavelmente o contexto está cheio",
+      "draftAccepted": "rascunho: {{accepted}}/{{total}} ({{pct}}%)",
+      "promptTokensPerSec": "{{value}} tokens de prompt/seg",
+      "cachedTokens": "{{value}} em cache"
     },
     "exportUtils": {
       "fileSaved": "Arquivo Salvo",
@@ -723,7 +815,8 @@
       "exportCurrentSession": "Exportar sessão atual",
       "exportAllSessions": "Exportar todas as sessões",
       "exportChatSession": "Exportar sessão de chat",
-      "importSessions": "Importar sessões"
+      "importSessions": "Importar sessões",
+      "exportCurrentSessionMarkdown": "Exportar como Markdown"
     },
     "hfTokenSheet": {
       "title": "Token do Hugging Face",
@@ -800,12 +893,16 @@
       "talentNames": {
         "render_html": "Pré-visualização de HTML",
         "calculate": "Expressões matemáticas",
-        "datetime": "Data e hora"
+        "datetime": "Data e hora",
+        "web_search": "Busca na web",
+        "read_url": "Ler página da web"
       },
       "talentDescriptions": {
         "render_html": "Renderizar documentos HTML diretamente no chat",
         "calculate": "Avaliar expressões matemáticas",
-        "datetime": "Obter a data e hora atuais"
+        "datetime": "Obter a data e hora atuais",
+        "web_search": "Pesquisar informações atualizadas na internet (requer chave de API nas Configurações)",
+        "read_url": "Ler o conteúdo completo de uma página da web (requer chave de API nas Configurações)"
       },
       "greeting": {
         "sectionLabel": "Saudação",
@@ -914,7 +1011,8 @@
       },
       "warnings": {
         "promptChanged": "O prompt de sistema foi alterado manualmente"
-      }
+      },
+      "generationBusy": "Uma resposta ainda está em andamento. Tente novamente quando terminar."
     },
     "sidebarContent": {
       "menuItems": {
@@ -948,8 +1046,11 @@
         "threeWeeksAgo": "Há 3 semanas",
         "fourWeeksAgo": "Há 4 semanas",
         "lastMonth": "Mês passado",
-        "older": "Mais antigos"
-      }
+        "older": "Mais antigos",
+        "pinned": "Fixadas"
+      },
+      "pin": "Fixar",
+      "unpin": "Desafixar"
     },
     "usageStats": {
       "tooltip": {
@@ -979,6 +1080,13 @@
       "importPals": "Importar pals",
       "importSuccess": "{{count}} pal(s) importado(s) com sucesso.",
       "importError": "Falha ao importar pals. Verifique o formato do arquivo."
+    },
+    "completionSettings": {
+      "serverDefault": "padrão do servidor",
+      "usingServerDefault": "Usando o padrão do servidor: {{value}}",
+      "usingServerDefaultUnreported": "Usando o padrão do servidor (não informado)",
+      "resetToServerDefault": "Padrão do servidor: {{value}} · Redefinir",
+      "resetToServerDefaultAccessibilityLabel": "Redefinir {{name}} para o padrão do servidor, {{value}}"
     }
   },
   "palsScreen": {
@@ -1032,8 +1140,6 @@
       "download": "Baixar",
       "getFree": "Obter Grátis"
     },
-    "premiumPalDescription": "Pal premium da comunidade palshub.ai",
-    "premiumInfoText": "Visite palshub.ai para explorar mais pals",
     "sortOptions": {
       "newest": "Mais Recentes",
       "oldest": "Mais Antigos",
@@ -1057,15 +1163,48 @@
       "error": "Erro",
       "failedToLoadDetails": "Falha ao carregar os detalhes do pal",
       "failedToDownload": "Falha ao baixar o pal",
-      "premiumPalMessage": "Este é um Pal Premium.\n• Se você já o desbloqueou com sua conta Palshub, basta entrar para acessar todos os detalhes.\n• Ainda não desbloqueou? Visite o app palshub.ai para saber mais.",
-      "notAvailable": "N/D",
-      "buyOnPalshub": "Comprar no Palshub",
-      "finalizingPurchase": "Finalizando sua compra…",
-      "processingPurchase": "Processando — será desbloqueado em breve.",
-      "checkoutSessionExpired": "Sua sessão expirou. Entre novamente para continuar.",
-      "signInAgain": "Entrar novamente",
-      "palNotAvailable": "Este pal não está disponível para compra no momento.",
-      "checkoutFailed": "Algo deu errado. Tente novamente."
+      "notAvailable": "N/D"
+    },
+    "purchase": {
+      "buy": "{{price}}",
+      "open": "Abrir",
+      "install": "Instalar",
+      "pending": "Pendente",
+      "unlocking": "Desbloqueando",
+      "retry": "Tentar novamente",
+      "supportCode": "Código de suporte: {{code}}",
+      "noLongerAvailable": "Este Pal não está mais disponível. Você pode {{refundLink}}.",
+      "refundLink": "pedir reembolso à Apple",
+      "notCompleted": "Não foi possível concluir esta compra. O Google fará o reembolso.",
+      "withdrawnRefunding": "Este Pal foi retirado. Entre em contato com o suporte para obter o reembolso.",
+      "invalid": "Não foi possível verificar esta compra.",
+      "heldInvalid": "Não foi possível desbloquear esta compra. Entre em contato com o suporte usando este código.",
+      "recommendedModel": "Modelo recomendado",
+      "sampleExchange": "Exemplo de conversa",
+      "signInLine": "Já tem este Pal? Entre",
+      "licenseNotice": "Você está comprando uma licença de uso deste Pal.",
+      "termsOfSale": "Termos de Venda",
+      "appleMediaTerms": "Termos dos Serviços de Mídia da Apple",
+      "linkPrompt": "Entre para usar também nos seus outros dispositivos",
+      "linkSignIn": "Entrar",
+      "dismiss": "Agora não",
+      "linkConflict": "Estas compras estão vinculadas a outra conta.",
+      "restorePurchases": "Restaurar compras",
+      "badgePending": "Pendente",
+      "badgeUnlocking": "Desbloqueando",
+      "badgeUpdate": "Atualização disponível",
+      "updatePrompt": "Uma nova versão do criador está disponível.",
+      "updatePromptWithNote": "Uma nova versão do criador está disponível: {{note}}.",
+      "updateButton": "Atualizar",
+      "updateConfirmText": "Isso substitui suas edições nas partes que o criador alterou.",
+      "updateConfirm": "Atualizar",
+      "updateCancel": "Cancelar",
+      "modelStep": {
+        "download": "Baixar · {{size}}",
+        "startChat": "Iniciar chat",
+        "needsMemory": "Este Pal precisa de um dispositivo com pelo menos {{size}} de memória para o menor modelo dele.",
+        "noModelFits": "Este dispositivo não tem memória suficiente para este Pal."
+      }
     }
   },
   "validation": {
@@ -1179,7 +1318,21 @@
     "generatingPreview": "Gerando pré-visualização… ({{tokens}} tokens)",
     "generatingPreviewPending": "Gerando pré-visualização…",
     "toolUsedChip": "usou {{name}}",
-    "toolErrorBlock": "{{name}} falhou"
+    "toolErrorBlock": "{{name}} falhou",
+    "webSearch": {
+      "searched": "Pesquisou: {{query}}",
+      "noResults": "Nenhum resultado",
+      "noResultsFor": "Nenhum resultado para {{query}}",
+      "resultsCount": "{{count}} resultados",
+      "resultsCountOne": "1 resultado",
+      "searchResultsTitle": "Resultados da busca",
+      "showResultsAccessibilityLabel": "Mostrar resultados da busca na web para {{query}}",
+      "openLinkError": "Não foi possível abrir este link."
+    },
+    "contextFullRemote": "A conversa ficou sem espaço. Comece um novo chat.",
+    "speculativeInitFailed": "Este dispositivo não conseguiu iniciar a decodificação especulativa para este modelo — provavelmente não há memória suficiente para o contexto de rascunho. Desative a Decodificação especulativa em Configurações → Configurações Avançadas e tente novamente.",
+    "routerLoading": "Carregando modelo…",
+    "routerLoadingPercent": "Carregando modelo · {{percent}}%"
   },
   "htmlPreview": {
     "defaultTitle": "Pré-visualização",
@@ -1213,7 +1366,8 @@
       "testWarning": "Nota: O teste pode levar de 2 a 5 minutos para modelos maiores e não pode ser interrompido depois de iniciado.",
       "keepScreenOpen": "Mantenha esta tela aberta.",
       "initializingModel": "Inicializando modelo...",
-      "modelMaxValue": "(máx.: {{maxValue}})"
+      "modelMaxValue": "(máx.: {{maxValue}})",
+      "testFailed": "Não foi possível executar o teste. Aguarde a resposta em andamento terminar e tente novamente."
     },
     "dialogs": {
       "advancedSettings": {
@@ -1421,7 +1575,11 @@
     "engineRetryCta": "Tentar novamente",
     "voicesEmptyState": "Nenhuma voz encontrada.",
     "kokoroDeviceNote": "Algumas vozes podem não funcionar em todos os dispositivos.",
-    "insufficientStorage": "Espaço insuficiente — libere {{requiredMb}} MB para instalar este mecanismo ({{freeMb}} MB disponíveis)."
+    "insufficientStorage": "Espaço insuficiente — libere {{requiredMb}} MB para instalar este mecanismo ({{freeMb}} MB disponíveis).",
+    "engineChipPhonon": "Phonon",
+    "enginePhononTagline": "Início rápido e pouco uso de RAM. Apenas em inglês.",
+    "enginePhononCredit": "Modelo e vozes da Gradium (Apache-2.0), construídos sobre o Mimi da Kyutai.",
+    "engineTierNatural": "inglês natural"
   },
   "onboarding": {
     "back": "Voltar",
@@ -1517,6 +1675,163 @@
   "downloadBanner": {
     "titleByPal": "{{name}} está sendo baixado",
     "titleByModel": "{{name}} está sendo baixado",
-    "extraInProgress": "+{{count}} mais em andamento"
+    "extraInProgress": "+{{count}} mais em andamento",
+    "failedTitle": "O download não foi concluído",
+    "retry": "Tentar novamente"
+  },
+  "voiceInput": {
+    "micLabel": "Ditar",
+    "recordingLabel": "Gravando",
+    "stopLabel": "Parar e transcrever",
+    "cancelLabel": "Cancelar entrada de voz",
+    "transcribingLabel": "Transcrevendo…",
+    "setupLabel": "Configurar entrada de voz",
+    "settingTitle": "Entrada de voz",
+    "settingDescription": "Toque no microfone no chat para ditar; a fala é transcrita no seu dispositivo.",
+    "unsupportedDeviceHelper": "Este dispositivo está abaixo das especificações recomendadas. A entrada de voz provavelmente vai ficar lenta ou pode falhar.",
+    "spokenLanguageLabel": "Idioma falado",
+    "spokenLanguageAuto": "Detecção automática",
+    "spokenLanguageDetected": "Detectado automaticamente: {{language}}",
+    "resetLanguageCta": "Redefinir",
+    "recordingLanguageAuto": "Idioma: automático",
+    "recordingLanguage": "Idioma: {{code}} (toque para redefinir)",
+    "waitingForChatLabel": "A transcrição começa quando a resposta terminar…",
+    "tierSizeLabel": "{{sizeMb}} MB",
+    "installCta": "Baixar",
+    "downloadingLabel": "Baixando…",
+    "retryCta": "Tentar novamente",
+    "removeCta": "Remover",
+    "errorPermissionDenied": "O acesso ao microfone é necessário para a entrada de voz.",
+    "errorPermissionBlocked": "O acesso ao microfone está bloqueado. Ative nas configurações do dispositivo.",
+    "errorTranscribeFailed": "Não foi possível transcrever — tente novamente.",
+    "errorNotInstalled": "Baixe um modelo de voz para usar a entrada de voz.",
+    "errorInsufficientMemory": "Memória insuficiente para entrada de voz com este modelo de chat. Tente um modelo menor.",
+    "errorMicUnavailable": "O microfone não está respondendo. Tente novamente ou troque para um modelo de chat menor.",
+    "errorTranscriptPartial": "Parte do seu ditado não pôde ser transcrita.",
+    "openSettingsLabel": "Abrir configurações",
+    "insufficientStorage": "Espaço insuficiente — libere {{requiredMb}} MB para instalar este modelo ({{freeMb}} MB disponíveis).",
+    "setupSheetTitle": "Configurar entrada de voz",
+    "setupSheetBody": "Um download rápido e você já pode ditar offline.",
+    "tierNameBase": "Base",
+    "tierNameSmall": "Small",
+    "tierNameLargeTurbo": "Large Turbo",
+    "tierHintBase": "Padrão, rápido",
+    "tierHintSmall": "Mais preciso, mais lento. Melhor para outros idiomas",
+    "tierHintLargeTurbo": "Muito lento na maioria dos celulares",
+    "useCta": "Usar",
+    "inUseLabel": "Em uso",
+    "modelSectionHelper": "Usado pela entrada de voz e pela voz mãos-livres.",
+    "memoryAlertTitle": "Memória limitada",
+    "memoryAlertBody": "A entrada de voz precisa de memória extra junto com este modelo de chat. Pode ficar muito lento, ou o app pode fechar.",
+    "memoryAlertTryAnyway": "Tentar mesmo assim"
+  },
+  "plus": {
+    "eyebrow": "PocketPal Plus",
+    "headline": "Leve a IA local mais longe.",
+    "subline": "O Plus mantém o PocketPal gratuito e de código aberto. Os recursos extras são o nosso agradecimento.",
+    "unsupportedSubline": "Os recursos do Plus ainda não funcionam neste celular. Você pode apoiar o PocketPal mesmo assim.",
+    "thanksHeadline": "Obrigado por ajudar o PocketPal a seguir em frente.",
+    "thanksSubline": "O Plus está desbloqueado neste dispositivo.",
+    "features": {
+      "handsFreeVoice": "Voz mãos-livres",
+      "localApiServer": "Servidor de API local"
+    },
+    "ready": "Pronto",
+    "needsRam": "Precisa de {{gb}} GB de RAM",
+    "comingSoon": "Em breve",
+    "speedLine": "A velocidade depende do seu celular e do modelo.",
+    "inDevelopment": "Recursos em desenvolvimento podem mudar ou não ser lançados.",
+    "priceCaption": "Pague quanto achar justo. Qualquer valor desbloqueia os mesmos recursos.",
+    "buyError": "A compra não foi concluída. Tente novamente.",
+    "getPlus": "Comprar o Plus · {{price}}",
+    "getPlusAnyway": "Comprar o Plus mesmo assim · {{price}}",
+    "loading": "Carregando",
+    "pending": "Pendente",
+    "pendingTitle": "Aguardando a loja confirmar seu pagamento.",
+    "pendingBody": "O Plus é desbloqueado automaticamente quando a compra for aprovada. Você pode fechar esta tela.",
+    "unavailableTitle": "As compras não estão disponíveis agora.",
+    "unavailableBody": "Não foi possível acessar a loja. Tente mais tarde ou restaure uma compra anterior.",
+    "done": "Concluído",
+    "oneTimePurchase": "Compra única",
+    "restore": "Restaurar",
+    "openSource": "Código aberto ↗",
+    "licence": "Compra única de uma licença de uso do Plus.",
+    "terms": "Termos",
+    "appleMediaTerms": "Termos dos Serviços de Mídia da Apple",
+    "noPurchaseFound": "Nenhuma compra do Plus encontrada.",
+    "restoreFailed": "Não foi possível acessar a loja. Tente novamente.",
+    "sidebar": {
+      "title": "PocketPal Plus",
+      "unlocked": "Desbloqueado",
+      "subtitleOne": "{{first}}",
+      "subtitleTwo": "{{first}}, {{second}}",
+      "subtitleMore": "{{first}}, {{second}} e mais"
+    },
+    "optIn": "Desativado",
+    "optInNote": "Desativado neste celular. Ative nas Configurações, se tiver coragem.",
+    "offInSettingsNote": "Desativado nas Configurações.",
+    "chatStaysFree": "O Plus é opcional. Conversar continua grátis.",
+    "chooseAmount": "Escolha um valor"
+  },
+  "voiceMode": {
+    "settingTitle": "Voz mãos-livres",
+    "settingDescription": "Fale com o modelo no chat e ouça as respostas.",
+    "unsupportedDeviceHelper": "Pode ficar lento neste celular.",
+    "startingTitle": "Iniciando",
+    "startingHint": "Carregando o reconhecimento de fala e a voz. Na primeira vez pode demorar um pouco mais.",
+    "startFailed": "Não foi possível iniciar o modo de voz. Tente novamente.",
+    "micFailed": "Não foi possível usar o microfone, então o modo de voz foi encerrado.",
+    "listeningTitle": "Ouvindo",
+    "listeningHint": "Faça uma pausa quando terminar ou toque na bolha para enviar",
+    "thinkingTitle": "Pensando",
+    "thinkingHint": "Toque na bolha para cancelar",
+    "speakingTitle": "Falando",
+    "speakingHint": "Toque na bolha para interromper",
+    "mutedTitle": "Microfone desligado",
+    "mutedHint": "Toque no microfone para falar de novo",
+    "errorTranscribe": "Não deu para entender. Tente novamente.",
+    "errorReply": "Não foi possível obter uma resposta. Tente novamente.",
+    "errorSpeech": "Não foi possível reproduzir a resposta em voz alta.",
+    "pullDownHint": "Arraste para baixo para ver o chat",
+    "showChatLabel": "Mostrar chat",
+    "swipeUpHint": "Deslize para cima para ver a tela de voz",
+    "cloudLabel": "Bolha do modo de voz",
+    "openViewLabel": "Abrir tela de voz",
+    "micSwitchLabel": "Microfone",
+    "endLabel": "Encerrar modo de voz",
+    "setupTitle": "Configurar modo de voz",
+    "setupBody": "Dois modelos pequenos rodam no seu celular para você conversar offline.",
+    "sttRowTitle": "Reconhecimento de fala",
+    "sttRowModel": "Whisper {{tier}} · {{size}}",
+    "sttProgress": "{{done}} de {{total}}",
+    "sttDownloadFailed": "O download falhou. Tente novamente.",
+    "installedLabel": "Instalado",
+    "voiceRowTitle": "Voz",
+    "voiceRowReady": "{{voice}} · pronta",
+    "voiceRowMissing": "Escolha uma voz natural. A voz do sistema não funciona no modo de voz.",
+    "chooseVoiceCta": "Escolher uma voz",
+    "micNote": "A seguir, vamos pedir acesso ao microfone.",
+    "micDenied": "O modo de voz precisa de acesso ao microfone.",
+    "continueCta": "Continuar",
+    "memoryTightTitle": "Memória limitada",
+    "memoryTightBody": "O modo de voz mantém três modelos carregados ao mesmo tempo. Neste celular isso pode ficar lento, ou o app pode fechar.",
+    "memoryWontFitTitle": "Memória insuficiente",
+    "memoryWontFitBody": "O reconhecimento de fala não cabe junto com este modelo de chat. Escolha um modelo menor para usar o modo de voz.",
+    "memoryChatRow": "Modelo de chat · {{name}}",
+    "memorySttRowModel": "Reconhecimento de fala · Whisper {{tier}}",
+    "memoryVoiceRow": "Voz · {{name}}",
+    "memoryNeeded": "Necessário",
+    "continueAnywayCta": "Continuar mesmo assim",
+    "chooseSmallerModelCta": "Escolher um modelo menor",
+    "startLabel": "Iniciar modo de voz",
+    "startLockedLabel": "Voz mãos-livres, PocketPal Plus",
+    "startLockedHint": "Abre uma demonstração curta. Digitar e ditar continuam grátis.",
+    "teaserTitle": "A conversa por voz é um recurso do Plus",
+    "teaserBody": "Fale sem usar as mãos. O modelo responde em voz alta.",
+    "teaserGetPlus": "Comprar o Plus",
+    "teaserKeepTyping": "Continuar digitando, grátis",
+    "voiceRowFileMissing": "{{voice}} ainda não foi baixada. Toque em Continuar para baixar.",
+    "voiceRowFileFailed": "Não deu para baixar {{voice}}. Conecte-se à internet e tente novamente.",
+    "memoryNeededOfTotal": "{{needed}} de {{total}} neste celular"
   }
 }

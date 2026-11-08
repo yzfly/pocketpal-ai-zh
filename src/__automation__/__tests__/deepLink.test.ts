@@ -7,6 +7,10 @@ import {
   clearMemorySnapshots,
 } from '../../utils/memoryProfile';
 
+jest.mock('../fakeStore', () => ({
+  fakeStore: {run: jest.fn().mockResolvedValue('{}')},
+}));
+
 jest.mock('../../utils/memoryProfile', () => ({
   takeMemorySnapshot: jest.fn().mockResolvedValue(undefined),
   clearMemorySnapshots: jest.fn().mockResolvedValue(undefined),
@@ -25,6 +29,16 @@ const makeParams = (overrides: Partial<DeepLinkParams>): DeepLinkParams => ({
 describe('dispatchAutomationDeepLink', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('runs a FakeStore command for host=iap', async () => {
+    const {fakeStore} = require('../fakeStore');
+    const handled = await dispatchAutomationDeepLink(
+      makeParams({host: 'iap', queryParams: {cmd: 'next::pending'}}),
+    );
+
+    expect(handled).toBe(true);
+    expect(fakeStore.run).toHaveBeenCalledWith('next::pending');
   });
 
   it('takes a memory snapshot for host=memory + cmd=snap::<label>', async () => {
@@ -170,6 +184,56 @@ describe('dispatchAutomationDeepLink', () => {
 
       expect(handled).toBe(false);
       expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('asr host', () => {
+    it('runs the asr command for host=asr + cmd=state::<...>', async () => {
+      const runAsrCommand = jest.fn().mockResolvedValue(undefined);
+      jest.doMock('../asrAutomation', () => ({runAsrCommand}));
+      jest.resetModules();
+      const {dispatchAutomationDeepLink: dispatch} = require('../deepLink');
+
+      const handled = await dispatch(
+        makeParams({host: 'asr', queryParams: {cmd: 'state::ready'}}),
+      );
+
+      expect(handled).toBe(true);
+      expect(runAsrCommand).toHaveBeenCalledWith('state::ready');
+      jest.dontMock('../asrAutomation');
+    });
+
+    it('returns false when host=asr but no cmd is provided', async () => {
+      const handled = await dispatchAutomationDeepLink(
+        makeParams({host: 'asr', queryParams: {}}),
+      );
+
+      expect(handled).toBe(false);
+    });
+  });
+
+  describe('voice host', () => {
+    it('runs the voice command for host=voice + cmd', async () => {
+      const runVoiceCommand = jest.fn().mockResolvedValue(undefined);
+      jest.doMock('../voiceAutomation', () => ({runVoiceCommand}));
+      jest.resetModules();
+      const {dispatchAutomationDeepLink: dispatch} = require('../deepLink');
+
+      const handled = await dispatch(
+        makeParams({host: 'voice', queryParams: {cmd: 'state::listening'}}),
+      );
+
+      expect(handled).toBe(true);
+      expect(runVoiceCommand).toHaveBeenCalledWith('state::listening');
+      jest.dontMock('../voiceAutomation');
+    });
+
+    it('returns false when host=voice but no cmd is provided', async () => {
+      const handled = await dispatchAutomationDeepLink(
+        makeParams({host: 'voice', queryParams: {}}),
+      );
+
+      expect(handled).toBe(false);
     });
   });
 });

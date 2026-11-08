@@ -66,11 +66,40 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.error,
       marginTop: 4,
     },
+    // Cap the value side of a settings row so a long value label ellipsizes
+    // inside the button instead of squeezing the flex title/description
+    // column into a sliver.
     menuContainer: {
       position: 'relative',
+      flexShrink: 1,
+      maxWidth: '55%',
     },
     menuButton: {
       minWidth: 100,
+      maxWidth: '100%',
+    },
+    tierActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    inUseLabel: {
+      color: theme.colors.primary,
+    },
+    // A control too wide to share its row (e.g. the draft-model picker, whose
+    // values are model filenames) sits under the title/description instead.
+    // Also keeps the menu anchor at the row's left edge, on-screen.
+    fullRowControl: {
+      marginTop: 8,
+      alignSelf: 'flex-start',
+      maxWidth: '100%',
+    },
+    consentContainer: {
+      marginVertical: 8,
+    },
+    consentButton: {
+      alignSelf: 'flex-end',
+      marginTop: 12,
     },
     buttonContent: {
       flexDirection: 'row-reverse',
@@ -90,8 +119,10 @@ export const createStyles = (theme: Theme) =>
       fontSize: 14,
       color: theme.colors.secondary,
     },
+    // Floor, not a fixed width: dropdown items size to their longest label
+    // (the outer menu clamps at 90% screen and item titles ellipsize past it).
     menu: {
-      width: 170,
+      minWidth: 170,
     },
     linkContainer: {
       flexDirection: 'row',
@@ -103,5 +134,36 @@ export const createStyles = (theme: Theme) =>
     },
     segmentedButtons: {
       marginVertical: 8,
+    },
+    keySheetContent: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    titleWithBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    plusBadge: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    teaserSheetContent: {
+      paddingTop: 44,
+    },
+    teaserBody: {
+      color: theme.colors.onSurfaceVariant,
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+    },
+    keySheetActions: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 8,
     },
   });

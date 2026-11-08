@@ -21,6 +21,7 @@
 import {ChatPage} from '../../pages/ChatPage';
 import {OnboardingPage} from '../../pages/OnboardingPage';
 import {byTestId} from '../../helpers/selectors';
+import {appId, reinstallApp} from '../../helpers/iap-actions';
 
 declare const driver: WebdriverIO.Browser;
 declare const browser: WebdriverIO.Browser;
@@ -35,9 +36,6 @@ const PIP_BALANCED_MODEL_ID =
   'lmstudio-community/gemma-3-1b-it-GGUF/gemma-3-1b-it-Q8_0.gguf';
 const CODIE_BALANCED_MODEL_ID =
   'lmstudio-community/Qwen3.5-2B-GGUF/Qwen3.5-2B-Q4_K_M.gguf';
-
-const getAppId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
 
 const isDisplayedSafe = async (testId: string): Promise<boolean> =>
   browser
@@ -54,136 +52,144 @@ describe('Onboarding flow', () => {
     chat = new ChatPage();
   });
 
-  it('walks screens 1..6 (topic=smartchat → Pip), picks balanced, lands on Chat', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
+  describe('first run', () => {
+    before(reinstallApp);
 
-    // Screens 1..4: Skip visible, primary advances.
-    expect(await onboarding.skip.isDisplayed()).toBe(true);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    expect(await onboarding.skip.isDisplayed()).toBe(true);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(4);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(5);
+    it('walks screens 1..6 (topic=smartchat → Pip), picks balanced, lands on Chat', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
 
-    // Screen 5: Skip top-right ("Skip"), no primary, back-only bottom bar.
-    expect(await isDisplayedSafe('onboarding-primary')).toBe(false);
-    expect(await onboarding.skip.isDisplayed()).toBe(true);
-    expect(await onboarding.back.isDisplayed()).toBe(true);
-    await onboarding.tapTopic('smartchat');
-    await onboarding.waitForScreen(6);
+      // Screens 1..4: Skip visible, primary advances.
+      expect(await onboarding.skip.isDisplayed()).toBe(true);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      expect(await onboarding.skip.isDisplayed()).toBe(true);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(4);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(5);
 
-    // Screen 6: Skip top-right ("Skip for now"), primary present
-    // (pre-seeded with the recommended tier so it's enabled on arrival),
-    // back present in the bottom bar.
-    expect(await onboarding.skip.isDisplayed()).toBe(true);
-    expect(await onboarding.primary.isDisplayed()).toBe(true);
-    expect(await onboarding.back.isDisplayed()).toBe(true);
-    await onboarding.tapPalModel(PIP_BALANCED_MODEL_ID);
-    await onboarding.tapPrimary();
+      // Screen 5: Skip top-right ("Skip"), no primary, back-only bottom bar.
+      expect(await isDisplayedSafe('onboarding-primary')).toBe(false);
+      expect(await onboarding.skip.isDisplayed()).toBe(true);
+      expect(await onboarding.back.isDisplayed()).toBe(true);
+      await onboarding.tapTopic('smartchat');
+      await onboarding.waitForScreen(6);
 
-    await chat.waitForReady(TIMEOUT);
+      // Screen 6: Skip top-right ("Skip for now"), primary present
+      // (pre-seeded with the recommended tier so it's enabled on arrival),
+      // back present in the bottom bar.
+      expect(await onboarding.skip.isDisplayed()).toBe(true);
+      expect(await onboarding.primary.isDisplayed()).toBe(true);
+      expect(await onboarding.back.isDisplayed()).toBe(true);
+      await onboarding.tapPalModel(PIP_BALANCED_MODEL_ID);
+      await onboarding.tapPrimary();
+
+      await chat.waitForReady(TIMEOUT);
+    });
+
+    it('cold restart skips onboarding', async () => {
+      const id = appId();
+      await (driver as any).terminateApp(id);
+      await (driver as any).activateApp(id);
+
+      await chat.waitForReady(TIMEOUT);
+      expect(await isDisplayedSafe('onboarding-splash')).toBe(false);
+    });
   });
 
-  it('cold restart skips onboarding', async () => {
-    const appId = getAppId();
-    await (driver as any).terminateApp(appId);
-    await (driver as any).activateApp(appId);
+  describe('from a fresh install', () => {
+    beforeEach(reinstallApp);
 
-    await chat.waitForReady(TIMEOUT);
-    expect(await isDisplayedSafe('onboarding-splash')).toBe(false);
-  });
+    it('Skip on screen 3 lands on Chat without a model bound', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      await onboarding.tapSkip();
+      await chat.waitForReady(TIMEOUT);
+    });
 
-  it('Skip on screen 3 lands on Chat without a model bound', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    await onboarding.tapSkip();
-    await chat.waitForReady(TIMEOUT);
-  });
+    it('Skip on screen 5 lands on Chat with no topic or model bound', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(4);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(5);
+      await onboarding.tapSkip();
+      await chat.waitForReady(TIMEOUT);
+    });
 
-  it('Skip on screen 5 lands on Chat with no topic or model bound', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(4);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(5);
-    await onboarding.tapSkip();
-    await chat.waitForReady(TIMEOUT);
-  });
+    it('topic=coding renders Codie pal models (Qwen3.5 2B set)', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(4);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(5);
+      await onboarding.tapTopic('coding');
+      await onboarding.waitForScreen(6);
 
-  it('topic=coding renders Codie pal models (Qwen3.5 2B set)', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(4);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(5);
-    await onboarding.tapTopic('coding');
-    await onboarding.waitForScreen(6);
+      // Screen 6 must show Codie's balanced model (Qwen3.5 2B), not
+      // Pip's Llama. This is the pal-per-topic guarantee.
+      expect(
+        await onboarding.palModel(CODIE_BALANCED_MODEL_ID).isExisting(),
+      ).toBe(true);
+      expect(
+        await onboarding.palModel(PIP_BALANCED_MODEL_ID).isExisting(),
+      ).toBe(false);
 
-    // Screen 6 must show Codie's balanced model (Qwen3.5 2B), not
-    // Pip's Llama. This is the pal-per-topic guarantee.
-    expect(
-      await onboarding.palModel(CODIE_BALANCED_MODEL_ID).isExisting(),
-    ).toBe(true);
-    expect(
-      await onboarding.palModel(PIP_BALANCED_MODEL_ID).isExisting(),
-    ).toBe(false);
+      await onboarding.tapPalModel(CODIE_BALANCED_MODEL_ID);
+      await onboarding.tapPrimary();
+      await chat.waitForReady(TIMEOUT);
+    });
 
-    await onboarding.tapPalModel(CODIE_BALANCED_MODEL_ID);
-    await onboarding.tapPrimary();
-    await chat.waitForReady(TIMEOUT);
-  });
+    it('back on screen 5 returns to screen 4 (mid-flow retreat affordance)', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(4);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(5);
 
-  it('back on screen 5 returns to screen 4 (mid-flow retreat affordance)', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(4);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(5);
+      await onboarding.tapBack();
+      await onboarding.waitForScreen(4);
+    });
 
-    await onboarding.tapBack();
-    await onboarding.waitForScreen(4);
-  });
+    it('Stepper renders 4 dots on screens 1..4 and is hidden on 5..6', async () => {
+      await onboarding.waitForScreen(1, TIMEOUT);
+      for (let i = 1; i <= 4; i++) {
+        expect(await onboarding.stepperDot(i).isExisting()).toBe(true);
+      }
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(2);
+      expect(await onboarding.stepperDot(2).isExisting()).toBe(true);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(3);
+      expect(await onboarding.stepperDot(3).isExisting()).toBe(true);
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(4);
+      expect(await onboarding.stepperDot(4).isExisting()).toBe(true);
 
-  it('Stepper renders 4 dots on screens 1..4 and is hidden on 5..6', async () => {
-    await onboarding.waitForScreen(1, TIMEOUT);
-    for (let i = 1; i <= 4; i++) {
-      expect(await onboarding.stepperDot(i).isExisting()).toBe(true);
-    }
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(2);
-    expect(await onboarding.stepperDot(2).isExisting()).toBe(true);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(3);
-    expect(await onboarding.stepperDot(3).isExisting()).toBe(true);
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(4);
-    expect(await onboarding.stepperDot(4).isExisting()).toBe(true);
-
-    // Persistent chrome hides the stepper on screens 5 and 6.
-    await onboarding.tapPrimary();
-    await onboarding.waitForScreen(5);
-    expect(await isDisplayedSafe('ui-stepper')).toBe(false);
-    await onboarding.tapTopic('smartchat');
-    await onboarding.waitForScreen(6);
-    expect(await isDisplayedSafe('ui-stepper')).toBe(false);
+      // Persistent chrome hides the stepper on screens 5 and 6.
+      await onboarding.tapPrimary();
+      await onboarding.waitForScreen(5);
+      expect(await isDisplayedSafe('ui-stepper')).toBe(false);
+      await onboarding.tapTopic('smartchat');
+      await onboarding.waitForScreen(6);
+      expect(await isDisplayedSafe('ui-stepper')).toBe(false);
+    });
   });
 });

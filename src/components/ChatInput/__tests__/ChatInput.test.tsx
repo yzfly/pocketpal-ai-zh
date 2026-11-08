@@ -1,6 +1,6 @@
 import {fireEvent, waitFor} from '@testing-library/react-native';
 import * as React from 'react';
-import {ScrollView, Alert} from 'react-native';
+import {ScrollView, Alert, StyleSheet, TextInput} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {runInAction} from 'mobx';
 
@@ -9,7 +9,13 @@ import {l10n} from '../../../locales';
 import {UserContext} from '../../../utils';
 import {ChatInput} from '../ChatInput';
 import {render} from '../../../../jest/test-utils';
-import {palStore, chatSessionStore, modelStore} from '../../../store';
+import {
+  asrStore,
+  palStore,
+  chatSessionStore,
+  modelStore,
+  voiceModeStore,
+} from '../../../store';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 // Mock react-native-image-picker
@@ -81,6 +87,48 @@ describe('input', () => {
     fireEvent.press(button);
     expect(onSendPress).toHaveBeenCalledWith({text: 'text', type: 'text'});
     expect(textInput.props).toHaveProperty('value', '');
+  });
+
+  describe('while a send waits for a stopped run to drain', () => {
+    beforeEach(() => {
+      runInAction(() => {
+        modelStore.activeModelId = 'test-model-id';
+      });
+      chatSessionStore.isStopping = true;
+    });
+
+    afterEach(() => {
+      chatSessionStore.isStopping = false;
+    });
+
+    it('disables Send, announced as disabled, and keeps the typed text', () => {
+      const onSendPress = jest.fn();
+      const {getByPlaceholderText, getByLabelText} = render(
+        <UserContext.Provider value={user}>
+          <ChatInput
+            {...{
+              onSendPress,
+              renderScrollable,
+              sendButtonVisibilityMode: 'editing',
+            }}
+          />
+        </UserContext.Provider>,
+      );
+      const textInput = getByPlaceholderText(
+        l10n.en.components.chatInput.inputPlaceholder,
+      );
+      fireEvent.changeText(textInput, 'second message');
+      const button = getByLabelText(
+        l10n.en.components.sendButton.accessibilityLabel,
+      );
+
+      expect(button.props.accessibilityState).toEqual(
+        expect.objectContaining({disabled: true}),
+      );
+      fireEvent.press(button);
+      expect(onSendPress).not.toHaveBeenCalled();
+      expect(textInput.props.value).toBe('second message');
+    });
   });
 
   it('sends a text message if onChangeText and value are provided', () => {
@@ -328,6 +376,75 @@ describe('input', () => {
     const palButton = getByLabelText('Select Pal');
     fireEvent.press(palButton);
     expect(onPalBtnPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the pal name and Think label shrink to fit beside the mic', async () => {
+    const pal = await palStore.createPal({
+      type: 'local',
+      name: 'A Pal With A Name Too Long For The Composer Row',
+      systemPrompt: 'Test pal',
+      originalSystemPrompt: 'Test pal',
+      isSystemPromptChanged: false,
+      useAIPrompt: false,
+      parameters: {},
+      parameterSchema: [],
+      source: 'local',
+    });
+    const originalActivePalId = Object.getOwnPropertyDescriptor(
+      chatSessionStore,
+      'activePalId',
+    );
+    const originalActiveModelId = modelStore.activeModelId;
+    Object.defineProperty(chatSessionStore, 'activePalId', {
+      get: jest.fn(() => pal.id),
+      configurable: true,
+    });
+    runInAction(() => {
+      modelStore.activeModelId = 'model-1';
+    });
+
+    try {
+      const {getByTestId} = render(
+        <UserContext.Provider value={user}>
+          <ChatInput
+            {...{
+              onSendPress: jest.fn(),
+              sendButtonVisibilityMode: 'editing',
+              showThinkingToggle: true,
+            }}
+          />
+        </UserContext.Provider>,
+      );
+
+      const shrinkOf = (testID: string) =>
+        StyleSheet.flatten(getByTestId(testID).props.style).flexShrink;
+      expect(getByTestId('active-pal-name').props.numberOfLines).toBe(1);
+      expect(getByTestId('thinking-toggle-label').props.numberOfLines).toBe(1);
+      expect(shrinkOf('pal-selector')).toBe(1);
+      expect(
+        StyleSheet.flatten(getByTestId('pal-selector').props.style).minWidth,
+      ).toBe(32);
+      expect(shrinkOf('active-pal-name')).toBe(1);
+      expect(shrinkOf('thinking-toggle')).toBeGreaterThan(0);
+      expect(shrinkOf('thinking-toggle')).toBeLessThan(
+        shrinkOf('pal-selector') / 100,
+      );
+      expect(shrinkOf('thinking-toggle-label')).toBe(1);
+      expect(
+        StyleSheet.flatten(getByTestId('thinking-toggle').props.style).minWidth,
+      ).toBe(32);
+    } finally {
+      runInAction(() => {
+        modelStore.activeModelId = originalActiveModelId;
+      });
+      if (originalActivePalId) {
+        Object.defineProperty(
+          chatSessionStore,
+          'activePalId',
+          originalActivePalId,
+        );
+      }
+    }
   });
 
   it('shows video button for video pal type', async () => {
@@ -636,6 +753,110 @@ describe('input', () => {
       expect(launchCamera).toHaveBeenCalledTimes(0); // Not called until menu interaction
     });
 
+    const renderWithImageUpload = () =>
+      render(
+        <UserContext.Provider value={user}>
+          <ChatInput
+            {...{
+              onSendPress: jest.fn(),
+              showImageUpload: true,
+              isVisionEnabled: true,
+              sendButtonVisibilityMode: 'editing',
+            }}
+          />
+        </UserContext.Provider>,
+      );
+
+    const pressCameraMenuItem = async (
+      screen: ReturnType<typeof renderWithImageUpload>,
+    ) => {
+      fireEvent.press(screen.getByLabelText('Add image'));
+      fireEvent.press(await screen.findByText(l10n.en.camera.takePhoto));
+    };
+
+    it('adds the captured photo to the selection', async () => {
+      (launchCamera as jest.Mock).mockResolvedValue({
+        assets: [{uri: 'file://test-photo.jpg'}],
+      });
+
+      const screen = renderWithImageUpload();
+      await pressCameraMenuItem(screen);
+
+      expect(await screen.findByLabelText('Remove image 1')).toBeTruthy();
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('alerts that no camera device was found when the camera is unavailable', async () => {
+      (launchCamera as jest.Mock).mockResolvedValue({
+        errorCode: 'camera_unavailable',
+      });
+
+      const screen = renderWithImageUpload();
+      await pressCameraMenuItem(screen);
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalledWith(
+          l10n.en.camera.errorTitle,
+          l10n.en.camera.noDevice,
+        );
+      });
+      expect(launchCamera).toHaveBeenCalledTimes(1);
+      expect(screen.queryByLabelText('Remove image 1')).toBeNull();
+    });
+
+    it('alerts with the generic camera error for other error codes', async () => {
+      (launchCamera as jest.Mock).mockResolvedValue({
+        errorCode: 'others',
+        errorMessage: 'x',
+      });
+
+      const screen = renderWithImageUpload();
+      await pressCameraMenuItem(screen);
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalledWith(
+          l10n.en.errors.cameraErrorTitle,
+          l10n.en.errors.cameraErrorMessage,
+        );
+      });
+    });
+
+    it('stays silent when the camera is cancelled', async () => {
+      (launchCamera as jest.Mock).mockResolvedValue({didCancel: true});
+
+      const screen = renderWithImageUpload();
+      await pressCameraMenuItem(screen);
+
+      await waitFor(() => {
+        expect(launchCamera).toHaveBeenCalledTimes(1);
+      });
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('closes the menu and re-enables auto-release after a camera error', async () => {
+      (launchCamera as jest.Mock).mockResolvedValue({
+        errorCode: 'camera_unavailable',
+      });
+
+      const screen = renderWithImageUpload();
+      await pressCameraMenuItem(screen);
+
+      await waitFor(() => {
+        expect(modelStore.enableAutoRelease).toHaveBeenCalledWith(
+          'camera-photo',
+        );
+      });
+      expect(modelStore.disableAutoRelease).toHaveBeenCalledWith(
+        'camera-photo',
+      );
+      await waitFor(
+        () => {
+          expect(screen.queryByText(l10n.en.camera.takePhoto)).toBeNull();
+        },
+        {timeout: 3000},
+      );
+    });
+
     it('handles image library selection successfully', async () => {
       const mockResult = {
         assets: [{uri: 'file://test-library-photo.jpg'}],
@@ -847,5 +1068,178 @@ describe('input', () => {
         imageUris: undefined,
       });
     });
+  });
+});
+
+describe('voice mode button', () => {
+  const onVoicePress = jest.fn();
+  const renderInput = (props: Record<string, unknown> = {}) =>
+    render(
+      <UserContext.Provider value={user}>
+        <ChatInput
+          {...{
+            onSendPress: jest.fn(),
+            sendButtonVisibilityMode: 'always',
+            onVoicePress,
+            ...props,
+          }}
+        />
+      </UserContext.Provider>,
+    );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (voiceModeStore as any).reset();
+    voiceModeStore.setUnlockOverride(true);
+    runInAction(() => {
+      modelStore.activeModelId = 'test-model-id';
+      modelStore.deviceTier = 'high';
+      modelStore.isContextLoading = false;
+      chatSessionStore.isEditMode = false;
+      asrStore.captureState = 'idle';
+    });
+  });
+
+  it('shows the voice button while empty and Send once the user types', () => {
+    const {getByTestId, queryByTestId, getByPlaceholderText} = renderInput();
+    expect(getByTestId('voice-mode-button')).toBeTruthy();
+    expect(queryByTestId('send-button')).toBeNull();
+
+    const input = getByPlaceholderText(
+      l10n.en.components.chatInput.inputPlaceholder,
+    );
+    fireEvent.changeText(input, 'h');
+    expect(queryByTestId('voice-mode-button')).toBeNull();
+    expect(getByTestId('send-button')).toBeTruthy();
+
+    fireEvent.changeText(input, '');
+    expect(getByTestId('voice-mode-button')).toBeTruthy();
+  });
+
+  it('opens voice mode on press, with a way to focus this composer', () => {
+    const focus = TextInput.prototype.focus as jest.Mock;
+    const {getByTestId} = renderInput();
+    fireEvent.press(getByTestId('voice-mode-button'));
+    expect(onVoicePress).toHaveBeenCalledTimes(1);
+
+    focus.mockClear();
+    onVoicePress.mock.calls[0][0]();
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the lock badge when voice mode is locked', () => {
+    voiceModeStore.setUnlockOverride(false);
+    const {getByTestId} = renderInput();
+    expect(getByTestId('voice-mode-lock')).toBeTruthy();
+  });
+
+  it.each([
+    [
+      'the device tier is below the gate',
+      () => {
+        modelStore.deviceTier = 'low';
+      },
+    ],
+    [
+      'dictation is recording',
+      () => {
+        asrStore.captureState = 'recording';
+      },
+    ],
+    [
+      'dictation is transcribing',
+      () => {
+        asrStore.captureState = 'transcribing';
+      },
+    ],
+    [
+      'a message is being edited',
+      () => {
+        chatSessionStore.isEditMode = true;
+      },
+    ],
+  ])('shows no voice button when %s', (_case, arrange) => {
+    runInAction(arrange);
+    const {queryByTestId} = renderInput();
+    expect(queryByTestId('voice-mode-button')).toBeNull();
+  });
+
+  it('shows no voice button while a reply runs', () => {
+    const {queryByTestId} = renderInput({isStopVisible: true});
+    expect(queryByTestId('voice-mode-button')).toBeNull();
+  });
+
+  it('shows no voice button with an image attached', () => {
+    const {queryByTestId} = renderInput({defaultImages: ['file://a.jpg']});
+    expect(queryByTestId('voice-mode-button')).toBeNull();
+  });
+
+  it('shows no voice button without a voice-mode handler', () => {
+    const {queryByTestId} = renderInput({onVoicePress: undefined});
+    expect(queryByTestId('voice-mode-button')).toBeNull();
+  });
+});
+
+describe('native text clear', () => {
+  const clear = TextInput.prototype.clear as jest.Mock;
+
+  const renderInput = (props = {}) =>
+    render(
+      <UserContext.Provider value={user}>
+        <ChatInput
+          {...{
+            onSendPress: jest.fn(),
+            renderScrollable,
+            sendButtonVisibilityMode: 'editing',
+            ...props,
+          }}
+        />
+      </UserContext.Provider>,
+    );
+
+  const typeAndSend = ({getByPlaceholderText, getByLabelText}: any) => {
+    fireEvent.changeText(
+      getByPlaceholderText(l10n.en.components.chatInput.inputPlaceholder),
+      'line one\nline two\nline three',
+    );
+    fireEvent.press(
+      getByLabelText(l10n.en.components.sendButton.accessibilityLabel),
+    );
+  };
+
+  beforeEach(() => {
+    clear.mockClear();
+    runInAction(() => {
+      modelStore.activeModelId = 'test-model-id';
+      chatSessionStore.isEditMode = false;
+    });
+  });
+
+  it('clears the native text when a message is sent', () => {
+    const onSendPress = jest.fn();
+    typeAndSend(renderInput({onSendPress}));
+    expect(onSendPress).toHaveBeenCalledTimes(1);
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the native text when the send is blocked without a model', () => {
+    runInAction(() => {
+      modelStore.activeModelId = undefined;
+    });
+    const onSendPress = jest.fn();
+    typeAndSend(renderInput({onSendPress}));
+    expect(onSendPress).not.toHaveBeenCalled();
+    expect(clear).not.toHaveBeenCalled();
+  });
+
+  it('clears the native text when an edit is cancelled', () => {
+    runInAction(() => {
+      chatSessionStore.isEditMode = true;
+    });
+    const onCancelEdit = jest.fn();
+    const {getByTestId} = renderInput({onCancelEdit});
+    fireEvent.press(getByTestId('icon-button'));
+    expect(onCancelEdit).toHaveBeenCalledTimes(1);
+    expect(clear).toHaveBeenCalledTimes(1);
   });
 });

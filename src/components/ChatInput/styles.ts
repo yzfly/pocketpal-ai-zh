@@ -47,11 +47,15 @@ export const createStyles = ({
       paddingHorizontal: 8,
       paddingVertical: 4,
       marginLeft: 8,
+      // Give up width only once the pal name has none left.
+      flexShrink: 0.001,
+      minWidth: 32,
     },
     thinkingToggleLeftDisabled: {
       backgroundColor: 'transparent',
     },
     thinkingToggleText: {
+      flexShrink: 1,
       fontSize: 12,
       fontWeight: '500',
       marginLeft: 4,
@@ -63,6 +67,8 @@ export const createStyles = ({
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
+      flexShrink: 1,
+      minWidth: 32,
     },
     inputWrapper: {
       flexDirection: 'row',
@@ -153,6 +159,7 @@ export const createStyles = ({
     },
     // New compact pal name styles for control bar
     palNameCompact: {
+      flexShrink: 1,
       fontSize: 10,
       ...fontStyles.regular,
       color: theme.colors.inverseOnSurface,
@@ -225,6 +232,10 @@ export const createStyles = ({
       marginBottom: 8,
     },
 
+    micBeforeSend: {
+      marginRight: -16,
+    },
+
     // Compact Video Button (for right side)
     compactVideoButton: {
       flexDirection: 'row',
@@ -247,20 +258,6 @@ export const createStyles = ({
     },
     inputWithLabel: {
       marginTop: 0,
-    },
-    // 语音输入按钮（麦克风），尺寸与 plusButton 保持一致
-    voiceInputButton: {
-      height: 28,
-      width: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 100,
-      marginRight: 4,
-    },
-    // 模型下载中显示在按钮内的进度百分比
-    voiceDownloadText: {
-      fontSize: 9,
-      ...fontStyles.semibold,
     },
     // Helper text for model not loaded warning
     helperTextContainer: {

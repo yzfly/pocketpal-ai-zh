@@ -93,28 +93,6 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       marginVertical: theme.spacing.default,
       opacity: 0.7,
     },
-    supportButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.primary,
-      padding: theme.spacing.default,
-      borderRadius: theme.borders.default,
-      gap: theme.spacing.default / 2,
-      shadowColor: theme.colors.primary,
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    supportButtonText: {
-      ...theme.fonts.titleMedium,
-      color: theme.colors.onPrimary,
-      letterSpacing: 0.5,
-    },
     feedbackButtonContent: {
       flexDirection: 'row-reverse',
     },
@@ -140,10 +118,21 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
     },
     legalRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'center',
       alignItems: 'center',
       paddingVertical: theme.spacing.default * 1.5,
+      columnGap: theme.spacing.default / 2,
+      rowGap: theme.spacing.default / 4,
+    },
+    legalItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: theme.spacing.default / 2,
+    },
+    legalHit: {
+      minHeight: 44,
+      justifyContent: 'center',
     },
     legalLink: {
       ...theme.fonts.bodySmall,
@@ -153,5 +142,21 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       ...theme.fonts.bodySmall,
       color: theme.colors.onSurfaceVariant,
       opacity: 0.5,
+    },
+    legalSeparatorHidden: {
+      opacity: 0,
+    },
+    noticesContent: {
+      padding: theme.spacing.default,
+      paddingBottom: insets.bottom + theme.spacing.default,
+    },
+    noticesCredit: {
+      ...theme.fonts.bodyMedium,
+      color: theme.colors.onSurface,
+      marginBottom: theme.spacing.default,
+    },
+    noticesText: {
+      ...theme.fonts.bodySmall,
+      color: theme.colors.onSurfaceVariant,
     },
   });

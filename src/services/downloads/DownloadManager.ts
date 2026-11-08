@@ -12,6 +12,7 @@ import {
 import {Model} from '../../utils/types';
 import {canonicalizeHfUrl, resolveHfRequest} from '../../config';
 import {formatBytes, hasEnoughSpace, hfUserAgent} from '../../utils';
+import {ensureNotificationPermission} from '../../utils/androidPermission';
 import {uiStore} from '../../store';
 import NativeDownloadModule from '../../specs/NativeDownloadModule';
 import type {
@@ -50,7 +51,18 @@ const isHuggingFaceUrl = (url: string | undefined): boolean => {
 export class DownloadManager {
   private downloadJobs: DownloadMap;
   private callbacks: DownloadEventCallbacks = {};
-  private eventEmitter: NativeEventEmitter | null = null;
+  private eventEmitter: NativeEventEmitter<{
+    onDownloadProgress: [
+      {
+        downloadId: string;
+        bytesWritten: number;
+        totalBytes: number;
+        progress: number;
+      },
+    ];
+    onDownloadComplete: [{downloadId: string; filePath: string}];
+    onDownloadFailed: [{downloadId: string; error: string; progress?: number}];
+  }> | null = null;
   private cancelledModelIds = new Set<string>();
 
   constructor() {
@@ -182,7 +194,11 @@ export class DownloadManager {
             job.state.isDownloading = false;
           });
           // Ensure callback is called before removing the job
-          this.callbacks.onError?.(job.model.id, new Error(event.error));
+          this.callbacks.onError?.(
+            job.model.id,
+            new Error(event.error),
+            event.progress ?? 0,
+          );
           runInAction(() => {
             this.downloadJobs.delete(job.model.id);
           });
@@ -506,6 +522,7 @@ export class DownloadManager {
         progressInterval: 1000,
         ...(authToken ? {authToken} : {}),
       };
+      await ensureNotificationPermission();
       const response: DownloadResponse =
         await NativeDownloadModule.startDownload(requestUrl, config);
 

@@ -8,6 +8,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
+import {PlusDrawerItem} from './PlusDrawerItem/PlusDrawerItem';
 import {chatSessionStore, SessionMetaData} from '../../store';
 import {Menu, RenameModal, Checkbox} from '..';
 import {
@@ -18,6 +19,7 @@ import {
   PalIcon,
   SettingsIcon,
   ShareIcon,
+  StarIcon,
   TrashIcon,
   AppInfoIcon,
 } from '../../assets/icons';
@@ -25,6 +27,7 @@ import {L10nContext} from '../../utils';
 import {t} from '../../locales';
 import {ROUTES} from '../../utils/navigationConstants';
 import {exportChatSession} from '../../utils/exportUtils';
+import {openPlus} from '../../services/plus/gate';
 
 // Check if app is in debug mode
 const isDebugMode = __DEV__;
@@ -33,11 +36,13 @@ const isDebugMode = __DEV__;
 interface SessionItemProps {
   session: SessionMetaData;
   isActive: boolean;
+  isPinned: boolean;
   onPress: (sessionId: string) => void;
   onLongPress: (sessionId: string, event: any) => void;
   menuVisible: string | null;
   menuPosition: {x: number; y: number};
   onMenuDismiss: () => void;
+  onPressPin: (sessionId: string) => void;
   onPressRename: (session: SessionMetaData) => void;
   onPressDelete: (sessionId: string) => void;
   onPressExport: (sessionId: string) => void;
@@ -55,11 +60,13 @@ const SessionItem = React.memo<SessionItemProps>(
   ({
     session,
     isActive,
+    isPinned,
     onPress,
     onLongPress,
     menuVisible,
     menuPosition,
     onMenuDismiss,
+    onPressPin,
     onPressRename,
     onPressDelete,
     onPressExport,
@@ -104,6 +111,17 @@ const SessionItem = React.memo<SessionItemProps>(
             active={isActive}
             label={session.title}
             style={styles.sessionDrawerItem}
+            right={
+              isPinned
+                ? () => (
+                    <StarIcon
+                      width={14}
+                      height={14}
+                      fill={theme.colors.primary}
+                    />
+                  )
+                : undefined
+            }
           />
         </TouchableOpacity>
         {!isSelectionMode && (
@@ -114,6 +132,31 @@ const SessionItem = React.memo<SessionItemProps>(
             style={styles.menu}
             contentStyle={{}}
             anchorPosition="bottom">
+            <Menu.Item
+              testID={`session-pin-${session.id}`}
+              onPress={() => {
+                onPressPin(session.id);
+                onMenuDismiss();
+              }}
+              label={
+                isPinned
+                  ? l10n.components.sidebarContent.unpin
+                  : l10n.components.sidebarContent.pin
+              }
+              leadingIcon={() => (
+                <StarIcon
+                  width={20}
+                  height={20}
+                  // star.svg is stroke-only and .svgrrc binds that stroke to the
+                  // fill prop, so fill='none' paints nothing. Omitting fill is
+                  // what yields an outline; no test can catch this (svg is mocked).
+                  {...(isPinned
+                    ? {fill: theme.colors.primary}
+                    : {stroke: theme.colors.primary})}
+                />
+              )}
+            />
+            <Divider style={styles.menuDivider} />
             <Menu.Item
               onPress={() => {
                 onPressRename(session);
@@ -299,12 +342,21 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
       setMenuVisible(null);
     }, []);
 
+    // The drawer router closes the drawer only when the focused route changes.
+    const navigateTo = React.useCallback(
+      (route: string) => {
+        props.navigation.navigate(route);
+        props.navigation.closeDrawer();
+      },
+      [props.navigation],
+    );
+
     const handleSessionPress = React.useCallback(
       async (sessionId: string) => {
         await chatSessionStore.setActiveSession(sessionId);
-        props.navigation.navigate(ROUTES.CHAT);
+        navigateTo(ROUTES.CHAT);
       },
-      [props.navigation],
+      [navigateTo],
     );
 
     const handleSessionLongPress = React.useCallback(
@@ -348,6 +400,10 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
       },
       [l10n, closeMenu],
     );
+
+    const handlePressPin = React.useCallback(async (sessionId: string) => {
+      await chatSessionStore.togglePinSession(sessionId);
+    }, []);
 
     const handlePressExport = React.useCallback(
       async (sessionId: string) => {
@@ -449,11 +505,13 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
           <SessionItem
             session={item}
             isActive={isActive}
+            isPinned={item.pinned || false}
             onPress={handleSessionPress}
             onLongPress={handleSessionLongPress}
             menuVisible={menuVisible}
             menuPosition={menuPosition}
             onMenuDismiss={closeMenu}
+            onPressPin={handlePressPin}
             onPressRename={handlePressRename}
             onPressDelete={onPressDelete}
             onPressExport={handlePressExport}
@@ -473,6 +531,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
         menuVisible,
         menuPosition,
         closeMenu,
+        handlePressPin,
         handlePressRename,
         onPressDelete,
         handlePressExport,
@@ -492,28 +551,28 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.chat}
               icon={() => <ChatIcon stroke={theme.colors.primary} />}
-              onPress={() => props.navigation.navigate(ROUTES.CHAT)}
+              onPress={() => navigateTo(ROUTES.CHAT)}
               style={styles.menuDrawerItem}
               testID="drawer-item-chat"
             />
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.pals}
               icon={() => <PalIcon stroke={theme.colors.primary} />}
-              onPress={() => props.navigation.navigate(ROUTES.PALS)}
+              onPress={() => navigateTo(ROUTES.PALS)}
               style={styles.menuDrawerItem}
               testID="drawer-item-pals"
             />
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.models}
               icon={() => <ModelIcon stroke={theme.colors.primary} />}
-              onPress={() => props.navigation.navigate(ROUTES.MODELS)}
+              onPress={() => navigateTo(ROUTES.MODELS)}
               style={styles.menuDrawerItem}
               testID="drawer-item-models"
             />
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.benchmark}
               icon={() => <BenchmarkIcon stroke={theme.colors.primary} />}
-              onPress={() => props.navigation.navigate(ROUTES.BENCHMARK)}
+              onPress={() => navigateTo(ROUTES.BENCHMARK)}
               style={styles.menuDrawerItem}
               testID="drawer-item-benchmark"
             />
@@ -526,9 +585,15 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                   stroke={theme.colors.primary}
                 />
               )}
-              onPress={() => props.navigation.navigate(ROUTES.SETTINGS)}
+              onPress={() => navigateTo(ROUTES.SETTINGS)}
               style={styles.menuDrawerItem}
               testID="drawer-item-settings"
+            />
+            <PlusDrawerItem
+              onPress={() => {
+                props.navigation.closeDrawer();
+                openPlus();
+              }}
             />
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.appInfo}
@@ -539,7 +604,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                   stroke={theme.colors.primary}
                 />
               )}
-              onPress={() => props.navigation.navigate(ROUTES.APP_INFO)}
+              onPress={() => navigateTo(ROUTES.APP_INFO)}
               style={styles.menuDrawerItem}
             />
             {/* Only show Dev Tools in debug mode */}
@@ -553,7 +618,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                     stroke={theme.colors.primary}
                   />
                 )}
-                onPress={() => props.navigation.navigate(ROUTES.DEV_TOOLS)}
+                onPress={() => navigateTo(ROUTES.DEV_TOOLS)}
                 style={styles.menuDrawerItem}
               />
             )}
@@ -561,7 +626,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
           <Divider style={styles.divider} />
         </View>
       ),
-      [l10n, theme, styles, props.navigation],
+      [l10n, theme, styles, navigateTo, props.navigation],
     );
 
     return (

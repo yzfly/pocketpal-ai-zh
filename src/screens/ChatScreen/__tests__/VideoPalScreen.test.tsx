@@ -1,6 +1,8 @@
 import React from 'react';
 import {Alert} from 'react-native';
 
+import {runInAction} from 'mobx';
+
 import {
   render as baseRender,
   fireEvent,
@@ -11,6 +13,7 @@ import {VideoPalScreen} from '../VideoPalScreen';
 import {palStore, chatSessionStore, modelStore} from '../../../store';
 import type {Pal} from '../../../types/pal';
 import {LlamaContext} from '../../../services/llm';
+import {ModelOrigin} from '../../../utils/types';
 import {mockLlamaContextParams} from '../../../../jest/fixtures/models';
 
 const render = (ui: React.ReactElement, options: any = {}) =>
@@ -53,6 +56,11 @@ describe('VideoPalScreen', () => {
   });
 
   afterEach(() => {
+    runInAction(() => {
+      modelStore.isMultimodalActive = false;
+      modelStore.activeModelId = undefined;
+      modelStore.models = [];
+    });
     // Restore original activePalId getter if it existed
     if (originalActivePalId) {
       Object.defineProperty(
@@ -116,8 +124,10 @@ describe('VideoPalScreen', () => {
     // Provide a context so we pass the first guard
     modelStore.context = new LlamaContext(mockLlamaContextParams);
 
-    // Ensure multimodal check resolves to false
-    jest.spyOn(modelStore, 'isMultimodalEnabled').mockResolvedValue(false);
+    // Multimodal is not active on the loaded model
+    runInAction(() => {
+      modelStore.isMultimodalActive = false;
+    });
 
     const alertSpy = jest.spyOn(Alert, 'alert');
 
@@ -150,7 +160,13 @@ describe('VideoPalScreen', () => {
     modelStore.context = new LlamaContext(mockLlamaContextParams);
 
     // Allow multimodal
-    jest.spyOn(modelStore, 'isMultimodalEnabled').mockResolvedValue(true);
+    runInAction(() => {
+      modelStore.models = [
+        {id: 'model-1', origin: ModelOrigin.PRESET, supportsMultimodal: true},
+      ] as any;
+      modelStore.activeModelId = 'model-1';
+      modelStore.isMultimodalActive = true;
+    });
 
     const {getByLabelText, getByTestId, queryByTestId} = render(
       <VideoPalScreen activePal={videoPal} />,
@@ -179,6 +195,66 @@ describe('VideoPalScreen', () => {
     await waitFor(() => {
       expect(queryByTestId('close-button')).toBeNull();
       expect(getByLabelText('Start video analysis')).toBeTruthy();
+    });
+  });
+
+  describe('under the generation lease', () => {
+    function openCamera() {
+      const videoPal = makeVideoPal();
+      (palStore as any).pals.push(videoPal);
+      Object.defineProperty(chatSessionStore, 'activePalId', {
+        get: jest.fn(() => videoPal.id),
+        configurable: true,
+      });
+      modelStore.context = new LlamaContext(mockLlamaContextParams);
+      runInAction(() => {
+        modelStore.models = [
+          {id: 'model-1', origin: ModelOrigin.PRESET, supportsMultimodal: true},
+        ] as any;
+        modelStore.activeModelId = 'model-1';
+        modelStore.isMultimodalActive = true;
+        modelStore.engine = {
+          completion: jest.fn(),
+          stopCompletion: jest.fn(),
+        };
+      });
+      return render(<VideoPalScreen activePal={videoPal} />);
+    }
+
+    afterEach(() => {
+      runInAction(() => {
+        modelStore.engine = undefined;
+      });
+      delete (modelStore as any).startImageCompletion;
+    });
+
+    it('closing the camera aborts the running generation', async () => {
+      const {getByLabelText, getByTestId} = openCamera();
+      fireEvent.press(getByLabelText('Start video analysis'));
+      await waitFor(() => expect(getByTestId('close-button')).toBeTruthy());
+
+      fireEvent.press(getByTestId('close-button'));
+
+      expect(modelStore.abortActiveGeneration).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops a frame that arrives while a generation holds the lease', async () => {
+      (modelStore as any).startImageCompletion = jest.fn();
+      const {getByLabelText, getByTestId, UNSAFE_root} = openCamera();
+      fireEvent.press(getByLabelText('Start video analysis'));
+      await waitFor(() => expect(getByTestId('close-button')).toBeTruthy());
+      const capture = (frame: string) =>
+        UNSAFE_root.findAll(
+          node => typeof node.props.onCapture === 'function',
+        )[0].props.onCapture(frame);
+      const held = modelStore.tryAcquireGeneration();
+
+      await capture('data:frame');
+      expect((modelStore as any).startImageCompletion).not.toHaveBeenCalled();
+
+      held!.end();
+      await capture('data:frame');
+      expect((modelStore as any).startImageCompletion).toHaveBeenCalledTimes(1);
     });
   });
 });

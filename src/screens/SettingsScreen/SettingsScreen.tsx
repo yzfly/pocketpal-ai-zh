@@ -5,7 +5,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  TextInput as RNTextInput,
+  type TextInputInstance,
   Alert,
   Linking,
   TouchableOpacity,
@@ -33,6 +33,8 @@ import {
   ShareIcon,
   LinkExternalIcon,
   VolumeOnIcon,
+  MicrophoneIcon,
+  VoiceWaveformIcon,
 } from '../../assets/icons';
 
 import {
@@ -40,24 +42,50 @@ import {
   Menu,
   Divider,
   HFTokenSheet,
+  LanguageSelector,
+  SearchProviderKeySheet,
   InputSlider,
 } from '../../components';
+import {AuthSheet} from '../../components/PalsHub';
+import {AccountCard} from './AccountCard';
+import {LocalApiServerCard} from './LocalApiServerCard';
+import {PurchasesCard} from './PurchasesCard';
 
 import {useTheme} from '../../hooks';
 
 import {createStyles} from './styles';
+import {CacheTypeMenuRow} from './CacheTypeMenuRow';
+import {useMenuAnchor} from './useMenuAnchor';
 
-import {modelStore, uiStore, hfStore, ttsStore} from '../../store';
-import {languageDisplayNames} from '../../locales';
+import {
+  modelStore,
+  uiStore,
+  hfStore,
+  ttsStore,
+  asrStore,
+  searchProviderStore,
+  purchaseStore,
+  voiceModeStore,
+} from '../../store';
+import {authService} from '../../services';
+import type {SearchProviderId} from '../../services/search/types';
+import {
+  ASR_DISK_HEADROOM_FACTOR,
+  ASR_INSUFFICIENT_STORAGE,
+  ASR_TIERS,
+  ASR_TIER_ORDER,
+  type AsrTier,
+} from '../../services/asr';
 
-import {CacheType} from '../../utils/types';
+import {CacheType, ModelType} from '../../utils/types';
 import {
   L10nContext,
   formatBytes,
   clearAllSessionCaches,
   getSessionCacheInfo,
 } from '../../utils';
-import {t} from '../../locales';
+import {type AvailableLanguage, languageDisplayNames, t} from '../../locales';
+import {asrTierHint, asrTierLabel} from '../../utils/asrTierLabel';
 import {checkGpuSupport} from '../../utils/deviceCapabilities';
 import {exportLegacyChatSessions} from '../../utils/exportUtils';
 import {getDeviceOptions, DeviceOption} from '../../utils/deviceSelection';
@@ -71,6 +99,11 @@ import {
 const OPENCL_DOCS_URL =
   'https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/OPENCL.md#model-preparation';
 
+const languageName = (code: string): string =>
+  code in languageDisplayNames
+    ? languageDisplayNames[code as AvailableLanguage]
+    : code.toUpperCase();
+
 export const SettingsScreen: React.FC = observer(() => {
   const l10n = useContext(L10nContext);
   const theme = useTheme();
@@ -81,31 +114,21 @@ export const SettingsScreen: React.FC = observer(() => {
   );
   const [isValidInput, setIsValidInput] = useState(true);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-  const inputRef = useRef<RNTextInput>(null);
-  const [showKeyCacheMenu, setShowKeyCacheMenu] = useState(false);
-  const [showValueCacheMenu, setShowValueCacheMenu] = useState(false);
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const inputRef = useRef<TextInputInstance>(null);
+  const keyCacheMenu = useMenuAnchor();
+  const valueCacheMenu = useMenuAnchor();
+  const draftKeyCacheMenu = useMenuAnchor();
+  const draftValueCacheMenu = useMenuAnchor();
+  const draftModelMenu = useMenuAnchor();
+  const searchProviderMenu = useMenuAnchor();
   const [showHfTokenDialog, setShowHfTokenDialog] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
+  const [showSearchKeySheet, setShowSearchKeySheet] = useState(false);
   const [gpuSupported, setGpuSupported] = useState(false);
-  const [keyCacheAnchor, setKeyCacheAnchor] = useState<{x: number; y: number}>({
-    x: 0,
-    y: 0,
-  });
-  const [valueCacheAnchor, setValueCacheAnchor] = useState<{
-    x: number;
-    y: number;
-  }>({x: 0, y: 0});
-  const [languageAnchor, setLanguageAnchor] = useState<{x: number; y: number}>({
-    x: 0.0,
-    y: 0.0,
-  });
   const [deviceOptions, setDeviceOptions] = useState<DeviceOption[]>([]);
   const [currentBackend, setCurrentBackend] = useState<
     'metal' | 'opencl' | 'hexagon' | 'cpu' | 'blas'
   >(Platform.OS === 'ios' ? 'metal' : 'cpu');
-  const keyCacheButtonRef = useRef<View>(null);
-  const valueCacheButtonRef = useRef<View>(null);
-  const languageButtonRef = useRef<View>(null);
   const debouncedUpdateStore = useRef(
     debounce((value: number) => {
       modelStore.setNContext(value);
@@ -126,7 +149,6 @@ export const SettingsScreen: React.FC = observer(() => {
       setGpuSupported(false);
     });
 
-    // Load available device options
     const loadDeviceOptions = async () => {
       try {
         const options = await getDeviceOptions();
@@ -139,9 +161,7 @@ export const SettingsScreen: React.FC = observer(() => {
     loadDeviceOptions();
   }, []);
 
-  // Re-sync the displayed context size when the screen regains focus or the
-  // global n_ctx changes elsewhere (e.g. the chat banner's increase-context
-  // flow). Skipped while the input is actively edited so it never fights typing.
+  // Skipped while the input is focused so the re-sync never fights typing.
   const configuredNCtx = modelStore.contextInitParams.n_ctx;
   useEffect(() => {
     if (isFocused && !inputRef.current?.isFocused()) {
@@ -150,7 +170,6 @@ export const SettingsScreen: React.FC = observer(() => {
     }
   }, [isFocused, configuredNCtx]);
 
-  // Compute current backend type based on device selection
   // Convert MobX observable to plain JS for dependency tracking
   const devicesKey = JSON.stringify(toJS(modelStore.contextInitParams.devices));
 
@@ -176,9 +195,11 @@ export const SettingsScreen: React.FC = observer(() => {
     inputRef.current?.blur();
     setContextSize(modelStore.contextInitParams.n_ctx.toString());
     setIsValidInput(true);
-    setShowKeyCacheMenu(false);
-    setShowValueCacheMenu(false);
-    setShowLanguageMenu(false);
+    keyCacheMenu.close();
+    valueCacheMenu.close();
+    draftKeyCacheMenu.close();
+    draftValueCacheMenu.close();
+    draftModelMenu.close();
   };
 
   const handleContextSizeChange = (text: string) => {
@@ -195,8 +216,10 @@ export const SettingsScreen: React.FC = observer(() => {
   const currentFlashAttnType =
     modelStore.contextInitParams.flash_attn_type ??
     (Platform.OS === 'ios' ? 'auto' : 'off');
+  const flashAttnOff =
+    !modelStore.contextInitParams.flash_attn_type ||
+    modelStore.contextInitParams.flash_attn_type === 'off';
 
-  // Get dynamic cache type options based on flash attention compatibility
   const cacheTypeKOptions = getAllowedCacheTypeKOptions(
     currentFlashAttnType as 'auto' | 'on' | 'off',
     currentBackend,
@@ -213,6 +236,66 @@ export const SettingsScreen: React.FC = observer(() => {
   ) => {
     const options = isValueCache ? cacheTypeVOptions : cacheTypeKOptions;
     return options.find(option => option.value === value)?.label || value;
+  };
+
+  const speculativeEnabled =
+    modelStore.contextInitParams.speculativeEnabled ?? false;
+  const selectedDraftModelId =
+    modelStore.contextInitParams.selectedDraftModelId;
+
+  const activeModelId = modelStore.activeModel?.id;
+  const eligibleDraftModels = modelStore.availableModels.filter(
+    m =>
+      m.isDownloaded &&
+      m.modelType !== ModelType.PROJECTION &&
+      m.id !== activeModelId,
+  );
+  const selectedDraftModel = eligibleDraftModels.find(
+    m => m.id === selectedDraftModelId,
+  );
+
+  const draftMode = modelStore.effectiveDraftMode;
+  const showSpeculativeNoEffectNote =
+    speculativeEnabled && !!modelStore.activeModel && draftMode === 'off';
+
+  const draftPickIgnoredNote = (() => {
+    if (!selectedDraftModel) {
+      return undefined;
+    }
+    const activeDefaultDraft = modelStore.activeModel?.defaultDraftModel;
+    if (activeDefaultDraft && activeDefaultDraft !== selectedDraftModel.id) {
+      return l10n.settings.speculativeDraftModelIgnoredOverridden;
+    }
+    if (draftMode === 'paired' || showSpeculativeNoEffectNote) {
+      return undefined;
+    }
+    return modelStore.activeModel
+      ? l10n.settings.speculativeDraftModelIgnoredIncompatible
+      : l10n.settings.speculativeDraftModelIgnoredNotCapable;
+  })();
+
+  // Draft cache compatibility is the draft's own, not the target's flash-attn.
+  const draftCacheTypeKOptions = getAllowedCacheTypeKOptions(
+    'on',
+    currentBackend,
+  );
+  const draftCacheTypeVOptions = getAllowedCacheTypeVOptions(
+    'on',
+    currentBackend,
+  );
+  const getDraftCacheTypeLabel = (
+    value: CacheType | string | undefined,
+    isValueCache = false,
+  ) => {
+    const defaults = modelStore.effectiveDraftCacheDefaults;
+    const effectiveValue = value ?? (isValueCache ? defaults.v : defaults.k);
+    const options = isValueCache
+      ? draftCacheTypeVOptions
+      : draftCacheTypeKOptions;
+    return (
+      options.find(option => option.value === effectiveValue)?.label ||
+      effectiveValue
+    );
   };
 
   const getCurrentDeviceId = (): string => {
@@ -262,28 +345,11 @@ export const SettingsScreen: React.FC = observer(() => {
     // Otherwise, keep the user's current flash attention preference
   };
 
-  const handleKeyCachePress = () => {
-    keyCacheButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setKeyCacheAnchor({x: pageX, y: pageY + height});
-      setShowKeyCacheMenu(true);
-    });
-  };
-
-  const handleValueCachePress = () => {
-    valueCacheButtonRef.current?.measure(
-      (x, y, width, height, pageX, pageY) => {
-        setValueCacheAnchor({x: pageX, y: pageY + height});
-        setShowValueCacheMenu(true);
-      },
-    );
-  };
-
-  const handleLanguagePress = () => {
-    languageButtonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setLanguageAnchor({x: pageX, y: pageY + height});
-      setShowLanguageMenu(true);
-    });
-  };
+  const activeSearchProvider = searchProviderStore.providers.find(
+    p => p.id === searchProviderStore.activeProviderId,
+  );
+  const activeSearchProviderId = searchProviderStore.activeProviderId;
+  const searchHasConsent = searchProviderStore.hasConsentedToSearch;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -427,6 +493,7 @@ export const SettingsScreen: React.FC = observer(() => {
 
               {/* Advanced Settings */}
               <List.Accordion
+                testID="advanced-settings-accordion"
                 title={l10n.settings.advancedSettings}
                 titleStyle={styles.accordionTitle}
                 style={styles.advancedAccordion}
@@ -602,142 +669,247 @@ export const SettingsScreen: React.FC = observer(() => {
                   </View>
                   <Divider />
 
-                  {/* Cache Type K Selection */}
-                  <View style={styles.settingItemContainer}>
-                    <View style={styles.switchContainer}>
-                      <View style={styles.textContainer}>
-                        <Text variant="titleMedium" style={styles.textLabel}>
-                          {l10n.settings.keyCacheType}
-                        </Text>
-                        <Text
-                          variant="labelSmall"
-                          style={styles.textDescription}>
-                          {modelStore.contextInitParams.flash_attn_type &&
-                          modelStore.contextInitParams.flash_attn_type !== 'off'
-                            ? l10n.settings.keyCacheTypeDescription
-                            : l10n.settings.keyCacheTypeDisabledDescription}
-                        </Text>
-                      </View>
-                      <View style={styles.menuContainer}>
-                        <Button
-                          ref={keyCacheButtonRef}
-                          mode="outlined"
-                          onPress={handleKeyCachePress}
-                          style={styles.menuButton}
-                          contentStyle={styles.buttonContent}
-                          disabled={
-                            !modelStore.contextInitParams.flash_attn_type ||
-                            modelStore.contextInitParams.flash_attn_type ===
-                              'off'
-                          }
-                          icon={({size, color}) => (
-                            <Icon
-                              source="chevron-down"
-                              size={size}
-                              color={color}
-                            />
-                          )}>
-                          {getCacheTypeLabel(
-                            modelStore.contextInitParams.cache_type_k,
-                            false,
-                          )}
-                        </Button>
-                        <Menu
-                          visible={showKeyCacheMenu}
-                          onDismiss={() => setShowKeyCacheMenu(false)}
-                          anchor={keyCacheAnchor}
-                          selectable>
-                          {cacheTypeKOptions.map(option => (
-                            <Menu.Item
-                              key={option.value}
-                              style={styles.menu}
-                              label={option.label}
-                              selected={
-                                option.value ===
-                                modelStore.contextInitParams.cache_type_k
-                              }
-                              disabled={option.disabled}
-                              onPress={() => {
-                                if (!option.disabled) {
-                                  modelStore.setCacheTypeK(option.value);
-                                  setShowKeyCacheMenu(false);
-                                }
-                              }}
-                            />
-                          ))}
-                        </Menu>
-                      </View>
-                    </View>
-                  </View>
+                  <CacheTypeMenuRow
+                    menu={keyCacheMenu}
+                    styles={styles}
+                    testID="key-cache-type-button"
+                    label={l10n.settings.keyCacheType}
+                    description={
+                      flashAttnOff
+                        ? l10n.settings.keyCacheTypeDisabledDescription
+                        : l10n.settings.keyCacheTypeDescription
+                    }
+                    value={modelStore.contextInitParams.cache_type_k}
+                    valueLabel={getCacheTypeLabel(
+                      modelStore.contextInitParams.cache_type_k,
+                      false,
+                    )}
+                    options={cacheTypeKOptions}
+                    disabled={flashAttnOff}
+                    onSelect={value => modelStore.setCacheTypeK(value)}
+                  />
                   <Divider />
 
-                  {/* Cache Type V Selection */}
+                  <CacheTypeMenuRow
+                    menu={valueCacheMenu}
+                    styles={styles}
+                    testID="value-cache-type-button"
+                    label={l10n.settings.valueCacheType}
+                    description={
+                      flashAttnOff
+                        ? l10n.settings.valueCacheTypeDisabledDescription
+                        : l10n.settings.valueCacheTypeDescription
+                    }
+                    value={modelStore.contextInitParams.cache_type_v}
+                    valueLabel={getCacheTypeLabel(
+                      modelStore.contextInitParams.cache_type_v,
+                      true,
+                    )}
+                    options={cacheTypeVOptions}
+                    disabled={flashAttnOff}
+                    onSelect={value => modelStore.setCacheTypeV(value)}
+                  />
+                  <Divider />
+
+                  {/* Speculative Decoding (draft model) */}
                   <View style={styles.settingItemContainer}>
                     <View style={styles.switchContainer}>
                       <View style={styles.textContainer}>
                         <Text variant="titleMedium" style={styles.textLabel}>
-                          {l10n.settings.valueCacheType}
+                          {l10n.settings.speculativeDecoding}
                         </Text>
                         <Text
                           variant="labelSmall"
                           style={styles.textDescription}>
-                          {modelStore.contextInitParams.flash_attn_type &&
-                          modelStore.contextInitParams.flash_attn_type !== 'off'
-                            ? l10n.settings.valueCacheTypeDescription
-                            : l10n.settings.valueCacheTypeDisabledDescription}
+                          {l10n.settings.speculativeDecodingDescription}
                         </Text>
                       </View>
-                      <View style={styles.menuContainer}>
-                        <Button
-                          ref={valueCacheButtonRef}
-                          mode="outlined"
-                          onPress={handleValueCachePress}
-                          style={styles.menuButton}
-                          contentStyle={styles.buttonContent}
-                          disabled={
-                            !modelStore.contextInitParams.flash_attn_type ||
-                            modelStore.contextInitParams.flash_attn_type ===
-                              'off'
-                          }
-                          icon={({size, color}) => (
-                            <Icon
-                              source="chevron-down"
-                              size={size}
-                              color={color}
-                            />
-                          )}>
-                          {getCacheTypeLabel(
-                            modelStore.contextInitParams.cache_type_v,
-                            true,
-                          )}
-                        </Button>
-                        <Menu
-                          visible={showValueCacheMenu}
-                          onDismiss={() => setShowValueCacheMenu(false)}
-                          anchor={valueCacheAnchor}
-                          selectable>
-                          {cacheTypeVOptions.map(option => (
-                            <Menu.Item
-                              key={option.value}
-                              label={option.label}
-                              style={styles.menu}
-                              selected={
-                                option.value ===
-                                modelStore.contextInitParams.cache_type_v
-                              }
-                              disabled={option.disabled}
-                              onPress={() => {
-                                if (!option.disabled) {
-                                  modelStore.setCacheTypeV(option.value);
-                                  setShowValueCacheMenu(false);
-                                }
-                              }}
-                            />
-                          ))}
-                        </Menu>
-                      </View>
+                      <Switch
+                        testID="speculative-decoding-switch"
+                        value={speculativeEnabled}
+                        accessibilityLabel={l10n.settings.speculativeDecoding}
+                        accessibilityHint={
+                          l10n.settings.speculativeDecodingDescription
+                        }
+                        onValueChange={value =>
+                          modelStore.setSpeculativeEnabled(value)
+                        }
+                      />
                     </View>
+                    {showSpeculativeNoEffectNote && (
+                      <Text
+                        variant="labelSmall"
+                        style={styles.textDescription}
+                        testID="speculative-no-effect-note">
+                        {l10n.settings.speculativeNotMTPCapable}
+                      </Text>
+                    )}
                   </View>
+
+                  {speculativeEnabled && (
+                    <>
+                      <Divider />
+
+                      {/* Draft Model Picker: full-row control — model names
+                          are too long to share a row with the title. */}
+                      <View style={styles.settingItemContainer}>
+                        <Text variant="titleMedium" style={styles.textLabel}>
+                          {l10n.settings.speculativeDraftModel}
+                        </Text>
+                        <Text
+                          variant="labelSmall"
+                          style={styles.textDescription}>
+                          {l10n.settings.speculativeDraftModelDescription}
+                        </Text>
+                        <View style={styles.fullRowControl}>
+                          <View>
+                            <Button
+                              ref={draftModelMenu.buttonRef}
+                              mode="outlined"
+                              onPress={draftModelMenu.open}
+                              style={styles.menuButton}
+                              contentStyle={styles.buttonContent}
+                              testID="speculative-draft-model-picker"
+                              accessibilityLabel={`${
+                                l10n.settings.speculativeDraftModel
+                              }, ${
+                                selectedDraftModel?.name ??
+                                l10n.settings.speculativeDraftModelNone
+                              }`}
+                              accessibilityHint={
+                                l10n.settings.speculativeDraftModelDescription
+                              }
+                              icon={({size, color}) => (
+                                <Icon
+                                  source="chevron-down"
+                                  size={size}
+                                  color={color}
+                                />
+                              )}>
+                              {selectedDraftModel?.name ??
+                                l10n.settings.speculativeDraftModelNone}
+                            </Button>
+                            <Menu
+                              visible={draftModelMenu.visible}
+                              onDismiss={draftModelMenu.close}
+                              anchor={draftModelMenu.anchor}
+                              selectable>
+                              <Menu.Item
+                                style={styles.menu}
+                                label={l10n.settings.speculativeDraftModelNone}
+                                selected={!selectedDraftModel}
+                                onPress={() => {
+                                  modelStore.setSelectedDraftModel(undefined);
+                                  draftModelMenu.close();
+                                }}
+                              />
+                              {eligibleDraftModels.map(model => (
+                                <Menu.Item
+                                  key={model.id}
+                                  style={styles.menu}
+                                  label={model.name}
+                                  selected={model.id === selectedDraftModel?.id}
+                                  onPress={() => {
+                                    modelStore.setSelectedDraftModel(model.id);
+                                    draftModelMenu.close();
+                                  }}
+                                />
+                              ))}
+                            </Menu>
+                          </View>
+                        </View>
+                        {draftPickIgnoredNote !== undefined && (
+                          <Text
+                            variant="labelSmall"
+                            style={styles.textDescription}
+                            testID="speculative-draft-model-ignored-note">
+                            {draftPickIgnoredNote}
+                          </Text>
+                        )}
+                      </View>
+                      <Divider />
+
+                      {/* Draft GPU Layers Slider */}
+                      <View style={styles.settingItemContainer}>
+                        <Text variant="titleMedium" style={styles.textLabel}>
+                          {l10n.settings.speculativeDraftNGpuLayers}
+                        </Text>
+                        <Text
+                          variant="labelSmall"
+                          style={styles.textDescription}>
+                          {l10n.settings.speculativeDraftNGpuLayersDescription}
+                        </Text>
+                        <InputSlider
+                          testID="speculative-draft-gpu-layers-slider"
+                          accessibilityLabel={
+                            l10n.settings.speculativeDraftNGpuLayers
+                          }
+                          value={
+                            modelStore.contextInitParams
+                              .spec_draft_n_gpu_layers ?? 99
+                          }
+                          onValueChange={value =>
+                            modelStore.setSpecDraftNGpuLayers(Math.round(value))
+                          }
+                          min={0}
+                          max={99}
+                          step={1}
+                        />
+                      </View>
+                      <Divider />
+
+                      <CacheTypeMenuRow
+                        menu={draftKeyCacheMenu}
+                        styles={styles}
+                        testID="speculative-draft-key-cache-button"
+                        label={l10n.settings.speculativeDraftKeyCacheType}
+                        description={
+                          draftMode === 'off'
+                            ? l10n.settings
+                                .speculativeDraftCacheTypeInactiveDescription
+                            : undefined
+                        }
+                        value={
+                          modelStore.contextInitParams.spec_draft_cache_type_k
+                        }
+                        valueLabel={getDraftCacheTypeLabel(
+                          modelStore.contextInitParams.spec_draft_cache_type_k,
+                          false,
+                        )}
+                        options={draftCacheTypeKOptions}
+                        disabled={draftMode === 'off'}
+                        onSelect={value =>
+                          modelStore.setSpecDraftCacheTypeK(value)
+                        }
+                      />
+                      <Divider />
+
+                      <CacheTypeMenuRow
+                        menu={draftValueCacheMenu}
+                        styles={styles}
+                        testID="speculative-draft-value-cache-button"
+                        label={l10n.settings.speculativeDraftValueCacheType}
+                        description={
+                          draftMode === 'off'
+                            ? l10n.settings
+                                .speculativeDraftCacheTypeInactiveDescription
+                            : undefined
+                        }
+                        value={
+                          modelStore.contextInitParams.spec_draft_cache_type_v
+                        }
+                        valueLabel={getDraftCacheTypeLabel(
+                          modelStore.contextInitParams.spec_draft_cache_type_v,
+                          true,
+                        )}
+                        options={draftCacheTypeVOptions}
+                        disabled={draftMode === 'off'}
+                        onSelect={value =>
+                          modelStore.setSpecDraftCacheTypeV(value)
+                        }
+                      />
+                    </>
+                  )}
                 </View>
               </List.Accordion>
             </Card.Content>
@@ -891,39 +1063,7 @@ export const SettingsScreen: React.FC = observer(() => {
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.menuContainer}>
-                    <Button
-                      ref={languageButtonRef}
-                      testID="language-selector-button"
-                      mode="outlined"
-                      onPress={handleLanguagePress}
-                      style={styles.menuButton}
-                      contentStyle={styles.buttonContent}
-                      icon={({size, color}) => (
-                        <Icon source="chevron-down" size={size} color={color} />
-                      )}>
-                      {languageDisplayNames[uiStore.language]}
-                    </Button>
-                    <Menu
-                      visible={showLanguageMenu}
-                      onDismiss={() => setShowLanguageMenu(false)}
-                      anchor={languageAnchor}
-                      selectable>
-                      {uiStore.supportedLanguages.map(lang => (
-                        <Menu.Item
-                          key={lang}
-                          testID={`language-option-${lang}`}
-                          style={styles.menu}
-                          label={languageDisplayNames[lang]}
-                          selected={lang === uiStore.language}
-                          onPress={() => {
-                            uiStore.setLanguage(lang);
-                            setShowLanguageMenu(false);
-                          }}
-                        />
-                      ))}
-                    </Menu>
-                  </View>
+                  <LanguageSelector />
                 </View>
                 <Divider />
 
@@ -1002,6 +1142,215 @@ export const SettingsScreen: React.FC = observer(() => {
                   />
                 </View>
 
+                <Divider />
+
+                {/* Voice input (ASR) availability toggle */}
+                <View style={styles.switchContainer}>
+                  <View style={styles.textContainer}>
+                    <View style={styles.labelWithIconContainer}>
+                      <MicrophoneIcon
+                        width={20}
+                        height={20}
+                        style={styles.settingIcon}
+                        stroke={theme.colors.onSurface}
+                      />
+                      <Text variant="titleMedium" style={styles.textLabel}>
+                        {l10n.voiceInput.settingTitle}
+                      </Text>
+                    </View>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {l10n.voiceInput.settingDescription}
+                    </Text>
+                    {!asrStore.deviceSupported && (
+                      <Text variant="labelSmall" style={styles.textDescription}>
+                        {l10n.voiceInput.unsupportedDeviceHelper}
+                      </Text>
+                    )}
+                  </View>
+                  <Switch
+                    testID="asr-availability-switch"
+                    value={asrStore.userASROverride ?? asrStore.deviceSupported}
+                    onValueChange={value => asrStore.setUserASROverride(value)}
+                  />
+                </View>
+
+                {asrStore.asrAvailable && (
+                  <View style={styles.switchContainer}>
+                    <View style={styles.textContainer}>
+                      <Text variant="bodyMedium" style={styles.textLabel}>
+                        {l10n.voiceInput.spokenLanguageLabel}
+                      </Text>
+                      <Text
+                        variant="labelSmall"
+                        style={styles.textDescription}
+                        testID="asr-spoken-language">
+                        {asrStore.spokenLanguage
+                          ? t(l10n.voiceInput.spokenLanguageDetected, {
+                              language: languageName(asrStore.spokenLanguage),
+                            })
+                          : l10n.voiceInput.spokenLanguageAuto}
+                      </Text>
+                    </View>
+                    {asrStore.spokenLanguage && (
+                      <Button
+                        mode="outlined"
+                        testID="asr-reset-language"
+                        onPress={() => asrStore.setSpokenLanguage(null)}
+                        style={styles.menuButton}>
+                        {l10n.voiceInput.resetLanguageCta}
+                      </Button>
+                    )}
+                  </View>
+                )}
+
+                <Divider />
+
+                <View style={styles.switchContainer}>
+                  <View style={styles.textContainer}>
+                    <View style={styles.labelWithIconContainer}>
+                      <VoiceWaveformIcon
+                        width={20}
+                        height={20}
+                        style={styles.settingIcon}
+                        color={theme.colors.onSurface}
+                      />
+                      <Text variant="titleMedium" style={styles.textLabel}>
+                        {l10n.voiceMode.settingTitle}
+                      </Text>
+                    </View>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {l10n.voiceMode.settingDescription}
+                    </Text>
+                    {!voiceModeStore.deviceSupported && (
+                      <Text variant="labelSmall" style={styles.textDescription}>
+                        {l10n.voiceMode.unsupportedDeviceHelper}
+                      </Text>
+                    )}
+                  </View>
+                  <Switch
+                    testID="voice-mode-availability-switch"
+                    value={voiceModeStore.supported}
+                    onValueChange={value =>
+                      voiceModeStore.setUserVoiceModeOverride(value)
+                    }
+                  />
+                </View>
+
+                {(asrStore.asrAvailable || voiceModeStore.supported) && (
+                  <>
+                    <Divider />
+                    <View
+                      style={styles.switchContainer}
+                      testID="asr-models-header">
+                      <View style={styles.textContainer}>
+                        <Text variant="titleMedium" style={styles.textLabel}>
+                          {l10n.voiceMode.sttRowTitle}
+                        </Text>
+                        <Text
+                          variant="labelSmall"
+                          style={styles.textDescription}>
+                          {l10n.voiceInput.modelSectionHelper}
+                        </Text>
+                      </View>
+                    </View>
+                    {ASR_TIER_ORDER.map((tier: AsrTier) => {
+                      const state = asrStore.downloadStates[tier];
+                      const sizeMb = Math.round(
+                        ASR_TIERS[tier].estimatedBytes / (1024 * 1024),
+                      );
+                      // Match the preflight threshold (estimated * headroom) so a
+                      // user who frees exactly this amount clears the disk gate.
+                      const requiredMb = Math.ceil(
+                        (ASR_TIERS[tier].estimatedBytes *
+                          ASR_DISK_HEADROOM_FACTOR) /
+                          (1024 * 1024),
+                      );
+                      const lowDisk =
+                        state === 'error' &&
+                        asrStore.downloadError[tier] ===
+                          ASR_INSUFFICIENT_STORAGE;
+                      const freeMb =
+                        asrStore.freeDiskBytes != null
+                          ? Math.floor(asrStore.freeDiskBytes / (1024 * 1024))
+                          : null;
+                      return (
+                        <View key={tier} style={styles.switchContainer}>
+                          <View style={styles.textContainer}>
+                            <Text variant="bodyMedium" style={styles.textLabel}>
+                              {asrTierLabel(tier, l10n)}
+                            </Text>
+                            <Text
+                              variant="labelSmall"
+                              style={styles.textDescription}>
+                              {asrTierHint(tier, l10n)}
+                            </Text>
+                            <Text
+                              variant="labelSmall"
+                              style={styles.textDescription}>
+                              {t(l10n.voiceInput.tierSizeLabel, {sizeMb})}
+                            </Text>
+                            {lowDisk && freeMb != null ? (
+                              <Text
+                                variant="labelSmall"
+                                style={styles.errorText}
+                                testID={`asr-insufficient-storage-${tier}`}>
+                                {t(l10n.voiceInput.insufficientStorage, {
+                                  requiredMb,
+                                  freeMb,
+                                })}
+                              </Text>
+                            ) : null}
+                          </View>
+                          {state === 'ready' ? (
+                            <View style={styles.tierActions}>
+                              {tier === asrStore.selectedTier ? (
+                                <Text
+                                  variant="labelLarge"
+                                  style={styles.inUseLabel}
+                                  testID={`asr-in-use-${tier}`}>
+                                  {l10n.voiceInput.inUseLabel}
+                                </Text>
+                              ) : (
+                                <Button
+                                  mode="outlined"
+                                  compact
+                                  testID={`asr-use-${tier}`}
+                                  onPress={() => asrStore.selectTier(tier)}>
+                                  {l10n.voiceInput.useCta}
+                                </Button>
+                              )}
+                              <Button
+                                mode="outlined"
+                                compact
+                                testID={`asr-remove-${tier}`}
+                                onPress={() => asrStore.deleteModel(tier)}>
+                                {l10n.voiceInput.removeCta}
+                              </Button>
+                            </View>
+                          ) : state === 'downloading' ? (
+                            <Button
+                              mode="outlined"
+                              disabled
+                              style={styles.menuButton}>
+                              {l10n.voiceInput.downloadingLabel}
+                            </Button>
+                          ) : (
+                            <Button
+                              mode="contained"
+                              testID={`asr-install-${tier}`}
+                              onPress={() => asrStore.downloadModel(tier)}
+                              style={styles.menuButton}>
+                              {state === 'error'
+                                ? l10n.voiceInput.retryCta
+                                : l10n.voiceInput.installCta}
+                            </Button>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </>
+                )}
+
                 {/* Display Memory Usage (iOS only) */}
                 {Platform.OS === 'ios' && (
                   <>
@@ -1035,6 +1384,177 @@ export const SettingsScreen: React.FC = observer(() => {
                     </View>
                   </>
                 )}
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* Internet Search */}
+          <Card elevation={0} style={styles.card} testID="internet-search-card">
+            <Card.Title title={l10n.settings.internetSearch.title} />
+            <Card.Content>
+              <View style={styles.settingItemContainer}>
+                <Text variant="labelSmall" style={styles.textDescription}>
+                  {l10n.settings.internetSearch.description}
+                </Text>
+
+                {/* First-enable consent gate / revoke affordance */}
+                {!searchHasConsent ? (
+                  <View
+                    testID="internet-search-consent"
+                    style={styles.consentContainer}>
+                    <Text variant="titleMedium" style={styles.textLabel}>
+                      {l10n.settings.internetSearch.consentTitle}
+                    </Text>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {l10n.settings.internetSearch.consentDescription}
+                    </Text>
+                    <Button
+                      testID="internet-search-consent-accept"
+                      mode="contained"
+                      onPress={() => searchProviderStore.setConsent(true)}
+                      style={styles.consentButton}>
+                      {l10n.settings.internetSearch.consentAccept}
+                    </Button>
+                  </View>
+                ) : (
+                  <View
+                    testID="internet-search-consent-given"
+                    style={styles.consentContainer}>
+                    <Text variant="titleMedium" style={styles.textLabel}>
+                      {l10n.settings.internetSearch.consentGivenTitle}
+                    </Text>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {l10n.settings.internetSearch.consentGivenDescription}
+                    </Text>
+                    <Button
+                      testID="internet-search-consent-revoke"
+                      mode="outlined"
+                      onPress={() => searchProviderStore.setConsent(false)}
+                      style={styles.consentButton}>
+                      {l10n.settings.internetSearch.consentRevoke}
+                    </Button>
+                  </View>
+                )}
+
+                {/* Provider picker */}
+                <Divider style={styles.divider} />
+                <View style={styles.switchContainer}>
+                  <View style={styles.textContainer}>
+                    <Text variant="titleMedium" style={styles.textLabel}>
+                      {l10n.settings.internetSearch.providerLabel}
+                    </Text>
+                  </View>
+                  <View style={styles.menuContainer}>
+                    <Button
+                      ref={searchProviderMenu.buttonRef}
+                      testID="search-provider-selector-button"
+                      mode="outlined"
+                      onPress={searchProviderMenu.open}
+                      style={styles.menuButton}
+                      contentStyle={styles.buttonContent}
+                      icon={({size, color}) => (
+                        <Icon source="chevron-down" size={size} color={color} />
+                      )}>
+                      {activeSearchProvider?.label ?? activeSearchProviderId}
+                    </Button>
+                    <Menu
+                      visible={searchProviderMenu.visible}
+                      onDismiss={searchProviderMenu.close}
+                      anchor={searchProviderMenu.anchor}
+                      selectable>
+                      {searchProviderStore.providers.map(provider => (
+                        <Menu.Item
+                          key={provider.id}
+                          testID={`search-provider-option-${provider.id}`}
+                          disabled={!provider.selectable}
+                          style={styles.menu}
+                          label={
+                            provider.selectable
+                              ? provider.label
+                              : `${provider.label} (${l10n.settings.internetSearch.providerGated})`
+                          }
+                          selected={provider.id === activeSearchProviderId}
+                          onPress={() => {
+                            searchProviderStore.setActiveProvider(
+                              provider.id as SearchProviderId,
+                            );
+                            searchProviderMenu.close();
+                          }}
+                        />
+                      ))}
+                    </Menu>
+                  </View>
+                </View>
+
+                {/* Per-provider BYOK key entry */}
+                <Divider style={styles.divider} />
+                <View style={styles.switchContainer}>
+                  <View style={styles.textContainer}>
+                    <Text variant="titleMedium" style={styles.textLabel}>
+                      {l10n.settings.internetSearch.keyLabel}
+                    </Text>
+                    <Text variant="labelSmall" style={styles.textDescription}>
+                      {searchProviderStore.hasKey(activeSearchProviderId)
+                        ? t(l10n.settings.internetSearch.keyIsSet, {
+                            provider:
+                              activeSearchProvider?.label ??
+                              activeSearchProviderId,
+                          })
+                        : searchProviderStore.isKeyOptional(
+                              activeSearchProviderId,
+                            )
+                          ? t(l10n.settings.internetSearch.keyOptional, {
+                              provider:
+                                activeSearchProvider?.label ??
+                                activeSearchProviderId,
+                            })
+                          : t(l10n.settings.internetSearch.keyNotSet, {
+                              provider:
+                                activeSearchProvider?.label ??
+                                activeSearchProviderId,
+                            })}
+                    </Text>
+                    {!searchHasConsent && (
+                      <Text variant="labelSmall" style={styles.textDescription}>
+                        {l10n.settings.internetSearch.consentRequired}
+                      </Text>
+                    )}
+                  </View>
+                  <Button
+                    testID="search-provider-key-button"
+                    mode="outlined"
+                    disabled={!searchHasConsent}
+                    onPress={() => setShowSearchKeySheet(true)}
+                    style={styles.menuButton}>
+                    {searchProviderStore.hasKey(activeSearchProviderId)
+                      ? l10n.settings.internetSearch.updateKeyButton
+                      : l10n.settings.internetSearch.setKeyButton}
+                  </Button>
+                </View>
+
+                {/* Result-count control */}
+                <Divider style={styles.divider} />
+                <View style={styles.textContainer}>
+                  <Text variant="titleMedium" style={styles.textLabel}>
+                    {l10n.settings.internetSearch.resultCountLabel}
+                  </Text>
+                  <InputSlider
+                    testID="search-result-count-slider"
+                    accessibilityLabel={
+                      l10n.settings.internetSearch.resultCountLabel
+                    }
+                    value={searchProviderStore.resultCount}
+                    onValueChange={value =>
+                      searchProviderStore.setResultCount(Math.round(value))
+                    }
+                    min={1}
+                    max={8}
+                    step={1}
+                  />
+                  <Text variant="labelSmall" style={styles.textDescription}>
+                    {l10n.settings.internetSearch.resultCountDescription}
+                  </Text>
+                </View>
               </View>
             </Card.Content>
           </Card>
@@ -1108,7 +1628,6 @@ export const SettingsScreen: React.FC = observer(() => {
                       mode="outlined"
                       onPress={async () => {
                         try {
-                          // Get cache info first
                           const cacheInfo = await getSessionCacheInfo();
 
                           if (cacheInfo.fileCount === 0) {
@@ -1119,7 +1638,6 @@ export const SettingsScreen: React.FC = observer(() => {
                             return;
                           }
 
-                          // Show confirmation dialog with cache info
                           const formattedSize = formatBytes(
                             cacheInfo.totalSizeBytes,
                           );
@@ -1185,6 +1703,12 @@ export const SettingsScreen: React.FC = observer(() => {
             </Card>
           )}
 
+          <PurchasesCard onSignInPress={() => setShowAuthSheet(true)} />
+
+          <AccountCard />
+
+          <LocalApiServerCard />
+
           {/* Export Options */}
           <Card elevation={0} style={styles.card}>
             <Card.Title title={l10n.settings.exportOptions} />
@@ -1234,6 +1758,23 @@ export const SettingsScreen: React.FC = observer(() => {
         onDismiss={() => setShowHfTokenDialog(false)}
         onSave={() => setShowHfTokenDialog(false)}
       />
+      <SearchProviderKeySheet
+        isVisible={showSearchKeySheet}
+        providerId={activeSearchProviderId}
+        providerLabel={activeSearchProvider?.label ?? activeSearchProviderId}
+        onDismiss={() => setShowSearchKeySheet(false)}
+      />
+      {showAuthSheet && (
+        <AuthSheet
+          isVisible={showAuthSheet}
+          onClose={() => {
+            setShowAuthSheet(false);
+            if (!authService.isAuthenticated) {
+              purchaseStore.cancelLinkRequest();
+            }
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 });

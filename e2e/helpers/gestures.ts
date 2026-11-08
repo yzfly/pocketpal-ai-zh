@@ -3,6 +3,8 @@
  * Provides reusable gesture actions using W3C WebDriver Actions API
  */
 
+import {byTestId} from './selectors';
+
 // WebdriverIO globals - available during test execution
 declare const browser: WebdriverIO.Browser;
 declare const driver: WebdriverIO.Browser;
@@ -13,6 +15,8 @@ interface SwipeOptions {
   startYPercent?: number;
   endXPercent?: number;
   endYPercent?: number;
+  /** Rest before lifting the finger, so the list stops instead of flinging. */
+  holdMs?: number;
 }
 
 interface ScreenSize {
@@ -44,6 +48,7 @@ async function swipe(options: SwipeOptions = {}): Promise<void> {
     startYPercent = 0.5,
     endXPercent = 0.5,
     endYPercent = 0.5,
+    holdMs = 0,
   } = options;
 
   const {width, height} = await getScreenSize();
@@ -63,6 +68,7 @@ async function swipe(options: SwipeOptions = {}): Promise<void> {
         {type: 'pointerDown', button: 0},
         {type: 'pause', duration: 100},
         {type: 'pointerMove', duration, x: endX, y: endY},
+        ...(holdMs ? [{type: 'pause', duration: holdMs}] : []),
         {type: 'pointerUp', button: 0},
       ],
     },
@@ -179,6 +185,47 @@ async function scrollToElement(
 }
 
 /**
+ * Scroll to a control with UiAutomator's own scroller, which walks the whole
+ * container in either direction rather than the viewport. Android only;
+ * returns false elsewhere so callers can fall back to a swipe loop.
+ *
+ * Only for a control known to be mounted — a miss scrolls to the end of the
+ * list before failing, which costs tens of seconds.
+ */
+async function nativeScrollIntoView(selector: string): Promise<boolean> {
+  if (!(browser as unknown as {isAndroid?: boolean}).isAndroid) {
+    return false;
+  }
+  const match = selector.match(/contains\(@resource-id, "([^"]+)"\)/);
+  if (!match) {
+    return false;
+  }
+  try {
+    return await browser
+      .$(
+        '-android uiautomator:new UiScrollable(new UiSelector().scrollable(true))' +
+          `.scrollIntoView(new UiSelector().resourceIdMatches(".*${match[1]}.*"))`,
+      )
+      .isExisting();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Scroll a sheet up by a fixed distance without a fling, which on a short
+ * screen can carry a target past the viewport between two checks.
+ */
+async function dragUpInSheet(): Promise<void> {
+  await swipe({
+    startYPercent: 0.6,
+    endYPercent: 0.4,
+    duration: 300,
+    holdMs: 300,
+  });
+}
+
+/**
  * Swipe up within a bottom sheet (uses safer coordinates)
  * Avoids the bottom navigation gesture area on Android
  */
@@ -208,6 +255,11 @@ async function swipeUpInSheet(): Promise<void> {
  *   for the bottom-anchored UI. Defaults to 0.15 (~15%), enough for a
  *   Sheet.Actions row plus system nav on Android. Pass a larger value
  *   when scrolling inside a sheet with a tall action area.
+ *
+ * The reserve is a guess, and it rejects an element that is genuinely the LAST
+ * item in the sheet and so can never be scrolled above it — the caller then
+ * sees an unreachable element rather than an obvious failure. Prefer
+ * `scrollInSheetClearOfOverlay`, which measures the pinned row instead.
  */
 async function scrollInSheetToElement(
   selector: string,
@@ -236,6 +288,85 @@ async function scrollInSheetToElement(
 }
 
 /**
+ * Swipe up within a bottom sheet, starting low enough to miss the text inputs
+ * that occupy the middle of a form sheet. A drag begun on a TextInput is
+ * consumed by it, so the sheet never scrolls and the caller sees an unreachable
+ * row rather than a failed gesture.
+ */
+async function swipeUpInSheetBelowInputs(): Promise<void> {
+  await swipe({
+    startYPercent: 0.78,
+    endYPercent: 0.42,
+    duration: 300,
+    holdMs: 300,
+  });
+}
+
+async function dragDownInSheet(): Promise<void> {
+  await swipe({
+    startYPercent: 0.4,
+    endYPercent: 0.6,
+    duration: 300,
+    holdMs: 300,
+  });
+}
+
+/** Bottom edge of the topmost sheet's header (its close button), or 0. */
+async function sheetHeaderBottom(): Promise<number> {
+  const buttons = browser.$$(byTestId('sheet-close-button'));
+  const count = await buttons.length;
+  const top = count > 0 ? buttons[count - 1] : undefined;
+  if (!top || !(await top.isExisting().catch(() => false))) {
+    return 0;
+  }
+  return (await top.getLocation('y')) + (await top.getSize('height'));
+}
+
+/**
+ * Scroll within a sheet until `selector` sits fully above `overlay`.
+ *
+ * Use for anything about to be tapped inside a sheet with a pinned action row.
+ * UiAutomator2 reports an element displayed while that row is painted over it,
+ * so the tap lands on the overlay instead. The percentage-based reserve in
+ * scrollInSheetToElement has to be guessed per layout and per device — and a
+ * row that is genuinely the last item can sit inside the reserve with nothing
+ * left to scroll. The overlay's own geometry is exact.
+ *
+ * Probes by existence: sheet content reports isDisplayed=false on iOS.
+ */
+async function scrollInSheetClearOfOverlay(
+  selector: string,
+  overlay: string,
+  maxScrolls = 8,
+  scroll: () => Promise<void> = dragUpInSheet,
+): Promise<boolean> {
+  for (let i = 0; i < maxScrolls; i++) {
+    const element = browser.$(selector);
+    if (await element.isExisting().catch(() => false)) {
+      const loc = await element.getLocation();
+      const size = await element.getSize();
+      const overlayEl = browser.$(overlay);
+      const overlayTop = (await overlayEl.isExisting().catch(() => false))
+        ? (await overlayEl.getLocation()).y
+        : (await getScreenSize()).height;
+      const headerBottom = await sheetHeaderBottom();
+      if (loc.y >= headerBottom && loc.y + size.height <= overlayTop) {
+        return true;
+      }
+      if (loc.y < headerBottom) {
+        // Scrolled under the sheet header, where a tap hits the header.
+        await dragDownInSheet();
+        await driver.pause(300);
+        continue;
+      }
+    }
+    await scroll();
+    await driver.pause(300);
+  }
+  return false;
+}
+
+/**
  * Scroll within a sheet to find an element using isExisting instead of isDisplayed
  * This is more reliable on iOS where elements in sheets report isDisplayed=false
  * @param selector - Element selector to scroll to
@@ -254,7 +385,7 @@ async function scrollInSheetToElementExists(
     } catch {
       // Element not found yet
     }
-    await swipeUpInSheet();
+    await dragUpInSheet();
     await driver.pause(300);
   }
   return false;
@@ -262,6 +393,7 @@ async function scrollInSheetToElementExists(
 
 export const Gestures = {
   getScreenSize,
+  nativeScrollIntoView,
   swipe,
   swipeDownOnElement,
   swipeDownToClose,
@@ -270,6 +402,9 @@ export const Gestures = {
   swipeToOpenDrawer,
   scrollToElement,
   swipeUpInSheet,
+  dragUpInSheet,
+  swipeUpInSheetBelowInputs,
   scrollInSheetToElement,
+  scrollInSheetClearOfOverlay,
   scrollInSheetToElementExists,
 };

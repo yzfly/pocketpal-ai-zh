@@ -1,7 +1,7 @@
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {Pressable, View} from 'react-native';
 
-import Slider from '@react-native-community/slider';
+import {Slider} from '../libraryViews';
 import DeviceInfo from 'react-native-device-info';
 import {observer} from 'mobx-react';
 import {Button, Text} from 'react-native-paper';
@@ -106,7 +106,7 @@ export const IncreaseContextSheet: React.FC<IncreaseContextSheetProps> =
       const memBytes = useMemo(
         () => (nCtx: number) =>
           getModelMemoryRequirement(model, projectionModel, {
-            ...modelStore.contextInitParams,
+            ...modelStore.memoryEstimateSettings,
             n_ctx: nCtx,
           }),
         [model, projectionModel],

@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'patches/**') }}
 
       # Step 2: Set up Node.js environment
       - name: Set up Node.js
@@ -100,14 +100,72 @@ jobs:
       - name: Run unit tests
         run: yarn test --coverage
 
+  # Render-count comparison of the PR merge commit against its base (main).
+  # Restores the shared node_modules cache but never saves it: this job installs
+  # other commits' dependencies and skips llama.rn's native postinstall.
+  perf:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.translation_only != 'true'
+    timeout-minutes: 30
+    env:
+      RNLLAMA_SKIP_POSTINSTALL: '1'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.21.0'
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Restore node_modules
+        id: nm
+        uses: actions/cache/restore@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'patches/**') }}
+
+      - name: Compare render performance with the base
+        env:
+          PERF_HEAD_INSTALL: ${{ steps.nm.outputs.cache-hit != 'true' && '1' || '' }}
+        run: yarn test:perf:compare HEAD^1
+
+      - name: Upload perf results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-perf
+          path: .reassure/
+          include-hidden-files: true
+
   # Job for Android build
   build-android:
     runs-on: ubuntu-latest
     needs: [build-and-test, detect-changes]
     if: needs.detect-changes.outputs.translation_only != 'true'
+    env:
+      # Declared here rather than in android/gradle.properties: llama.rn's own
+      # android/gradle.properties sets rnllamaBuildFromSource, and a subproject's
+      # value beats the root project's, so only an environment property or -P wins.
+      ORG_GRADLE_PROJECT_rnllamaBuildFromSource: 'true'
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+
+      # Must precede setup-node and setup-java: /opt/hostedtoolcache is where
+      # those install. The Hexagon SDK adds ~3.1 GB on top of a from-source build.
+      - name: Maximize build space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache
+          df -h /
 
       # Set up Node.js environment
       - name: Set up Node.js
@@ -121,7 +179,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'patches/**') }}
 
       - name: Install Yarn
         run: npm install -g yarn
@@ -129,12 +187,34 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Derive the rnllama variant allowlist from the payload manifest
+        run: |
+          set -euo pipefail
+          VARIANTS=$(node scripts/verify-android-payload.js --print-variants)
+          echo "Declared allowlist: $VARIANTS"
+          echo "ORG_GRADLE_PROJECT_rnllamaVariants=$VARIANTS" >> "$GITHUB_ENV"
+
+      # Keyed on the manifest and patches/ as well as yarn.lock: the manifest
+      # decides the variant set and a patch changes the sources, so changing
+      # either must invalidate the configured build tree.
+      - name: Cache llama.rn native build tree
+        uses: actions/cache@v4
+        with:
+          path: node_modules/llama.rn/android/.cxx
+          key: ${{ runner.os }}-cxx-${{ hashFiles('yarn.lock', 'patches/**', 'scripts/android-payload-manifest.json') }}
+
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
+
+      - name: Set up the Hexagon SDK
+        uses: ./.github/actions/setup-hexagon-sdk
+
+      - name: Set up ccache
+        uses: ./.github/actions/setup-ccache
 
       - name: Create dummy google-services.json for CI
         run: |
@@ -202,7 +282,60 @@ jobs:
         env:
           APP_RELEASE_STORE_PASSWORD: dummy-ci-password
           APP_RELEASE_KEY_PASSWORD: dummy-ci-password
-        run: ./gradlew assembleProdRelease
+        run: |
+          set -euo pipefail
+          # Compared against "true" rather than merely checked for emptiness:
+          # the payload gate cannot tell the modes apart (upstream's prebuilt
+          # exports the same symbols), so this guard is the only thing holding
+          # the declaration.
+          if [ "${ORG_GRADLE_PROJECT_rnllamaBuildFromSource:-}" != "true" ]; then
+            echo "::error::ORG_GRADLE_PROJECT_rnllamaBuildFromSource is '${ORG_GRADLE_PROJECT_rnllamaBuildFromSource:-<unset>}', expected 'true'. Building from prebuilts is the documented escape hatch, but it must be a deliberate edit to this workflow."
+            exit 1
+          fi
+          ./gradlew assembleProdRelease 2>&1 | tee android-build.log
+
+      - name: ccache statistics
+        if: always()
+        run: ccache --show-stats || echo "ccache unavailable (its setup step did not complete)"
+
+      # COUPLING: the string grepped for below is upstream's, printed by
+      # node_modules/llama.rn/android/build.gradle next to its rnllamaVariants
+      # lookup. A llama.rn upgrade that rewords it fails this step. That is the
+      # intended direction — it is the only live proof the environment reaches
+      # gradle — but the fix is to update the literal, not to delete the check.
+      - name: Verify the variant allowlist reached the llama.rn build
+        run: |
+          set -euo pipefail
+          VARIANTS=$(node scripts/verify-android-payload.js --print-variants)
+          if ! grep -qF "Building rnllama variants: $VARIANTS" android/android-build.log; then
+            echo "::error::llama.rn did not report building the declared variant set."
+            echo "Expected: $VARIANTS"
+            echo "In the build log:"
+            grep -F "rnllama variants" android/android-build.log || echo "  (no such line at all)"
+            echo ""
+            echo "Two different causes look identical here. Either ORG_GRADLE_PROJECT_rnllamaVariants"
+            echo "did not reach the llama.rn subproject, or upstream changed the wording of the line"
+            echo "this step greps for (android/build.gradle, the println next to rnllamaVariants)."
+            echo "Check the wording first — a llama.rn upgrade is the more common reason."
+            exit 1
+          fi
+          echo "OK: llama.rn reported the declared variant list (extras, if any, are permitted and are reported by the payload check)."
+
+      - name: Verify the Android payload
+        run: |
+          node scripts/verify-android-payload.js \
+            --apk android/app/build/outputs/apk/prod/release/app-prod-release.apk \
+            --report payload-report.txt
+
+      # The report is evidence about the artifact, not the artifact, so it
+      # uploads whether or not the check passed. The APK below does not.
+      - name: Upload payload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payload-report
+          path: payload-report.txt
+          if-no-files-found: ignore
 
       - name: Verify prod APK has no automation-bridge code (DCE sanity check)
         run: |
@@ -220,6 +353,12 @@ jobs:
             'memory-snapshot-result'
             'BENCH_RUN_MATRIX'
             'bench-runner-screen-status'
+            'ASR_AUTOMATION_STATE'
+            'VOICE_AUTOMATION_STATE'
+            'IAP_API_BASE_OVERRIDE'
+            'IAP_FAKE_STORE'
+            'PLUS_SHIP_OVERRIDE'
+            'PLUS_GATE_PROBE'
           )
           FAIL=0
           for m in "${MARKERS[@]}"; do
@@ -236,6 +375,9 @@ jobs:
             exit 1
           fi
           echo "OK: prod bundle contains zero automation markers."
+
+      - name: Verify the Plus store gate
+        run: scripts/verify-plus-gate.sh android/app/build/outputs/apk/prod/release/app-prod-release.apk --ungated
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -266,7 +408,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'patches/**') }}
 
       - name: Install Yarn
         run: npm install -g yarn
@@ -357,6 +499,11 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
+      - name: Ensure Metal toolchain
+        run: |
+          xcrun -sdk iphoneos metal -v || xcodebuild -downloadComponent MetalToolchain
+          xcrun -sdk iphonesimulator metal -v
+
       - name: Build iOS Release
         run: |
           cd ios
@@ -368,6 +515,7 @@ jobs:
             -configuration Release \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -381,3 +529,44 @@ jobs:
             echo "::endgroup::"
             exit $EXIT_CODE
           fi
+
+      - name: Verify iOS payload
+        run: scripts/verify-ios-payload.sh ios/build/Build/Products/Release-iphonesimulator/PocketPal.app --require-marker
+
+      - name: Verify the Plus store gate
+        run: scripts/verify-plus-gate.sh ios/build/Build/Products/Release-iphonesimulator/PocketPal.app --ungated
+
+      - name: AMX scan (llama-rn, whisper-rn)
+        shell: bash -eo pipefail {0}
+        run: |
+          llvm_objdump="$(brew --prefix llvm 2>/dev/null || true)/bin/llvm-objdump"
+          if [ -x "$llvm_objdump" ]; then objdump=("$llvm_objdump"); else objdump=(xcrun llvm-objdump); fi
+          "${objdump[@]}" --version
+
+          # Only undecoded words in AMX opcode space count (0x00201000 | op << 5 | operand):
+          # jump tables inside __text also show as <unknown>.
+          scan() {
+            local dump="$RUNNER_TEMP/$(basename "$1").objdump.txt"
+            "${objdump[@]}" -d --mattr=+all "$1" > "$dump"
+            raw=$(grep -c '<unknown>' "$dump" || true)
+            amx=$(awk '$1 ~ /^[0-9a-fA-F]+:$/ && $NF == "<unknown>" && tolower($2) ~ /^00201[0-3][0-9a-f][0-9a-f]$/' "$dump" | wc -l | tr -d ' ')
+            echo "$1: $raw <unknown>, $amx in AMX opcode space"
+          }
+
+          # A known AMX instruction must be flagged, or a clean scan proves nothing.
+          printf '.text\n.globl _amx\n_amx:\n.inst 0x00201220\n' |
+            xcrun clang -arch arm64 -x assembler -c - -o "$RUNNER_TEMP/amx.o"
+          scan "$RUNNER_TEMP/amx.o"
+          test "$amx" -gt 0
+
+          for lib in llama-rn/libllama-rn.a whisper-rn/libwhisper-rn.a; do
+            lib="ios/build/Build/Products/Release-iphonesimulator/$lib"
+            test -f "$lib"
+            scan "$lib"
+            test "$amx" -eq 0
+          done
+
+      - name: Symbol overlap (llama-rn, whisper-rn)
+        run: |
+          products=ios/build/Build/Products/Release-iphonesimulator
+          scripts/verify-ios-symbol-overlap.sh --self-test "$products/llama-rn/libllama-rn.a" "$products/whisper-rn/libwhisper-rn.a"

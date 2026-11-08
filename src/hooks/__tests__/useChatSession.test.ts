@@ -1,5 +1,7 @@
 import {LlamaContext} from '../../services/llm';
+import {AccessibilityInfo} from 'react-native';
 import {renderHook, act, waitFor} from '@testing-library/react-native';
+import {runInAction} from 'mobx';
 
 import {textMessage} from '../../../jest/fixtures';
 import {sessionFixtures} from '../../../jest/fixtures/chatSessions';
@@ -11,17 +13,25 @@ import {
 } from '../../../jest/fixtures/models';
 
 import {useChatSession} from '../useChatSession';
+import {isReadUrlAllowed} from '../../services/talents';
+import {bodyExtras} from '../../api/servers';
 
 import {
   chatSessionStore,
   modelStore,
   palStore,
+  serverStore,
   ttsStore,
   uiStore,
 } from '../../store';
 
 import {l10n} from '../../locales';
 import {assistant} from '../../utils/chat';
+import {ModelOrigin} from '../../utils/types';
+import {
+  RemoteModelNotReadyError,
+  RemoteModelRequestWithdrawnError,
+} from '../../utils/errors';
 
 const mockAssistant = {
   id: 'h3o3lc5xj',
@@ -77,6 +87,125 @@ describe('useChatSession', () => {
     expect(modelStore.context?.completion).toHaveBeenCalled();
   });
 
+  describe('a spoken send', () => {
+    const addedRows = () =>
+      (chatSessionStore.addMessageToCurrentSession as jest.Mock).mock.calls.map(
+        ([row]) => row,
+      );
+
+    it('marks the user row and the assistant turn as spoken', async () => {
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage, {spoken: true});
+      });
+
+      const user = addedRows().find(row => row.type === 'text');
+      const turn = addedRows().find(row => row.type === 'assistant_turn');
+      expect(user.metadata.spoken).toBe(true);
+      expect(turn.metadata.spoken).toBe(true);
+    });
+
+    it("hands back the assistant turn's id once its row exists", async () => {
+      (
+        chatSessionStore.addMessageToCurrentSession as jest.Mock
+      ).mockImplementation(async row => {
+        row.id = `${row.type}-id`;
+      });
+      const onTurnCreated = jest.fn();
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage, {
+          spoken: true,
+          onTurnCreated,
+        });
+      });
+
+      expect(onTurnCreated).toHaveBeenCalledTimes(1);
+      expect(onTurnCreated).toHaveBeenCalledWith('assistant_turn-id');
+      (
+        chatSessionStore.addMessageToCurrentSession as jest.Mock
+      ).mockResolvedValue(undefined);
+    });
+
+    const sendWithThinkingOn = async (opts?: {spoken: boolean}) => {
+      const model = {
+        ...(modelsList as any)[0],
+        reasoning: {
+          isReasoning: 'yes',
+          source: 'user',
+          supportsEffort: true,
+          effortValues: ['low', 'medium', 'high'],
+          effortSource: 'user',
+        },
+      };
+      modelStore.models = [model] as any;
+      modelStore.activeModelId = model.id;
+      const settings = await chatSessionStore.getCurrentCompletionSettings();
+      (
+        chatSessionStore.getCurrentCompletionSettings as jest.Mock
+      ).mockResolvedValueOnce({
+        ...settings,
+        enable_thinking: true,
+        reasoning: {enabled: true, effort: 'high'},
+      });
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+      await act(async () => {
+        await result.current.handleSendPress(textMessage, opts);
+      });
+      return (modelStore.engine!.completion as jest.Mock).mock.calls[0][0];
+    };
+
+    it('runs the reply with thinking off, whatever the chat setting', async () => {
+      const params = await sendWithThinkingOn({spoken: true});
+
+      expect(params.chat_template_kwargs).toEqual(
+        expect.objectContaining({enable_thinking: false}),
+      );
+      expect(params.chat_template_kwargs?.reasoning_effort).toBeUndefined();
+      expect(params.reasoning).toEqual({enabled: false});
+    });
+
+    it('asks a remote server for no thinking too', async () => {
+      const params = await sendWithThinkingOn({spoken: true});
+      const request = {samplers: {}, reasoning: params.reasoning};
+
+      expect(bodyExtras('llama.cpp', request)).toEqual({
+        reasoning_format: 'auto',
+        chat_template_kwargs: {enable_thinking: false},
+      });
+      expect(bodyExtras('Ollama', request)).toEqual({reasoning_effort: 'none'});
+    });
+
+    it('leaves thinking to the chat setting for a typed send', async () => {
+      const params = await sendWithThinkingOn();
+
+      expect(params.chat_template_kwargs?.enable_thinking).not.toBe(false);
+      expect(params.chat_template_kwargs?.reasoning_effort).toBe('high');
+    });
+
+    it('a typed send carries no spoken flag', async () => {
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+
+      for (const row of addedRows()) {
+        expect(row.metadata).not.toHaveProperty('spoken');
+      }
+    });
+  });
+
   it('should handle model not loaded scenario', async () => {
     modelStore.context = undefined;
     modelStore.engine = undefined;
@@ -123,6 +252,375 @@ describe('useChatSession', () => {
     );
   });
 
+  it('maps the speculative draft-context failure to friendly copy', async () => {
+    // Low-RAM devices throw this at first completion; the raw native string
+    // must not reach the chat.
+    if (modelStore.context) {
+      modelStore.context.completion = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('failed to create draft context'));
+    }
+
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+
+    await act(async () => {
+      await result.current.handleSendPress(textMessage);
+    });
+
+    expect(chatSessionStore.addMessageToCurrentSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: l10n.en.chat.speculativeInitFailed,
+        author: assistant,
+      }),
+    );
+  });
+
+  it('maps a tool-call parse failure before any output to friendly copy', async () => {
+    if (modelStore.context) {
+      modelStore.context.completion = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new Error(
+            'Failed to parse tool call arguments as JSON: [json.exception.parse_error.101] parse error',
+          ),
+        );
+    }
+
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+
+    await act(async () => {
+      await result.current.handleSendPress(textMessage);
+    });
+
+    const texts = (
+      chatSessionStore.addMessageToCurrentSession as jest.Mock
+    ).mock.calls.map(call => call[0]?.text);
+    expect(texts).toContain(l10n.en.chat.toolCallTruncated);
+    expect(
+      texts.filter(text => text?.startsWith(l10n.en.chat.completionFailed)),
+    ).toEqual([]);
+  });
+
+  describe('a router turn that ends before its request', () => {
+    type Row = {id: string; type: string; [key: string]: unknown};
+    type Session = {id: string; title: string; messages: Row[]};
+    let sessions: Session[];
+    let nextId: number;
+    const deleteMessage =
+      chatSessionStore.deleteMessageFromSession as jest.Mock;
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    const addToCurrent =
+      chatSessionStore.addMessageToCurrentSession as jest.Mock;
+    const setTitle =
+      chatSessionStore.updateSessionTitleBySessionId as jest.Mock;
+
+    const activeSession = () =>
+      sessions.find(s => s.id === chatSessionStore.activeSessionId);
+    const userRow = (id: string, text: string): Row => ({
+      id,
+      type: 'text',
+      text,
+      author: textMessage.author,
+      createdAt: 0,
+    });
+    const assistantRow = (id: string, text: string): Row => ({
+      id,
+      type: 'text',
+      text,
+      author: assistant,
+      createdAt: 0,
+    });
+
+    const failWith = (error: Error) => {
+      modelStore.context!.completion = jest.fn().mockRejectedValueOnce(error);
+    };
+    const failWhenReleased = () => {
+      let release!: (error: Error) => void;
+      modelStore.context!.completion = jest.fn(
+        () => new Promise((_resolve, reject) => (release = reject)),
+      );
+      return (error: Error) => release(error);
+    };
+    const renderSession = (ref = {current: null}) =>
+      renderHook(() => useChatSession(ref, textMessage.author, mockAssistant))
+        .result;
+    const send = async (result = renderSession()) => {
+      let undone: unknown;
+      await act(async () => {
+        undone = await result.current.handleSendPress(textMessage);
+      });
+      return undone;
+    };
+
+    beforeEach(() => {
+      nextId = 0;
+      sessions = [{id: 'S', title: 'text', messages: []}];
+      chatSessionStore.sessions = sessions as any;
+      chatSessionStore.activeSessionId = 'S';
+      addToCurrent.mockImplementation(async (message: Row) => {
+        message.id = `row-${++nextId}`;
+        if (!activeSession()) {
+          sessions.push({id: 'N', title: 'New Session', messages: []});
+          chatSessionStore.activeSessionId = 'N';
+        }
+        const session = activeSession()!;
+        const oldest = session.messages.at(-1);
+        if (oldest && session.title === 'New Session') {
+          session.title = oldest.text as string;
+        }
+        session.messages.unshift(message);
+      });
+      setTitle.mockImplementation(async (id: string, title: string) => {
+        sessions.find(s => s.id === id)!.title = title;
+      });
+      deleteMessage.mockImplementation(
+        async (sessionId: string, id: string) => {
+          const owner = sessions.find(s => s.id === sessionId);
+          if (owner) {
+            owner.messages = owner.messages.filter(m => m.id !== id);
+          }
+        },
+      );
+    });
+
+    afterEach(() => {
+      addToCurrent.mockResolvedValue(undefined);
+      setTitle.mockReset();
+      setTitle.mockResolvedValue(undefined);
+      deleteMessage.mockReset();
+      deleteMessage.mockResolvedValue(undefined);
+      Object.defineProperty(chatSessionStore, 'currentSessionMessages', {
+        get: jest.fn(() => []),
+        configurable: true,
+      });
+    });
+
+    it('removes its user and assistant rows and hands the input back', async () => {
+      failWith(new RemoteModelRequestWithdrawnError());
+
+      const undone = await send();
+
+      expect(deleteMessage.mock.calls.map(([, id]) => id).sort()).toEqual([
+        'row-1',
+        'row-2',
+      ]);
+      expect(sessions[0].messages).toEqual([]);
+      expect(undone).toEqual({message: textMessage, sessionId: 'S'});
+      expect(chatSessionStore.addMessageToSession).not.toHaveBeenCalled();
+      expect(
+        addToCurrent.mock.calls.filter(([m]) => m.metadata?.system),
+      ).toEqual([]);
+      expect(modelStore.inferencing).toBe(false);
+    });
+
+    it('resets the title of a chat the send created', async () => {
+      sessions = [];
+      chatSessionStore.sessions = sessions as any;
+      chatSessionStore.activeSessionId = null as any;
+      failWith(new RemoteModelRequestWithdrawnError());
+
+      const undone = await send();
+
+      expect(
+        chatSessionStore.updateSessionTitleBySessionId,
+      ).toHaveBeenCalledWith('N', 'New Session');
+      expect(sessions[0].messages).toEqual([]);
+      expect(undone).toEqual({message: textMessage, sessionId: 'N'});
+    });
+
+    it('leaves a new chat untitled after two undone sends', async () => {
+      sessions = [];
+      chatSessionStore.sessions = sessions as any;
+      chatSessionStore.activeSessionId = null as any;
+      const result = renderSession();
+      const second = {...textMessage, text: 'second'};
+      failWith(new RemoteModelRequestWithdrawnError());
+      await send(result);
+
+      failWith(new RemoteModelRequestWithdrawnError());
+      let undone: unknown;
+      await act(async () => {
+        undone = await result.current.handleSendPress(second);
+      });
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].messages).toEqual([]);
+      expect(sessions[0].title).toBe('New Session');
+      expect(undone).toEqual({message: second, sessionId: 'N'});
+    });
+
+    it('keeps the title of a chat that already existed', async () => {
+      failWith(new RemoteModelRequestWithdrawnError());
+
+      await send();
+
+      expect(
+        chatSessionStore.updateSessionTitleBySessionId,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('sends alternating roles when the same text is sent again', async () => {
+      sessions[0].messages = [
+        assistantRow('a1', 'hi there'),
+        userRow('u1', 'hello'),
+      ];
+      Object.defineProperty(chatSessionStore, 'currentSessionMessages', {
+        get: jest.fn(() => [...sessions[0].messages]),
+        configurable: true,
+      });
+      const requests: Array<Array<{role: string; content: unknown}>> = [];
+      const completion = modelStore.engine!.completion;
+      modelStore.engine!.completion = jest.fn((params, onData) => {
+        requests.push(params.messages!.map(m => ({...m})) as any);
+        return completion(params, onData);
+      });
+      const result = renderSession();
+      failWith(new RemoteModelRequestWithdrawnError());
+      await send(result);
+
+      await send(result);
+
+      const resent = requests[1].filter(m => m.role !== 'system');
+      expect(resent.map(m => m.role)).toEqual(['user', 'assistant', 'user']);
+      expect(resent[2].content).toBe(textMessage.text);
+    });
+
+    it('keeps Send blocked until the user row is deleted', async () => {
+      const atDelete: Array<{inferencing: boolean; generatingEnded: boolean}> =
+        [];
+      deleteMessage.mockImplementation(async () => {
+        atDelete.push({
+          inferencing: modelStore.inferencing,
+          generatingEnded: (
+            chatSessionStore.setIsGenerating as jest.Mock
+          ).mock.calls.some(([value]) => value === false),
+        });
+      });
+      failWith(new RemoteModelRequestWithdrawnError());
+
+      await send();
+
+      expect(atDelete).toHaveLength(2);
+      expect(atDelete).toEqual(
+        atDelete.map(() => ({inferencing: true, generatingEnded: false})),
+      );
+      expect(modelStore.inferencing).toBe(false);
+    });
+
+    it('ends the run even when the undo fails', async () => {
+      sessions = [];
+      chatSessionStore.sessions = sessions as any;
+      chatSessionStore.activeSessionId = null as any;
+      deleteMessage.mockRejectedValue(new Error('db locked'));
+      (
+        chatSessionStore.updateSessionTitleBySessionId as jest.Mock
+      ).mockRejectedValueOnce(new Error('db locked'));
+      failWith(new RemoteModelRequestWithdrawnError());
+      const result = renderSession();
+
+      await act(async () => {
+        await result.current.handleSendPress(textMessage).catch(() => {});
+      });
+
+      expect(modelStore.inferencing).toBe(false);
+      expect(
+        (chatSessionStore.setIsGenerating as jest.Mock).mock.calls.at(-1),
+      ).toEqual([false]);
+    });
+
+    it('deletes its own rows when a later send replaced the shared message info', async () => {
+      const ref: {current: any} = {current: null};
+      const result = renderSession(ref);
+      const release = failWhenReleased();
+      let sending!: Promise<unknown>;
+      act(() => {
+        sending = result.current.handleSendPress(textMessage);
+      });
+      await waitFor(() => expect(ref.current).not.toBeNull());
+
+      ref.current = {createdAt: 0, id: 'other-turn', sessionId: 'T'};
+      await act(async () => {
+        release(new RemoteModelRequestWithdrawnError());
+        await sending;
+      });
+
+      expect(deleteMessage.mock.calls.map(([, id]) => id).sort()).toEqual([
+        'row-1',
+        'row-2',
+      ]);
+    });
+
+    it('keeps a turn that already has step content and undoes nothing', async () => {
+      modelStore.context!.completion = jest.fn(async () => {
+        const turn = sessions[0].messages.find(
+          m => m.type === 'assistant_turn',
+        )!;
+        turn.steps = [{content: 'partial', toolCalls: []}];
+        throw new RemoteModelRequestWithdrawnError();
+      });
+
+      const undone = await send();
+
+      expect(undone).toBeUndefined();
+      expect(deleteMessage).not.toHaveBeenCalled();
+      expect(chatSessionStore.updateMessage).toHaveBeenCalledWith(
+        'row-2',
+        'S',
+        expect.objectContaining({
+          metadata: expect.objectContaining({interrupted: true}),
+        }),
+      );
+      expect(sessions[0].messages.map(m => m.id)).toEqual(['row-2', 'row-1']);
+    });
+
+    it("adds one message to the turn's chat with the server words set apart", async () => {
+      const release = failWhenReleased();
+      const result = renderSession();
+      let sending!: Promise<unknown>;
+      act(() => {
+        sending = result.current.handleSendPress(textMessage);
+      });
+      await waitFor(() => expect(sessions[0].messages).toHaveLength(2));
+
+      chatSessionStore.activeSessionId = 'T';
+      await act(async () => {
+        release(new RemoteModelNotReadyError('load-failed', 'out of memory'));
+        await sending;
+      });
+
+      const text = `${l10n.en.settings.routerModels.loadFailed}\n\n“out of memory”`;
+      expect(chatSessionStore.addMessageToSession).toHaveBeenCalledTimes(1);
+      expect(chatSessionStore.addMessageToSession).toHaveBeenCalledWith(
+        'S',
+        expect.objectContaining({text, metadata: {system: true}}),
+      );
+      expect(
+        addToCurrent.mock.calls.filter(([m]) => m.metadata?.system),
+      ).toEqual([]);
+      expect(announce).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledWith(text);
+      expect(sessions[0].messages.map(m => m.id)).toEqual(['row-1']);
+    });
+
+    it("adds the app's sentence alone when the server gave no words", async () => {
+      const error = new RemoteModelNotReadyError('server-unreachable');
+      failWith(error);
+
+      await send();
+
+      expect(chatSessionStore.addMessageToSession).toHaveBeenCalledWith(
+        'S',
+        expect.objectContaining({
+          text: l10n.en.settings.routerModels.serverUnreachable,
+        }),
+      );
+    });
+  });
+
   it('should reset the conversation', () => {
     const {result} = renderHook(() =>
       useChatSession({current: null}, textMessage.author, mockAssistant),
@@ -148,25 +646,38 @@ describe('useChatSession', () => {
     expect(modelStore.context?.stopCompletion).not.toHaveBeenCalled();
   });
 
-  it('handleStopPress sets isStopping immediately so the UI can gate sends', async () => {
-    // Simulate a real in-flight chat: inferencing is true and the
-    // engine has been wired (mock above). The stop press should:
-    //   - flip isStopping to true (UI feedback + send-button gate)
-    //   - leave inferencing alone (cleared later by the runner exit)
-    // The cleanup of isStopping happens in the for-await loop, so it
-    // is exercised in `should set inferencing correctly during send`.
-    modelStore.setInferencing(true);
+  it('handleStopPress aborts the run and clears the run UI at once, without isStopping', async () => {
+    let resolveCompletion!: (value: any) => void;
+    modelStore.context!.completion = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolveCompletion = resolve;
+        }),
+    ) as any;
     const {result} = renderHook(() =>
       useChatSession({current: null}, textMessage.author, mockAssistant),
     );
 
+    let sending!: Promise<unknown>;
+    await act(async () => {
+      sending = result.current.handleSendPress(textMessage);
+    });
+    await waitFor(() =>
+      expect(modelStore.context!.completion).toHaveBeenCalled(),
+    );
+    expect(modelStore.inferencing).toBe(true);
+
     await result.current.handleStopPress();
 
-    expect(chatSessionStore.setIsStopping).toHaveBeenCalledWith(true);
-    // inferencing flag is NOT cleared by handleStopPress anymore — the
-    // runner's for-await cleanup is the single owner of that.
-    const calls = (chatSessionStore.setIsGenerating as jest.Mock).mock.calls;
-    expect(calls.find(c => c[0] === false)).toBeUndefined();
+    expect(modelStore.inferencing).toBe(false);
+    expect(chatSessionStore.setIsGenerating).toHaveBeenLastCalledWith(false);
+    expect(chatSessionStore.setIsStopping).not.toHaveBeenCalledWith(true);
+    expect(modelStore.engine!.stopCompletion).toHaveBeenCalled();
+
+    await act(async () => {
+      resolveCompletion({text: '', content: '', interrupted: true});
+      await sending;
+    });
   });
 
   it('should set inferencing correctly during send', async () => {
@@ -332,9 +843,6 @@ describe('useChatSession', () => {
   });
 
   it('emits multimodal warning when user sends an image but multimodal is disabled', async () => {
-    // modelStore.isMultimodalEnabled is mocked to return false by default
-    // (see __mocks__/stores/modelStore.ts). The hook should call
-    // uiStore.setChatWarning with the multimodal-not-enabled message.
     if (modelStore.context) {
       modelStore.context.completion = jest
         .fn()
@@ -354,6 +862,58 @@ describe('useChatSession', () => {
     const arg = (uiStore.setChatWarning as jest.Mock).mock.calls[0][0];
     // The warning carries the multimodalNotEnabled message text.
     expect(JSON.stringify(arg)).toContain(l10n.en.chat.multimodalNotEnabled);
+  });
+
+  it('sends an image on a remote model whose probe reported vision', async () => {
+    runInAction(() => {
+      modelStore.models = [
+        {
+          id: 'srv-1/gemma-4-e2b',
+          origin: ModelOrigin.REMOTE,
+          serverId: 'srv-1',
+          remoteModelId: 'gemma-4-e2b',
+        } as any,
+      ];
+      modelStore.activeModelId = 'srv-1/gemma-4-e2b';
+      serverStore.remoteCaps = {'srv-1/gemma-4-e2b': {supportsVision: true}};
+    });
+    if (modelStore.context) {
+      modelStore.context.completion = jest
+        .fn()
+        .mockResolvedValue({text: 'ok', content: 'ok', timings: {}});
+    }
+
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+    await act(async () => {
+      await result.current.handleSendPress({
+        text: 'look at this',
+        type: 'text',
+        imageUris: ['file:///photo.jpg'],
+      });
+    });
+
+    const sent = (modelStore.engine!.completion as jest.Mock).mock
+      .calls[0][0] as {messages: Array<{role: string; content: any}>};
+    const lastUser = [...sent.messages].reverse().find(m => m.role === 'user')!;
+    expect(lastUser.content).toEqual(
+      expect.arrayContaining([
+        {type: 'image_url', image_url: {url: 'file:///photo.jpg'}},
+      ]),
+    );
+
+    const warnings = (uiStore.setChatWarning as jest.Mock).mock.calls;
+    expect(
+      warnings.some(call =>
+        JSON.stringify(call[0]).includes(l10n.en.chat.multimodalNotEnabled),
+      ),
+    ).toBe(false);
+
+    runInAction(() => {
+      serverStore.remoteCaps = {};
+      modelStore.activeModelId = undefined;
+    });
   });
 
   it('should use system prompt as-is when pal has no parameters', async () => {
@@ -413,14 +973,184 @@ describe('useChatSession', () => {
     expect(systemMessage.content).toBe('You are a helpful assistant.');
   });
 
+  describe('search grounding', () => {
+    const webSearchTool = {
+      type: 'function',
+      function: {name: 'web_search', description: '', parameters: {}},
+    };
+
+    const activateSearchTools = async () => {
+      const baseSettings =
+        await chatSessionStore.getCurrentCompletionSettings();
+      (
+        chatSessionStore.getCurrentCompletionSettings as jest.Mock
+      ).mockResolvedValueOnce({...baseSettings, tools: [webSearchTool]});
+    };
+
+    const useSessionWithPal = (systemPrompt: string) => {
+      const pal = {
+        id: 'search-pal-id',
+        type: 'local' as const,
+        name: 'Search Pal',
+        systemPrompt,
+        parameters: {},
+        parameterSchema: [],
+        isSystemPromptChanged: false,
+        useAIPrompt: false,
+        source: 'local' as const,
+      };
+      palStore.pals = [pal];
+      chatSessionStore.sessions = [
+        {
+          id: 'search-session-id',
+          activePalId: pal.id,
+          title: 'Search Session',
+          date: new Date().toISOString().split('T')[0],
+          messages: [],
+          completionSettings: mockDefaultCompletionParams,
+          settingsSource: 'pal' as const,
+        },
+      ];
+      chatSessionStore.activeSessionId = 'search-session-id';
+      return pal;
+    };
+
+    const captureMessages = () => {
+      const captured: {messages: any[]} = {messages: []};
+      if (modelStore.context) {
+        modelStore.context.completion = jest
+          .fn()
+          .mockImplementation((params, _onData) => {
+            captured.messages = params.messages || [];
+            return Promise.resolve({timings: {total: 100}, usage: {}});
+          });
+      }
+      return captured;
+    };
+
+    const send = async () => {
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+      await act(async () => {
+        await result.current.handleSendPress(textMessage);
+      });
+    };
+
+    // Strict templates reject a second system message ("must be at the
+    // beginning"), so grounding folds into the pal's system message.
+    it('sends exactly one system message carrying both the pal prompt and the grounding', async () => {
+      const pal = useSessionWithPal('You are a research assistant.');
+      await activateSearchTools();
+      const captured = captureMessages();
+
+      await send();
+
+      const systemMessages = captured.messages.filter(
+        msg => msg.role === 'system',
+      );
+      expect(systemMessages).toHaveLength(1);
+
+      const today = new Date().toISOString().slice(0, 10);
+      expect(systemMessages[0].content).toContain(
+        'You are a research assistant.',
+      );
+      expect(systemMessages[0].content).toContain(`Today's date is ${today}`);
+      expect(systemMessages[0].content).toContain('web_search');
+
+      // Composition happens at assembly time only.
+      expect(pal.systemPrompt).toBe('You are a research assistant.');
+    });
+
+    it('sends the grounding as the sole system message when the pal has no system prompt', async () => {
+      useSessionWithPal('');
+      await activateSearchTools();
+      const captured = captureMessages();
+
+      await send();
+
+      const systemMessages = captured.messages.filter(
+        msg => msg.role === 'system',
+      );
+      expect(systemMessages).toHaveLength(1);
+
+      const today = new Date().toISOString().slice(0, 10);
+      expect(systemMessages[0].content).toContain(`Today's date is ${today}`);
+      expect(systemMessages[0].content).toContain('web_search');
+    });
+
+    it('leaves the pal system message alone when no search tools are active', async () => {
+      useSessionWithPal('You are a research assistant.');
+      const captured = captureMessages();
+
+      await send();
+
+      const systemMessages = captured.messages.filter(
+        msg => msg.role === 'system',
+      );
+      expect(systemMessages).toHaveLength(1);
+      expect(systemMessages[0].content).toBe('You are a research assistant.');
+    });
+
+    it('seeds the read_url allowlist from URLs the user wrote', async () => {
+      useSessionWithPal('');
+      await activateSearchTools();
+      captureMessages();
+
+      const {result} = renderHook(() =>
+        useChatSession({current: null}, textMessage.author, mockAssistant),
+      );
+      await act(async () => {
+        await result.current.handleSendPress({
+          ...textMessage,
+          text: 'summarize https://user.example.com/doc please',
+        });
+      });
+
+      expect(isReadUrlAllowed('https://user.example.com/doc')).toBe(true);
+      expect(isReadUrlAllowed('https://other.example.com/x')).toBe(false);
+    });
+  });
+
+  it('omits the search grounding line when no search tools are active', async () => {
+    let capturedMessages: any[] = [];
+    if (modelStore.context) {
+      modelStore.context.completion = jest
+        .fn()
+        .mockImplementation((params, _onData) => {
+          capturedMessages = params.messages || [];
+          return Promise.resolve({timings: {total: 100}, usage: {}});
+        });
+    }
+
+    const {result} = renderHook(() =>
+      useChatSession({current: null}, textMessage.author, mockAssistant),
+    );
+
+    await act(async () => {
+      await result.current.handleSendPress(textMessage);
+    });
+
+    expect(
+      capturedMessages.some(
+        msg =>
+          msg.role === 'system' &&
+          typeof msg.content === 'string' &&
+          msg.content.includes("Today's date is"),
+      ),
+    ).toBe(false);
+  });
+
   describe('TTS streaming wiring', () => {
     beforeEach(() => {
-      // Hook is gated on autoSpeakEnabled (default false in the mock);
-      // opt in for tests that assert it fires.
+      // Hook is gated on ttsStore.streamsReplies (false in the mock by
+      // default); open the gate and opt in for tests that assert it fires.
+      (ttsStore as any).userTTSOverride = true;
       (ttsStore as any).autoSpeakEnabled = true;
     });
 
     afterEach(() => {
+      (ttsStore as any).userTTSOverride = null;
       (ttsStore as any).autoSpeakEnabled = false;
     });
 

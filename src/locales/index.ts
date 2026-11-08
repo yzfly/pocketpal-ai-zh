@@ -7,15 +7,24 @@ import type {Translations} from './types';
 
 // ─── Language Registry (single source of truth) ──────────────────────
 // To add a language: 1) add entry here, 2) place JSON in src/locales/,
-// 3) add case to requireLanguageData(), 4) add getter to l10n object.
+// 3) add case to requireLanguageData(), 4) add getter to l10n object,
+// 5) add the dayjs locale to initLocale(), 6) run `yarn verify:fonts` — if it
+// reports letters missing from the bundled Fraunces subset, add the locale to
+// NON_LATIN_LOCALES in src/theme/tokens/typography.ts so headlines fall back
+// to Inter. Step 6 is not optional and not decidable by eye: Polish is Latin
+// script but still needs the fallback.
 const languageRegistry = {
   en: {displayName: 'English (EN)'},
+  ar: {displayName: 'العربية (AR)'},
+  es: {displayName: 'Español (ES)'},
   fa: {displayName: 'فارسی (FA)'},
   he: {displayName: 'עברית (HE)'},
   id: {displayName: 'Indonesia (ID)'},
   ja: {displayName: '日本語 (JA)'},
   ko: {displayName: '한국어 (KO)'},
   ms: {displayName: 'Melayu (MS)'},
+  pl: {displayName: 'Polski (PL)'},
+  pt: {displayName: 'Português (PT)'},
   pt_BR: {displayName: 'Português (PT_BR)'},
   ru: {displayName: 'Русский (RU)'},
   uk: {displayName: 'Українська (UK)'},
@@ -30,12 +39,16 @@ export const supportedLanguages = Object.keys(
 
 export const languageDisplayNames: Record<AvailableLanguage, string> = {
   en: languageRegistry.en.displayName,
+  ar: languageRegistry.ar.displayName,
+  es: languageRegistry.es.displayName,
   fa: languageRegistry.fa.displayName,
   he: languageRegistry.he.displayName,
   id: languageRegistry.id.displayName,
   ja: languageRegistry.ja.displayName,
   ko: languageRegistry.ko.displayName,
   ms: languageRegistry.ms.displayName,
+  pl: languageRegistry.pl.displayName,
+  pt: languageRegistry.pt.displayName,
   pt_BR: languageRegistry.pt_BR.displayName,
   ru: languageRegistry.ru.displayName,
   uk: languageRegistry.uk.displayName,
@@ -51,6 +64,10 @@ const cache: Partial<Record<AvailableLanguage, Translations>> = {
 // Metro bundles these at build time, but JS doesn't parse them until require() is called
 function requireLanguageData(lang: AvailableLanguage): object | null {
   switch (lang) {
+    case 'ar':
+      return require('./ar.json');
+    case 'es':
+      return require('./es.json');
     case 'fa':
       return require('./fa.json');
     case 'he':
@@ -63,6 +80,10 @@ function requireLanguageData(lang: AvailableLanguage): object | null {
       return require('./ko.json');
     case 'ms':
       return require('./ms.json');
+    case 'pl':
+      return require('./pl.json');
+    case 'pt':
+      return require('./pt.json');
     case 'pt_BR':
       return require('./pt_BR.json');
     case 'ru':
@@ -102,6 +123,12 @@ export const l10n = {
   get en(): Translations {
     return enData;
   },
+  get ar(): Translations {
+    return getTranslations('ar');
+  },
+  get es(): Translations {
+    return getTranslations('es');
+  },
   get fa(): Translations {
     return getTranslations('fa');
   },
@@ -119,6 +146,12 @@ export const l10n = {
   },
   get ms(): Translations {
     return getTranslations('ms');
+  },
+  get pl(): Translations {
+    return getTranslations('pl');
+  },
+  get pt(): Translations {
+    return getTranslations('pt');
   },
   get pt_BR(): Translations {
     return getTranslations('pt_BR');
@@ -159,12 +192,16 @@ export function t(
 export const initLocale = (locale?: AvailableLanguage) => {
   const locales: Record<AvailableLanguage, unknown> = {
     en: require('dayjs/locale/en'),
+    ar: require('dayjs/locale/ar'),
+    es: require('dayjs/locale/es'),
     fa: require('dayjs/locale/fa'),
     he: require('dayjs/locale/he'),
     id: require('dayjs/locale/id'),
     ja: require('dayjs/locale/ja'),
     ko: require('dayjs/locale/ko'),
     ms: require('dayjs/locale/ms'),
+    pl: require('dayjs/locale/pl'),
+    pt: require('dayjs/locale/pt'),
     pt_BR: require('dayjs/locale/pt-br'),
     ru: require('dayjs/locale/ru'),
     uk: require('dayjs/locale/uk'),

@@ -1,10 +1,10 @@
 import React, {useEffect, useRef, useState, useContext} from 'react';
-import {TextInput as RNTextInput} from 'react-native';
+import type {TextInputInstance} from 'react-native';
 import {View, Keyboard} from 'react-native';
 
 import {Button, Text, Switch, Chip} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
+import {MaskedView} from '../../../components/libraryViews';
 
 import {Divider, TextInput} from '../../../components';
 
@@ -49,7 +49,7 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
   const theme = useTheme();
   const styles = createStyles(theme);
 
-  const textInputRef = useRef<RNTextInput>(null);
+  const textInputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     setLocalChatTemplate(chatTemplate.chatTemplate);
@@ -270,9 +270,7 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
         title={l10n.models.modelSettings.template.dialogTitle}
         enableContentPanningGesture={false}
         displayFullHeight>
-        <Sheet.ScrollView
-          bottomOffset={16}
-          contentContainerStyle={styles.sheetContainer}>
+        <Sheet.ScrollView contentContainerStyle={styles.sheetContainer}>
           <View>
             <ChatTemplatePicker
               selectedTemplateName={selectedTemplateName}

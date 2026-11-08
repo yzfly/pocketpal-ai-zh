@@ -1,11 +1,39 @@
 import {
+  __clearRemoteImageCache,
   fetchModels,
   fetchModelsWithHeaders,
-  detectServerType,
   testConnection,
   streamChatCompletion,
-  buildReasoningPayload,
 } from '../openai';
+import type {StreamChatParams} from '../openai';
+import type {RemoteEndpoint} from '../servers';
+import {
+  directTextModelsBody,
+  directVisionModelsBody,
+  routerModelsBody,
+} from '../../../jest/fixtures/remoteModelList';
+import {cacheReuseTimings} from '../../../jest/fixtures/llamaServerTimings';
+import {runInAction} from 'mobx';
+import {routerWireText} from '../../../jest/fixtures/routerWire';
+import {isModelNotLoaded} from '../llamaServer/routerWire';
+
+import {serverStore} from '../../store';
+
+/**
+ * The endpoint a streamed turn goes to. `serverType` is taken raw, because a
+ * persisted value need not be a member of the union and these tests pin what
+ * the free-string values reach.
+ */
+const endpointFor = (
+  overrides: Partial<Omit<RemoteEndpoint, 'serverType'>> & {
+    serverType?: string;
+  } = {},
+): RemoteEndpoint => ({
+  url: 'http://localhost:1234',
+  remoteModelId: 'test-model',
+  serverType: 'unknown',
+  ...(overrides as Partial<RemoteEndpoint>),
+});
 
 /** Build a minimal Headers-like object for fetch mocks. */
 function mockHeaders(entries: Record<string, string> = {}) {
@@ -201,79 +229,96 @@ describe('fetchModelsWithHeaders', () => {
     abortSpy.mockRestore();
     jest.useRealTimers();
   });
-});
 
-describe('detectServerType', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  describe('models[] capabilities', () => {
+    const serve = (body: unknown) => {
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        headers: mockHeaders({server: 'llama.cpp'}),
+        json: () => Promise.resolve(body),
+      });
+    };
 
-  it('detects llama.cpp from Server header', async () => {
-    const result = await detectServerType(
-      'http://localhost:8080',
-      [{id: 'model-1', object: 'model', owned_by: 'system'}],
-      {server: 'llama.cpp'},
-    );
-    expect(result).toBe('llama.cpp');
-  });
+    it('carries a direct server capabilities onto its data row', async () => {
+      serve(directVisionModelsBody);
 
-  it('detects LM Studio from owned_by field', async () => {
-    const result = await detectServerType(
-      'http://localhost:1234',
-      [{id: 'model-1', object: 'model', owned_by: 'organization_owner'}],
-      {},
-    );
-    expect(result).toBe('LM Studio');
-  });
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
 
-  it('detects Ollama from GET / response', async () => {
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      text: () => Promise.resolve('Ollama is running'),
+      expect(models).toHaveLength(1);
+      expect(models[0].id).toBe('gemma-4-e2b');
+      expect(models[0].capabilities).toEqual(['completion', 'multimodal']);
+      expect(models[0].meta?.n_ctx).toBe(8192);
     });
 
-    const result = await detectServerType(
-      'http://localhost:11434',
-      [{id: 'model-1', object: 'model', owned_by: 'ollama'}],
-      {},
-    );
-    expect(result).toBe('Ollama');
-    expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:11434',
-      expect.objectContaining({method: 'GET'}),
-    );
-  });
+    it('distinguishes a text-only direct server by the same field', async () => {
+      serve(directTextModelsBody);
 
-  it('returns empty string for unknown server', async () => {
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      text: () => Promise.resolve('<html>Not Ollama</html>'),
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
+
+      expect(models[0].capabilities).toEqual(['completion']);
     });
 
-    const result = await detectServerType(
-      'http://localhost:9999',
-      [{id: 'model-1', object: 'model', owned_by: 'custom'}],
-      {},
-    );
-    expect(result).toBe('');
-  });
+    it('returns a router body untouched, models[] being absent there', async () => {
+      serve(routerModelsBody);
 
-  it('returns empty string when Ollama probe fails', async () => {
-    global.fetch = jest.fn().mockRejectedValueOnce(new Error('Network error'));
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
 
-    const result = await detectServerType(
-      'http://localhost:9999',
-      [{id: 'model-1', object: 'model', owned_by: 'custom'}],
-      {},
-    );
-    expect(result).toBe('');
-  });
+      expect(models).toEqual(routerModelsBody.data);
+      expect(models.some(m => 'capabilities' in m)).toBe(false);
+    });
 
-  it('prefers llama.cpp header over LM Studio owned_by', async () => {
-    const result = await detectServerType(
-      'http://localhost:8080',
-      [{id: 'model-1', object: 'model', owned_by: 'organization_owner'}],
-      {server: 'llama.cpp'},
-    );
-    expect(result).toBe('llama.cpp');
+    it('leaves rows alone when no entry names them', async () => {
+      serve({
+        data: [
+          {id: 'a', object: 'model', owned_by: 'x'},
+          {id: 'b', object: 'model', owned_by: 'x'},
+        ],
+        models: [{name: 'c', model: 'c', capabilities: ['completion']}],
+      });
+
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
+
+      expect(models.some(m => 'capabilities' in m)).toBe(false);
+    });
+
+    it('pairs a lone row with a lone entry whatever the entry calls itself', async () => {
+      serve({
+        data: [{id: 'a', object: 'model', owned_by: 'x'}],
+        models: [{name: 'something-else', capabilities: ['completion']}],
+      });
+
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
+
+      expect(models[0].capabilities).toEqual(['completion']);
+    });
+
+    it('never pairs an id-less row with a nameless entry', async () => {
+      serve({
+        data: [
+          {object: 'model', owned_by: 'x'},
+          {id: 'b', object: 'model', owned_by: 'x'},
+        ],
+        models: [
+          {capabilities: ['multimodal']},
+          {name: 'other', capabilities: ['completion']},
+        ],
+      });
+
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
+
+      expect(models.some(m => 'capabilities' in m)).toBe(false);
+    });
+
+    it('ignores a models field that is not an array', async () => {
+      serve({
+        data: [{id: 'a', object: 'model', owned_by: 'x'}],
+        models: {name: 'a', capabilities: ['completion']},
+      });
+
+      const {models} = await fetchModelsWithHeaders('http://localhost:8080');
+
+      expect(models[0].capabilities).toBeUndefined();
+    });
   });
 });
 
@@ -457,6 +502,7 @@ describe('streamChatCompletion', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    __clearRemoteImageCache();
     MockXHR.instances = [];
     originalXHR = global.XMLHttpRequest;
     (global as any).XMLHttpRequest = MockXHR;
@@ -469,9 +515,12 @@ describe('streamChatCompletion', () => {
   it('streams tokens and returns full completion result', async () => {
     const onToken = jest.fn();
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
-      undefined,
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
       undefined,
       onToken,
     );
@@ -517,15 +566,12 @@ describe('streamChatCompletion', () => {
   it('sends correct request headers and body', async () => {
     const resultPromise = streamChatCompletion(
       {
+        samplers: {temperature: 0.7, top_p: 0.9, n_predict: 100},
         messages: [{role: 'user', content: 'Hi'}],
         model: 'test-model',
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 100,
         stop: ['</s>'],
       },
-      'http://localhost:1234',
-      'sk-key',
+      endpointFor({apiKey: 'sk-key'}),
     );
 
     const xhr = MockXHR.instances[0];
@@ -553,10 +599,365 @@ describe('streamChatCompletion', () => {
     await resultPromise;
   });
 
+  it('encodes a local image path to a data URI on the remote wire', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.readFile as jest.Mock).mockResolvedValueOnce('QUJD');
+
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {type: 'text', text: 'what is this?'},
+              {type: 'image_url', image_url: {url: 'file:///tmp/photo.png'}},
+            ],
+          },
+        ],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    await new Promise(r => setImmediate(r));
+    const xhr = MockXHR.instances[0];
+    const body = JSON.parse(xhr.requestBody);
+    expect(body.messages[0].content[1].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    );
+    xhr.simulateLoad();
+    await resultPromise;
+  });
+
+  it('passes through data: and http image urls unchanged', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {url: 'data:image/jpeg;base64,ZZ'},
+              },
+              {type: 'image_url', image_url: {url: 'https://ex.com/a.png'}},
+            ],
+          },
+        ],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    await new Promise(r => setImmediate(r));
+    const xhr = MockXHR.instances[0];
+    const body = JSON.parse(xhr.requestBody);
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'data:image/jpeg;base64,ZZ',
+    );
+    expect(body.messages[0].content[1].image_url.url).toBe(
+      'https://ex.com/a.png',
+    );
+    expect(RNFS.readFile).not.toHaveBeenCalled();
+
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    );
+    xhr.simulateLoad();
+    await resultPromise;
+  });
+
+  it('leaves a text-only message array untouched', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'plain text'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    await new Promise(r => setImmediate(r));
+    const xhr = MockXHR.instances[0];
+    const body = JSON.parse(xhr.requestBody);
+    expect(body.messages[0].content).toBe('plain text');
+    expect(RNFS.readFile).not.toHaveBeenCalled();
+
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    );
+    xhr.simulateLoad();
+    await resultPromise;
+  });
+
+  // Drive a stream to completion so its promise settles after the request
+  // body has been inspected.
+  const finishStream = async (
+    xhr: MockXHR,
+    resultPromise: Promise<unknown>,
+  ) => {
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    );
+    xhr.simulateLoad();
+    await resultPromise;
+  };
+
+  const imageMessage = (url: string) => ({
+    role: 'user',
+    content: [{type: 'image_url', image_url: {url}}],
+  });
+
+  it('encodes a local image once and re-uses the cache on the next send', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.readFile as jest.Mock).mockResolvedValue('QUJD');
+
+    const p1 = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/cached.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body1 = JSON.parse(MockXHR.instances[0].requestBody);
+    expect(body1.messages[0].content[0].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[0], p1);
+
+    const p2 = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/cached.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body2 = JSON.parse(MockXHR.instances[1].requestBody);
+    expect(body2.messages[0].content[0].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[1], p2);
+
+    // The second send hit the cache — the file was read from disk only once.
+    expect(RNFS.readFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('evicts oldest-first once cached bytes exceed the 24MB budget', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    // ~9MB base64 per image; three exceed the 24MB cache budget, so caching the
+    // third evicts the oldest (first) entry.
+    const big = 'A'.repeat(9 * 1024 * 1024);
+    (RNFS.readFile as jest.Mock).mockResolvedValue(big);
+
+    const send = async (path: string) => {
+      const p = streamChatCompletion(
+        {samplers: {}, messages: [imageMessage(path)], model: 'm'},
+        endpointFor(),
+      );
+      await new Promise(r => setImmediate(r));
+      await finishStream(MockXHR.instances[MockXHR.instances.length - 1], p);
+    };
+
+    // Fill: A (oldest) → B → C. Caching C pushes bytes over budget and evicts A.
+    await send('file:///tmp/a.png');
+    await send('file:///tmp/b.png');
+    await send('file:///tmp/c.png');
+    expect(RNFS.readFile).toHaveBeenCalledTimes(3);
+
+    // The two newest paths are still resident — re-sending them is a cache hit.
+    await send('file:///tmp/c.png');
+    await send('file:///tmp/b.png');
+    expect(RNFS.readFile).toHaveBeenCalledTimes(3);
+
+    // The oldest path was evicted, so re-sending it re-reads from disk.
+    await send('file:///tmp/a.png');
+    expect(RNFS.readFile).toHaveBeenCalledTimes(4);
+  });
+
+  it('dedups a concurrent double-encode of the same path (race-safe cache set)', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.readFile as jest.Mock).mockResolvedValue('QUJD');
+
+    // Two sends of the same new path start before either populates the cache, so
+    // both miss the read-side lookup and both call the cache setter; the second
+    // set hits the `has()` guard and does not double-count the entry.
+    const p1 = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/race.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    const p2 = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/race.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    await finishStream(MockXHR.instances[0], p1);
+    await finishStream(MockXHR.instances[1], p2);
+    expect(RNFS.readFile).toHaveBeenCalledTimes(2);
+
+    // A subsequent send is a plain cache hit — the raced entry cached cleanly.
+    const p3 = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/race.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    await finishStream(MockXHR.instances[2], p3);
+    expect(RNFS.readFile).toHaveBeenCalledTimes(2);
+  });
+
+  it('maps a dotless path to image/jpeg (no invalid image// MIME)', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.readFile as jest.Mock).mockResolvedValueOnce('QUJD');
+
+    const p = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('content://media/1234')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body = JSON.parse(MockXHR.instances[0].requestBody);
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'data:image/jpeg;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[0], p);
+  });
+
+  it('skips inlining a file whose successful stat exceeds the size cap', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.stat as jest.Mock).mockResolvedValueOnce({size: 20 * 1024 * 1024});
+
+    const p = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/huge.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body = JSON.parse(MockXHR.instances[0].requestBody);
+    // Left unchanged; the server surfaces the failure.
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'file:///tmp/huge.png',
+    );
+    expect(RNFS.readFile).not.toHaveBeenCalled();
+    await finishStream(MockXHR.instances[0], p);
+  });
+
+  it('encodes anyway when stat is unavailable (undefined result)', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    // stat is an unconfigured jest.fn() → resolves undefined.
+    (RNFS.readFile as jest.Mock).mockResolvedValueOnce('QUJD');
+
+    const p = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/nostat.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body = JSON.parse(MockXHR.instances[0].requestBody);
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[0], p);
+  });
+
+  it('encodes anyway when stat rejects (healthy image not dropped)', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.stat as jest.Mock).mockRejectedValueOnce(new Error('stat failed'));
+    (RNFS.readFile as jest.Mock).mockResolvedValueOnce('QUJD');
+
+    const p = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [imageMessage('file:///tmp/statfail.png')],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body = JSON.parse(MockXHR.instances[0].requestBody);
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[0], p);
+  });
+
+  it('degrades per-image: a read failure leaves that part but encodes siblings', async () => {
+    const RNFS = require('@dr.pogodin/react-native-fs');
+    (RNFS.readFile as jest.Mock)
+      .mockRejectedValueOnce(new Error('read failed'))
+      .mockResolvedValueOnce('QUJD');
+
+    const p = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {type: 'image_url', image_url: {url: 'file:///tmp/bad.png'}},
+              {type: 'image_url', image_url: {url: 'file:///tmp/ok.png'}},
+            ],
+          },
+        ],
+        model: 'm',
+      },
+      endpointFor(),
+    );
+    await new Promise(r => setImmediate(r));
+    const body = JSON.parse(MockXHR.instances[0].requestBody);
+    // The failed image is left unchanged; the sibling still encodes and the
+    // completion promise does not reject.
+    expect(body.messages[0].content[0].image_url.url).toBe(
+      'file:///tmp/bad.png',
+    );
+    expect(body.messages[0].content[1].image_url.url).toBe(
+      'data:image/png;base64,QUJD',
+    );
+    await finishStream(MockXHR.instances[0], p);
+  });
+
   it('forwards response_format and injects json_schema.name for OpenAI compatibility', async () => {
     const schema = {type: 'object', properties: {name: {type: 'string'}}};
     const resultPromise = streamChatCompletion(
       {
+        samplers: {},
         messages: [{role: 'user', content: 'Hi'}],
         model: 'test-model',
         response_format: {
@@ -564,7 +965,7 @@ describe('streamChatCompletion', () => {
           json_schema: {strict: true, schema},
         },
       },
-      'http://localhost:1234',
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -586,6 +987,7 @@ describe('streamChatCompletion', () => {
     const schema = {type: 'object', properties: {x: {type: 'number'}}};
     const resultPromise = streamChatCompletion(
       {
+        samplers: {},
         messages: [{role: 'user', content: 'Hi'}],
         model: 'test-model',
         response_format: {
@@ -593,7 +995,7 @@ describe('streamChatCompletion', () => {
           json_schema: {name: 'custom', strict: false, schema},
         },
       },
-      'http://localhost:1234',
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -610,8 +1012,12 @@ describe('streamChatCompletion', () => {
 
   it('maps finish_reason "length" to stopped_limit', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -631,8 +1037,12 @@ describe('streamChatCompletion', () => {
 
   it('maps finish_reason "content_filter" to interrupted', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -652,9 +1062,12 @@ describe('streamChatCompletion', () => {
   it('skips malformed SSE events', async () => {
     const onToken = jest.fn();
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
-      undefined,
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
       undefined,
       onToken,
     );
@@ -676,9 +1089,12 @@ describe('streamChatCompletion', () => {
   it('handles reasoning_content in streaming delta', async () => {
     const onToken = jest.fn();
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
-      undefined,
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
       undefined,
       onToken,
     );
@@ -708,9 +1124,12 @@ describe('streamChatCompletion', () => {
   it('handles delta.reasoning field (LM Studio format)', async () => {
     const onToken = jest.fn();
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
-      undefined,
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
       undefined,
       onToken,
     );
@@ -739,8 +1158,12 @@ describe('streamChatCompletion', () => {
 
   it('rejects on 401 response', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -753,8 +1176,12 @@ describe('streamChatCompletion', () => {
 
   it('rejects on network error', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -765,8 +1192,12 @@ describe('streamChatCompletion', () => {
 
   it('rejects on server error response with body', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -779,12 +1210,35 @@ describe('streamChatCompletion', () => {
     );
   });
 
+  it("reads a router's not-loaded refusal as such, from the captured body", async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    MockXHR.instances[0].simulateErrorResponse(
+      400,
+      routerWireText('completion-not-loaded-400.json'),
+    );
+
+    const error = await resultPromise.catch(e => e);
+    expect(isModelNotLoaded(error)).toBe(true);
+    expect(error.message).toBe('Server error: 400 — model is not loaded');
+  });
+
   it('handles abort via AbortController', async () => {
     const controller = new AbortController();
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
-      undefined,
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
       controller.signal,
     );
 
@@ -804,8 +1258,12 @@ describe('streamChatCompletion', () => {
 
   it('captures server-side timings from SSE events (llama.cpp)', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -831,10 +1289,266 @@ describe('streamChatCompletion', () => {
     expect(result.stopped_eos).toBe(true);
   });
 
+  it('keeps the timings of the last event that carried them', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hi"},"finish_reason":null}],"timings":{"prompt_n":1,"predicted_n":1}}\n\n',
+    );
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":{"prompt_n":9,"predicted_n":4}}\n\n',
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    expect(result.timings).toEqual({prompt_n: 9, predicted_n: 4});
+    expect(result.tokens_evaluated).toBe(9);
+    expect(result.tokens_predicted).toBe(4);
+  });
+
+  it('reads the final frame that arrives without a trailing blank line', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hel"},"finish_reason":null}]}\n\n',
+    );
+    // No terminating "\n\n", so the SSE parser holds this frame in its buffer
+    // and only the flush at onload can reach it.
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"lo","reasoning_content":"why"},"finish_reason":"stop"}],"timings":{"prompt_n":7,"cache_n":2,"predicted_n":5}}',
+    );
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    expect(result.timings).toEqual({prompt_n: 7, cache_n: 2, predicted_n: 5});
+    expect(result.tokens_evaluated).toBe(9);
+    expect(result.tokens_predicted).toBe(5);
+    expect(result.content).toBe('Hello');
+    expect(result.reasoning_content).toBe('why');
+    expect(result.stopped_eos).toBe(true);
+  });
+
+  it('reconciles token counts from timings prompt_n/predicted_n', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+    );
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":{"prompt_n":3000,"predicted_n":500}}\n\n',
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    // Server counts win over the single content-bearing per-event tally.
+    expect(result.tokens_evaluated).toBe(3000);
+    expect(result.tokens_predicted).toBe(500);
+  });
+
+  it('adds the cache-reused prefix to the evaluated prompt count', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+    );
+    xhr.simulateProgress(
+      `data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":${JSON.stringify(
+        cacheReuseTimings,
+      )}}\n\n`,
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    // The server evaluated one token and reused thirty-one, so reading
+    // `prompt_n` alone reports 1 for a prompt of 32.
+    expect(cacheReuseTimings.prompt_n).toBe(1);
+    expect(result.tokens_evaluated).toBe(32);
+    expect(result.tokens_predicted).toBe(3);
+    // The total the context banner reads off the snapshot.
+    expect(
+      (result.tokens_evaluated ?? 0) + (result.tokens_predicted ?? 0),
+    ).toBe(35);
+  });
+
+  // Both shapes are projected from the capture rather than retyped, so each
+  // still carries the finish chunk's full nine-key `timings` object.
+  it('distinguishes a reported cache_n of 0 from an absent one', async () => {
+    const coldTimings = {...cacheReuseTimings, cache_n: 0};
+    const preReuseTimings: Record<string, number> = {...cacheReuseTimings};
+    delete preReuseTimings.cache_n;
+
+    const finish = async (timings: Record<string, number>) => {
+      const resultPromise = streamChatCompletion(
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor(),
+      );
+      const xhr = MockXHR.instances[MockXHR.instances.length - 1];
+      xhr.simulateHeaders(200);
+      xhr.simulateProgress(
+        'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+      );
+      xhr.simulateProgress(
+        `data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":${JSON.stringify(
+          timings,
+        )}}\n\n`,
+      );
+      xhr.simulateProgress('data: [DONE]\n\n');
+      xhr.simulateLoad();
+      return resultPromise;
+    };
+
+    // A cold prompt on a build that reports reuse: 0 is a real count.
+    const cold = await finish(coldTimings);
+    expect(cold.tokens_evaluated).toBe(cacheReuseTimings.prompt_n);
+    expect(cold.timings?.cache_n).toBe(0);
+
+    // A build too old to report reuse omits the key. Same total, and the app
+    // degrades to it rather than below it — but a different fact, and the
+    // result keeps the two apart.
+    const preReuse = await finish(preReuseTimings);
+    expect(preReuse.tokens_evaluated).toBe(cacheReuseTimings.prompt_n);
+    expect(preReuse.timings?.cache_n).toBeUndefined();
+  });
+
+  it('guards each timings token key independently (only predicted_n)', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+    );
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":{"predicted_n":7}}\n\n',
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    // Missing prompt_n stays unset; predicted_n still wins.
+    expect(result.tokens_evaluated).toBeUndefined();
+    expect(result.tokens_predicted).toBe(7);
+  });
+
+  it('guards each timings token key independently (only prompt_n)', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+    );
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":{"prompt_n":3000}}\n\n',
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    // prompt_n sets tokens_evaluated; absent predicted_n must NOT zero the
+    // per-event tally — it keeps the single content-bearing event count.
+    expect(result.tokens_evaluated).toBe(3000);
+    expect(result.tokens_predicted).toBe(1);
+    // A build too old to report prompt-cache reuse omits the key outright, and
+    // must degrade to the prompt count it does report — never below it.
+    expect(result.timings?.cache_n).toBeUndefined();
+  });
+
+  it('guards each timings token key independently (only cache_n)', async () => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
+    );
+
+    const xhr = MockXHR.instances[0];
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+    );
+    xhr.simulateProgress(
+      `data: {"choices":[{"delta":{},"finish_reason":"stop"}],"timings":${JSON.stringify(
+        {cache_n: cacheReuseTimings.cache_n},
+      )}}\n\n`,
+    );
+    xhr.simulateProgress('data: [DONE]\n\n');
+    xhr.simulateLoad();
+
+    const result = await resultPromise;
+    // A fully reused prompt evaluates nothing, so the whole count arrives on
+    // cache_n and prompt_n is absent. Reading prompt_n alone loses it.
+    expect(result.tokens_evaluated).toBe(31);
+    expect(result.timings?.prompt_n).toBeUndefined();
+  });
+
   it('returns no timings when server does not provide them', async () => {
     const resultPromise = streamChatCompletion(
-      {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-      'http://localhost:1234',
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'test-model',
+      },
+      endpointFor(),
     );
 
     const xhr = MockXHR.instances[0];
@@ -849,6 +1563,9 @@ describe('streamChatCompletion', () => {
 
     const result = await resultPromise;
     expect(result.timings).toBeUndefined();
+    // No timings → prompt count unset, predicted keeps the per-event tally.
+    expect(result.tokens_evaluated).toBeUndefined();
+    expect(result.tokens_predicted).toBe(1);
   });
 
   it('rejects immediately if signal already aborted', async () => {
@@ -857,9 +1574,12 @@ describe('streamChatCompletion', () => {
 
     await expect(
       streamChatCompletion(
-        {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-        'http://localhost:1234',
-        undefined,
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor(),
         controller.signal,
       ),
     ).rejects.toThrow('Completion aborted');
@@ -883,12 +1603,13 @@ describe('streamChatCompletion', () => {
     it('forwards tools and tool_choice in the request body', async () => {
       const resultPromise = streamChatCompletion(
         {
+          samplers: {},
           messages: [{role: 'user', content: 'What is 2+2?'}],
           model: 'test-model',
           tools: [calculateTool],
           tool_choice: 'auto',
         },
-        'http://localhost:1234',
+        endpointFor(),
       );
 
       const xhr = MockXHR.instances[0];
@@ -907,8 +1628,12 @@ describe('streamChatCompletion', () => {
 
     it('omits tools/tool_choice from the body when caller did not supply them', async () => {
       const resultPromise = streamChatCompletion(
-        {messages: [{role: 'user', content: 'hi'}], model: 'test-model'},
-        'http://localhost:1234',
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'hi'}],
+          model: 'test-model',
+        },
+        endpointFor(),
       );
       const xhr = MockXHR.instances[0];
       const body = JSON.parse(xhr.requestBody);
@@ -926,11 +1651,12 @@ describe('streamChatCompletion', () => {
     it('omits empty tools array (some servers reject it)', async () => {
       const resultPromise = streamChatCompletion(
         {
+          samplers: {},
           messages: [{role: 'user', content: 'hi'}],
           model: 'test-model',
           tools: [],
         },
-        'http://localhost:1234',
+        endpointFor(),
       );
       const xhr = MockXHR.instances[0];
       const body = JSON.parse(xhr.requestBody);
@@ -948,12 +1674,12 @@ describe('streamChatCompletion', () => {
       const onToken = jest.fn();
       const resultPromise = streamChatCompletion(
         {
+          samplers: {},
           messages: [{role: 'user', content: 'What is 2+2?'}],
           model: 'test-model',
           tools: [calculateTool],
         },
-        'http://localhost:1234',
-        undefined,
+        endpointFor(),
         undefined,
         onToken,
       );
@@ -1021,11 +1747,12 @@ describe('streamChatCompletion', () => {
     it('handles parallel tool_calls indexed across chunks', async () => {
       const resultPromise = streamChatCompletion(
         {
+          samplers: {},
           messages: [{role: 'user', content: 'Hi'}],
           model: 'test-model',
           tools: [calculateTool],
         },
-        'http://localhost:1234',
+        endpointFor(),
       );
 
       const xhr = MockXHR.instances[0];
@@ -1063,12 +1790,12 @@ describe('streamChatCompletion', () => {
     // headers well past the 30s default without a premature reject.
     it('honours a raised connection timeout (does not abort before configured value)', async () => {
       const resultPromise = streamChatCompletion(
-        {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-        'http://localhost:1234',
-        undefined,
-        undefined,
-        undefined,
-        600000,
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor({timeoutMs: 600000}),
       );
       // Surface any rejection deterministically without an unhandled promise.
       let rejected: Error | null = null;
@@ -1104,8 +1831,12 @@ describe('streamChatCompletion', () => {
     // existing 30s default.
     it('aborts at the 30s default connection timeout when timeoutMs is omitted', async () => {
       const resultPromise = streamChatCompletion(
-        {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-        'http://localhost:1234',
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor(),
       );
 
       // Drive past the 30s default — no headers received.
@@ -1118,12 +1849,12 @@ describe('streamChatCompletion', () => {
     // via the idle guard (not the connection guard).
     it('aborts at the configured idle timeout after connecting', async () => {
       const resultPromise = streamChatCompletion(
-        {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-        'http://localhost:1234',
-        undefined,
-        undefined,
-        undefined,
-        120000,
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor({timeoutMs: 120000}),
       );
 
       const xhr = MockXHR.instances[0];
@@ -1146,12 +1877,12 @@ describe('streamChatCompletion', () => {
     // durations changed, not the per-chunk reset structure.
     it('resets the idle timer on each chunk (healthy stream outlives total timeout)', async () => {
       const resultPromise = streamChatCompletion(
-        {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-        'http://localhost:1234',
-        undefined,
-        undefined,
-        undefined,
-        100000,
+        {
+          samplers: {},
+          messages: [{role: 'user', content: 'Hi'}],
+          model: 'test-model',
+        },
+        endpointFor({timeoutMs: 100000}),
       );
       let rejected: Error | null = null;
       resultPromise.catch((e: Error) => {
@@ -1200,12 +1931,12 @@ describe('streamChatCompletion', () => {
         'falls back to the 30s default when timeoutMs is %s',
         async (_label, badValue) => {
           const resultPromise = streamChatCompletion(
-            {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-            'http://localhost:1234',
-            undefined,
-            undefined,
-            undefined,
-            badValue as number | undefined,
+            {
+              samplers: {},
+              messages: [{role: 'user', content: 'Hi'}],
+              model: 'test-model',
+            },
+            endpointFor({timeoutMs: badValue as number | undefined}),
           );
           let rejected: Error | null = null;
           resultPromise.catch((e: Error) => {
@@ -1227,12 +1958,12 @@ describe('streamChatCompletion', () => {
       // the configured value, not the default.
       it('passes a positive finite timeoutMs through (guard fires at configured value)', async () => {
         const resultPromise = streamChatCompletion(
-          {messages: [{role: 'user', content: 'Hi'}], model: 'test-model'},
-          'http://localhost:1234',
-          undefined,
-          undefined,
-          undefined,
-          5000,
+          {
+            samplers: {},
+            messages: [{role: 'user', content: 'Hi'}],
+            model: 'test-model',
+          },
+          endpointFor({timeoutMs: 5000}),
         );
         let rejected: Error | null = null;
         resultPromise.catch((e: Error) => {
@@ -1252,89 +1983,6 @@ describe('streamChatCompletion', () => {
   });
 });
 
-describe('buildReasoningPayload (per-serverType gating)', () => {
-  it('returns empty when no reasoning intent', () => {
-    expect(buildReasoningPayload('llama.cpp', undefined)).toEqual({});
-  });
-
-  it('llama.cpp ON sends reasoning_format auto', () => {
-    expect(buildReasoningPayload('llama.cpp', {enabled: true})).toEqual({
-      reasoning_format: 'auto',
-    });
-  });
-
-  it('llama.cpp ON+effort sends reasoning_format auto + reasoning_effort', () => {
-    expect(
-      buildReasoningPayload('llama.cpp', {enabled: true, effort: 'high'}),
-    ).toEqual({
-      reasoning_format: 'auto',
-      chat_template_kwargs: {reasoning_effort: 'high'},
-    });
-  });
-
-  it('llama.cpp OFF sends enable_thinking:false + reasoning_format auto', () => {
-    expect(buildReasoningPayload('llama.cpp', {enabled: false})).toEqual({
-      reasoning_format: 'auto',
-      chat_template_kwargs: {enable_thinking: false},
-    });
-  });
-
-  it('LM Studio is on/off only — no graded effort', () => {
-    expect(buildReasoningPayload('LM Studio', {enabled: false})).toEqual({
-      chat_template_kwargs: {enable_thinking: false},
-    });
-    expect(buildReasoningPayload('LM Studio', {enabled: true})).toEqual({});
-    // Even when an effort is set, LM Studio never sends reasoning_effort.
-    const onEffort = buildReasoningPayload('LM Studio', {
-      enabled: true,
-      effort: 'high',
-    });
-    expect(onEffort).toEqual({});
-    expect(onEffort).not.toHaveProperty('reasoning_effort');
-  });
-
-  it('vLLM ON+effort sends chat_template_kwargs.reasoning_effort', () => {
-    expect(
-      buildReasoningPayload('vLLM', {enabled: true, effort: 'max'}),
-    ).toEqual({chat_template_kwargs: {reasoning_effort: 'max'}});
-    // ON without an effort sends nothing.
-    expect(buildReasoningPayload('vLLM', {enabled: true})).toEqual({});
-  });
-
-  it('vLLM OFF sends enable_thinking:false', () => {
-    expect(buildReasoningPayload('vLLM', {enabled: false})).toEqual({
-      chat_template_kwargs: {enable_thinking: false},
-    });
-  });
-
-  it('Ollama OFF sends only reasoning_effort none and never think:true', () => {
-    const off = buildReasoningPayload('Ollama', {enabled: false});
-    expect(off).toEqual({reasoning_effort: 'none'});
-    expect(off).not.toHaveProperty('think');
-    // ON sends nothing — never think:true, never a non-none effort.
-    const on = buildReasoningPayload('Ollama', {enabled: true, effort: 'high'});
-    expect(on).toEqual({});
-    expect(on).not.toHaveProperty('think');
-    expect(on).not.toHaveProperty('reasoning_effort');
-  });
-
-  it('OpenAI sends reasoning_effort only when effort is known', () => {
-    expect(
-      buildReasoningPayload('OpenAI', {enabled: true, effort: 'medium'}),
-    ).toEqual({reasoning_effort: 'medium'});
-    // No effort known → omit everything (no enable_thinking, no 400 bait).
-    expect(buildReasoningPayload('OpenAI', {enabled: true})).toEqual({});
-    expect(buildReasoningPayload('OpenAI', {enabled: false})).toEqual({});
-  });
-
-  it('unknown serverType omits everything', () => {
-    expect(buildReasoningPayload(undefined, {enabled: false})).toEqual({});
-    expect(
-      buildReasoningPayload('something-else', {enabled: false, effort: 'low'}),
-    ).toEqual({});
-  });
-});
-
 describe('streamChatCompletion reasoning payload', () => {
   let originalXHR: typeof XMLHttpRequest;
   beforeEach(() => {
@@ -1349,16 +1997,12 @@ describe('streamChatCompletion reasoning payload', () => {
   it('attaches the gated payload by serverType', async () => {
     const resultPromise = streamChatCompletion(
       {
+        samplers: {},
         messages: [{role: 'user', content: 'Hi'}],
         model: 'm',
         reasoning: {enabled: false},
       },
-      'http://localhost:1234',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      'llama.cpp',
+      endpointFor({serverType: 'llama.cpp'}),
     );
     const xhr = MockXHR.instances[0];
     const body = JSON.parse(xhr.requestBody);
@@ -1378,16 +2022,12 @@ describe('streamChatCompletion reasoning payload', () => {
   it('omits reasoning controls for an unknown serverType', async () => {
     const resultPromise = streamChatCompletion(
       {
+        samplers: {},
         messages: [{role: 'user', content: 'Hi'}],
         model: 'm',
         reasoning: {enabled: false, effort: 'high'},
       },
-      'http://localhost:1234',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
+      endpointFor(),
     );
     const xhr = MockXHR.instances[0];
     const body = JSON.parse(xhr.requestBody);
@@ -1402,5 +2042,135 @@ describe('streamChatCompletion reasoning payload', () => {
     );
     xhr.simulateLoad();
     await resultPromise;
+  });
+});
+
+describe('streamChatCompletion sampler payload', () => {
+  let originalXHR: typeof XMLHttpRequest;
+  beforeEach(() => {
+    originalXHR = global.XMLHttpRequest;
+    (global as any).XMLHttpRequest = MockXHR;
+    MockXHR.instances = [];
+  });
+  afterEach(() => {
+    global.XMLHttpRequest = originalXHR;
+  });
+
+  /** Send one turn and return the parsed request body. */
+  const bodyOf = async (
+    params: Partial<StreamChatParams>,
+    serverType?: string,
+  ): Promise<any> => {
+    const resultPromise = streamChatCompletion(
+      {
+        samplers: {},
+        messages: [{role: 'user', content: 'Hi'}],
+        model: 'm',
+        ...params,
+      },
+      endpointFor({serverType}),
+    );
+    const xhr = MockXHR.instances[MockXHR.instances.length - 1];
+    const body = JSON.parse(xhr.requestBody);
+    xhr.simulateHeaders(200);
+    xhr.simulateProgress(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    );
+    xhr.simulateLoad();
+    await resultPromise;
+    return body;
+  };
+
+  it('carries the changed samplers alongside the unconditional fields', async () => {
+    const body = await bodyOf(
+      {
+        samplers: {
+          temperature: 0.7,
+          top_p: 0.9,
+          n_predict: 100,
+          top_k: 10,
+          penalty_repeat: 1.2,
+        },
+        stop: ['</s>'],
+      },
+      'llama.cpp',
+    );
+
+    expect(body.top_k).toBe(10);
+    expect(body.repeat_penalty).toBe(1.2);
+    expect(body.temperature).toBe(0.7);
+    expect(body.top_p).toBe(0.9);
+    expect(body.max_completion_tokens).toBe(100);
+    expect(body.stop).toEqual(['</s>']);
+    expect(body.stream).toBe(true);
+  });
+
+  it('omits a non-finite sampler handed straight to the transport', async () => {
+    // `pickSamplers` drops non-finite values before the engine fills
+    // `samplers`, so every other test reaches the transport with them already
+    // gone. This caller bypasses it, which is what pins the transport-side
+    // finite rule: without it the two filters mask each other and either can
+    // be removed with nothing failing.
+    const body = await bodyOf(
+      {
+        samplers: {
+          temperature: NaN,
+          top_p: Infinity,
+          n_predict: -Infinity,
+          top_k: 10,
+        },
+      },
+      'llama.cpp',
+    );
+
+    expect(body).not.toHaveProperty('temperature');
+    expect(body).not.toHaveProperty('top_p');
+    expect(body).not.toHaveProperty('max_completion_tokens');
+    expect(body.top_k).toBe(10);
+  });
+
+  it('sends an unknown server type the same body as before', async () => {
+    const body = await bodyOf({
+      samplers: {
+        temperature: 0.7,
+        top_p: 0.9,
+        n_predict: 100,
+        top_k: 10,
+        penalty_repeat: 1.2,
+      },
+      stop: ['</s>'],
+    });
+
+    expect(body).toEqual({
+      model: 'm',
+      messages: [{role: 'user', content: 'Hi'}],
+      stream: true,
+      temperature: 0.7,
+      top_p: 0.9,
+      max_completion_tokens: 100,
+      stop: ['</s>'],
+    });
+  });
+
+  it('builds the same body whether or not a probe has landed', async () => {
+    const params = {samplers: {top_k: 10, penalty_repeat: 1.2, seed: 7}};
+    const before = await bodyOf(params, 'llama.cpp');
+
+    runInAction(() => {
+      serverStore.remoteCaps = {
+        'srv/m': {
+          samplerDefaults: {top_k: 40, penalty_repeat: 1.0, temperature: 0.8},
+          probedUrl: 'http://localhost:1234',
+        },
+      };
+    });
+
+    const after = await bodyOf(params, 'llama.cpp');
+
+    expect(after).toEqual(before);
+
+    runInAction(() => {
+      serverStore.remoteCaps = {};
+    });
   });
 });

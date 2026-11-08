@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">口袋AI</string>
+    <string name="download_channel_name">模型下载</string>
 </resources>

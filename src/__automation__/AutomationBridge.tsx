@@ -1,8 +1,10 @@
 import React from 'react';
 
+import {IapAdapter} from './adapters/IapAdapter';
 import {MemoryAdapter} from './adapters/MemoryAdapter';
 import {OnboardingBypass} from './adapters/OnboardingBypass';
 import {TTSAdapter} from './adapters/TTSAdapter';
+import {VoiceAdapter} from './adapters/VoiceAdapter';
 
 /**
  * Single mount point for all E2E automation surfaces.
@@ -25,6 +27,8 @@ export const AutomationBridge: React.FC = () => {
     <>
       <MemoryAdapter />
       <TTSAdapter />
+      <IapAdapter />
+      <VoiceAdapter />
       <OnboardingBypass />
     </>
   );

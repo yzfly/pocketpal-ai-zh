@@ -1,0 +1,89 @@
+import type {
+  SearchProvider,
+  SearchHit,
+  SearchOptions,
+  PageContent,
+} from '../types';
+import {fetchJson, requireKey} from './http';
+
+interface ExaResult {
+  title?: string;
+  url?: string;
+  highlights?: string[];
+  summary?: string;
+  text?: string;
+  publishedDate?: string;
+}
+
+interface ExaResponse {
+  results?: ExaResult[];
+}
+
+/** Pick Exa's smallest faithful body field: highlights → summary → text. */
+const exaSnippet = (r: ExaResult): string => {
+  if (r.highlights && r.highlights.length > 0) {
+    return r.highlights.join(' ');
+  }
+  return r.summary ?? r.text ?? '';
+};
+
+export class ExaProvider implements SearchProvider {
+  readonly id = 'exa' as const;
+
+  constructor(private getKey: () => string) {}
+
+  async search(
+    query: string,
+    opts: SearchOptions,
+    signal?: AbortSignal,
+  ): Promise<SearchHit[]> {
+    const key = requireKey(this.getKey(), 'Exa');
+    const data = await fetchJson<ExaResponse | null>(
+      'https://api.exa.ai/search',
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'x-api-key': key},
+        body: JSON.stringify({
+          query,
+          numResults: opts.maxResults,
+          contents: {highlights: true, summary: true},
+        }),
+        signal,
+      },
+      {retryOn429: true},
+    );
+    const results = data?.results;
+    if (!Array.isArray(results)) {
+      throw new Error('unexpected response');
+    }
+    return results.map(r => ({
+      title: r.title ?? '',
+      url: r.url ?? '',
+      snippet: exaSnippet(r),
+      ...(r.publishedDate ? {publishedAt: r.publishedDate} : {}),
+    }));
+  }
+
+  async read(url: string, signal?: AbortSignal): Promise<PageContent> {
+    const key = requireKey(this.getKey(), 'Exa');
+    const data = await fetchJson<ExaResponse | null>(
+      'https://api.exa.ai/contents',
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'x-api-key': key},
+        body: JSON.stringify({urls: [url], text: true}),
+        signal,
+      },
+    );
+    const results = data?.results;
+    if (!Array.isArray(results)) {
+      throw new Error('unexpected response');
+    }
+    const first = results[0];
+    return {
+      url,
+      ...(first?.title ? {title: first.title} : {}),
+      text: first?.text ?? '',
+    };
+  }
+}

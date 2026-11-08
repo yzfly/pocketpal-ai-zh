@@ -90,8 +90,8 @@ android {
         applicationId "com.pocketpalai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 142
-        versionName "1.16.0"
+        versionCode 159
+        versionName "1.22.1"
         ndk {
             abiFilters "arm64-v8a", "x86_64"
         }
@@ -145,7 +145,7 @@ android {
                 println "Warning: Release signing credentials not found, using debug keystore"
             }
             minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             buildConfigField "boolean", "USE_DEV_SUPPORT", "false"
         }
         releaseE2e {
@@ -160,6 +160,13 @@ android {
             debuggable true
             signingConfig signingConfigs.debug
             matchingFallbacks = ['release']
+        }
+    }
+
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all {
+            systemProperty "robolectric.conscryptMode", "OFF"
         }
     }
 
@@ -196,6 +203,12 @@ android {
     }
 }
 
+tasks.withType(com.facebook.react.tasks.BundleHermesCTask).configureEach {
+    inputs.property('plusStoreGate', providers.environmentVariable('PLUS_STORE_GATE').orElse(''))
+    inputs.property('e2eBuild', providers.environmentVariable('E2E_BUILD').orElse(''))
+    inputs.property('e2eSkipOnboarding', providers.environmentVariable('E2E_SKIP_ONBOARDING').orElse(''))
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
@@ -228,14 +241,30 @@ dependencies {
     // Core library for AndroidX Jetpack - Needed for WindowCompat (we use for edge-to-edge)
     implementation "androidx.core:core-ktx:1.17.0"
 
-    // Chrome Custom Tabs for the in-app PalsHub checkout (AuthSessionModule)
-    implementation "androidx.browser:browser:1.8.0"
-
-    // Google Play Billing — External Content Links program (ExternalContentLinkModule)
-    implementation "com.android.billingclient:billing:8.2.1"
-
     // OkHttp for DownloadModule (network requests)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.test:core-ktx:1.7.0")
+    testImplementation("androidx.room:room-testing:$room_version")
+    testImplementation("androidx.sqlite:sqlite-bundled-jvm:2.6.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("androidx.work:work-testing:2.10.5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+}
+
+// openiap-google's Compose helper (IapContext) is unreferenced; Gson is used by OpenIapModule.
+configurations.matching {
+    it.name.endsWith('CompileClasspath') || it.name.endsWith('RuntimeClasspath')
+}.configureEach {
+    exclude group: 'androidx.compose.ui'
+    exclude group: 'androidx.compose.runtime'
+}
+
+// react-native-tcp-socket needs BouncyCastle only for TLS servers; the local API server is plain TCP.
+configurations.matching { it.name.endsWith('RuntimeClasspath') }.configureEach {
+    exclude group: 'org.bouncycastle'
 }
 
 project.ext.vectoricons = [

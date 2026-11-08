@@ -15,7 +15,7 @@ import {chatSessionStore, modelStore, serverStore} from '../../../store';
 
 import {l10n} from '../../../locales';
 import {mockLlamaContextParams} from '../../../../jest/fixtures/models';
-import {buildReasoningPayload} from '../../../api/openai';
+import {bodyExtras} from '../../../api/servers';
 import {ModelOrigin} from '../../../utils/types';
 
 const render = (ui: React.ReactElement, options: any = {}) =>
@@ -705,21 +705,29 @@ describe('ChatScreen graded effort pill cycle', () => {
     });
   });
 
-  const useGradedModel = () => {
+  const gradedReasoning = (effortValues: string[]) => ({
+    isReasoning: 'yes' as const,
+    source: 'user' as const,
+    supportsEffort: true,
+    effortValues,
+    effortSource: 'user' as const,
+  });
+
+  const useGradedModel = (
+    id = 'graded-model',
+    effortValues = ['low', 'medium', 'high'],
+  ) => {
     const model = {
       ...savedModels[0],
-      id: 'graded-model',
-      reasoning: {
-        isReasoning: 'yes' as const,
-        source: 'user' as const,
-        supportsEffort: true,
-        effortValues: ['low', 'medium', 'high'],
-        effortSource: 'user' as const,
-      },
+      id,
+      reasoning: gradedReasoning(effortValues),
     };
-    modelStore.models = [...savedModels, model];
     runInAction(() => {
-      modelStore.activeModelId = 'graded-model';
+      modelStore.models = [
+        ...modelStore.models.filter(m => m.id !== id),
+        model,
+      ];
+      modelStore.activeModelId = id;
     });
   };
 
@@ -757,6 +765,110 @@ describe('ChatScreen graded effort pill cycle', () => {
       enable_thinking: false,
       reasoning: {enabled: false, effort: undefined},
     });
+  });
+
+  it('shows a stored unsupported effort as the nearest lower one', async () => {
+    persisted = {enable_thinking: true, reasoning: {effort: 'xhigh'}};
+    useGradedModel();
+    const {getByTestId} = render(<ChatScreen />, {withNavigation: true});
+    const pill = () => within(getByTestId('thinking-toggle'));
+
+    await waitFor(() =>
+      expect(pill().getByText(effortLabel('high'))).toBeTruthy(),
+    );
+
+    await act(async () => {
+      fireEvent.press(getByTestId('thinking-toggle'));
+    });
+    expect(persisted).toMatchObject({
+      enable_thinking: false,
+      reasoning: {enabled: false, effort: undefined},
+    });
+  });
+
+  it('keeps a supported stored effort when the model becomes active after mount', async () => {
+    persisted = {enable_thinking: true, reasoning: {effort: 'high'}};
+    const {getByTestId, queryByTestId} = render(<ChatScreen />, {
+      withNavigation: true,
+    });
+    await act(async () => {});
+    expect(queryByTestId('thinking-toggle')).toBeNull();
+
+    await act(async () => {
+      useGradedModel();
+    });
+    await waitFor(() =>
+      expect(
+        within(getByTestId('thinking-toggle')).getByText(effortLabel('high')),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('re-clamps on a model switch and sends the clamped effort', async () => {
+    persisted = {enable_thinking: true, reasoning: {effort: 'xhigh'}};
+    modelStore.context!.completion = jest.fn().mockResolvedValue({
+      timings: {predicted_per_token_ms: 10, predicted_per_second: 100},
+    });
+    modelStore.engine = {
+      completion: jest.fn((params, onData) =>
+        modelStore.context!.completion(params, onData),
+      ),
+      stopCompletion: jest.fn(),
+    } as any;
+    useGradedModel('wide-model', ['low', 'medium', 'high', 'xhigh']);
+    const {getByTestId, getByPlaceholderText} = render(<ChatScreen />, {
+      withNavigation: true,
+    });
+    const pill = () => within(getByTestId('thinking-toggle'));
+    await waitFor(() =>
+      expect(pill().getByText(effortLabel('xhigh'))).toBeTruthy(),
+    );
+
+    await act(async () => {
+      useGradedModel();
+    });
+    await waitFor(() =>
+      expect(pill().getByText(effortLabel('high'))).toBeTruthy(),
+    );
+
+    await act(async () => {
+      fireEvent.changeText(
+        getByPlaceholderText(l10n.en.chat.typeYourMessage),
+        'Hello',
+      );
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId('send-button'));
+    });
+    await waitFor(() =>
+      expect(modelStore.context!.completion).toHaveBeenCalled(),
+    );
+    const sent = (modelStore.context!.completion as jest.Mock).mock.calls[0][0];
+    expect(sent.chat_template_kwargs?.reasoning_effort).toBe('high');
+    expect(sent.reasoning?.effort).toBe('high');
+  });
+
+  it('re-clamps when the active model drops the stored grade', async () => {
+    persisted = {enable_thinking: true, reasoning: {effort: 'xhigh'}};
+    useGradedModel('wide-model', ['low', 'medium', 'high', 'xhigh']);
+    const {getByTestId} = render(<ChatScreen />, {withNavigation: true});
+    const pill = () => within(getByTestId('thinking-toggle'));
+    await waitFor(() =>
+      expect(pill().getByText(effortLabel('xhigh'))).toBeTruthy(),
+    );
+
+    await act(async () => {
+      runInAction(() => {
+        modelStore.activeModel!.reasoning = gradedReasoning([
+          'low',
+          'medium',
+          'high',
+        ]);
+      });
+    });
+    await waitFor(() =>
+      expect(pill().getByText(effortLabel('high'))).toBeTruthy(),
+    );
   });
 });
 
@@ -830,10 +942,9 @@ describe('ChatScreen on/off toggle → reasoning carrier (remote)', () => {
   };
 
   // Toggling thinking OFF on a remote effort-unknown model must populate the
-  // reasoning carrier (enabled:false), so buildReasoningPayload produces the
-  // per-serverType OFF wire shape. Pre-R1 the toggle set only enable_thinking,
-  // leaving params.reasoning undefined → buildReasoningPayload returns {}.
-  it('off toggle yields reasoning.enabled false reaching buildReasoningPayload', async () => {
+  // reasoning carrier (enabled:false), so the server profile produces the
+  // per-type OFF wire shape.
+  it('off toggle yields reasoning.enabled false reaching the server profile', async () => {
     useRemoteEffortUnknownModel();
     const {getByLabelText} = render(<ChatScreen />, {withNavigation: true});
 
@@ -849,12 +960,141 @@ describe('ChatScreen on/off toggle → reasoning carrier (remote)', () => {
     expect(persisted.reasoning?.enabled).toBe(false);
 
     // The carrier drives the per-serverType OFF payload.
-    expect(buildReasoningPayload('llama.cpp', persisted.reasoning)).toEqual({
+    expect(
+      bodyExtras('llama.cpp', {
+        samplers: {},
+        reasoning: persisted.reasoning,
+      }),
+    ).toEqual({
       reasoning_format: 'auto',
       chat_template_kwargs: {enable_thinking: false},
     });
-    expect(buildReasoningPayload('Ollama', persisted.reasoning)).toEqual({
+    expect(
+      bodyExtras('Ollama', {
+        samplers: {},
+        reasoning: persisted.reasoning,
+      }),
+    ).toEqual({
       reasoning_effort: 'none',
     });
+  });
+});
+
+// The image-attach affordance must reflect a capability that lands after the
+// screen is already on screen: the probe is detached and a lazily-started
+// server can take seconds to answer.
+describe('ChatScreen remote vision reactivity', () => {
+  const modelId = 'srv-1/gemma-4-e2b';
+  let savedModels: any[];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    savedModels = modelStore.models;
+    modelStore.models = [
+      ...savedModels,
+      {
+        ...savedModels[0],
+        id: modelId,
+        origin: ModelOrigin.REMOTE,
+        serverId: 'srv-1',
+        remoteModelId: 'gemma-4-e2b',
+      },
+    ];
+    runInAction(() => {
+      modelStore.context = undefined;
+      modelStore.activeModelId = modelId;
+      serverStore.servers = [
+        {
+          id: 'srv-1',
+          name: 'llama',
+          url: 'http://localhost:8080',
+          serverType: 'llama.cpp',
+        } as any,
+      ];
+      serverStore.remoteCaps = {};
+    });
+    modelStore.engine = {
+      completion: jest.fn(),
+      stopCompletion: jest.fn(),
+    } as any;
+  });
+
+  afterEach(() => {
+    modelStore.models = savedModels;
+    runInAction(() => {
+      modelStore.activeModelId = undefined;
+      serverStore.servers = [];
+      serverStore.remoteCaps = {};
+    });
+  });
+
+  it('enables attach when capabilities land, with no further user action', () => {
+    const {getByLabelText} = render(<ChatScreen />, {withNavigation: true});
+
+    expect(getByLabelText('Add image').props.accessibilityState.disabled).toBe(
+      true,
+    );
+
+    act(() => {
+      runInAction(() => {
+        serverStore.remoteCaps[modelId] = {supportsVision: true};
+      });
+    });
+
+    expect(getByLabelText('Add image').props.accessibilityState.disabled).toBe(
+      false,
+    );
+  });
+
+  it('enables attach when a local model finishes loading its projection', () => {
+    const localId = 'local-mm-1';
+    runInAction(() => {
+      modelStore.models = [
+        ...savedModels,
+        {
+          ...savedModels[0],
+          id: localId,
+          origin: ModelOrigin.PRESET,
+          supportsMultimodal: true,
+        },
+      ];
+      modelStore.activeModelId = localId;
+      modelStore.isMultimodalActive = false;
+    });
+
+    const {getByLabelText} = render(<ChatScreen />, {withNavigation: true});
+
+    expect(getByLabelText('Add image').props.accessibilityState.disabled).toBe(
+      true,
+    );
+
+    // What `proceedWithInitialization` writes once the native init verifies.
+    act(() => {
+      runInAction(() => {
+        modelStore.isMultimodalActive = true;
+      });
+    });
+
+    expect(getByLabelText('Add image').props.accessibilityState.disabled).toBe(
+      false,
+    );
+
+    runInAction(() => {
+      modelStore.isMultimodalActive = false;
+    });
+  });
+
+  it('does not let the active model inherit a sibling model vision flag', () => {
+    act(() => {
+      runInAction(() => {
+        serverStore.remoteCaps['srv-1/gemma-3-4b'] = {supportsVision: true};
+      });
+    });
+
+    const {getByLabelText} = render(<ChatScreen />, {withNavigation: true});
+
+    expect(getByLabelText('Add image').props.accessibilityState.disabled).toBe(
+      true,
+    );
   });
 });

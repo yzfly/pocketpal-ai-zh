@@ -2,7 +2,7 @@ import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {View} from 'react-native';
 import {Text} from 'react-native-paper';
 import {useTheme} from '../../hooks';
-import Slider from '@react-native-community/slider';
+import {Slider} from '../libraryViews';
 import {createStyles} from './styles';
 import {TextInput} from '../TextInput';
 import {VariantProp} from 'react-native-paper/lib/typescript/components/Typography/types';
@@ -22,6 +22,7 @@ interface InputSliderProps {
   showRangeLabel?: boolean;
   unit?: string;
   testID?: string;
+  accessibilityLabel?: string;
   /** Debounce delay in milliseconds for onValueChange. Default: 300ms. Set to 0 to disable debouncing. */
   debounceMs?: number;
   /** Optional callback for immediate value changes (not debounced) */
@@ -43,6 +44,7 @@ export const InputSlider: React.FC<InputSliderProps> = ({
   showRangeLabel = false,
   unit = '',
   testID,
+  accessibilityLabel,
   debounceMs = 300,
   onImmediateChange,
 }) => {
@@ -143,6 +145,8 @@ export const InputSlider: React.FC<InputSliderProps> = ({
         <View style={styles.sliderContainer}>
           <Slider
             testID={testID}
+            accessibilityLabel={accessibilityLabel}
+            accessibilityValue={{min, max, now: value}}
             style={styles.slider}
             minimumValue={min}
             maximumValue={max}
@@ -175,6 +179,7 @@ export const InputSlider: React.FC<InputSliderProps> = ({
         {showInput && (
           <TextInput
             testID={`${testID}-input`}
+            accessibilityLabel={accessibilityLabel}
             style={[styles.textInput, disabled && styles.disabledTextInput]}
             value={textValue}
             onChangeText={handleTextChange}

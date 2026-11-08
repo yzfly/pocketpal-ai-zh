@@ -114,11 +114,21 @@ export const createStyles = (theme: Theme) => {
       color: theme.colors.onSurface,
       marginLeft: 8,
     },
+    modelVisionSlot: {
+      width: 20,
+      marginStart: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modelVisionUnknown: {
+      fontSize: 14,
+      color: theme.colors.onSurfaceVariant,
+    },
     alreadyAddedText: {
       fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
-      marginLeft: 4,
+      marginStart: 4,
     },
     noModelsText: {
       fontSize: 14,
@@ -158,6 +168,55 @@ export const createStyles = (theme: Theme) => {
       width: '100%',
     },
     addButton: {
+      flex: 1,
+    },
+    routerRowDimmed: {
+      opacity: 0.6,
+    },
+    routerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    routerSelect: {
+      flex: 1,
+      minWidth: 0,
+    },
+    routerVision: {
+      marginStart: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    routerStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginStart: 8,
+    },
+    routerPercent: {
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+    },
+    routerDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginHorizontal: 7,
+      backgroundColor: theme.colors.statusLoaded,
+    },
+    routerPower: {
+      width: 44,
+      height: 44,
+      margin: 0,
+    },
+    routerReasonRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginHorizontal: 16,
+    },
+    routerReasonText: {
+      fontSize: 12,
+      color: theme.colors.error,
       flex: 1,
     },
   });

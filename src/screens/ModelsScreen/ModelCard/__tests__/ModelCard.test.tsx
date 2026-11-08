@@ -1,14 +1,27 @@
 import React from 'react';
-import {Linking, Alert} from 'react-native';
+import {Linking, Alert, StyleSheet} from 'react-native';
 
-import {render, fireEvent, waitFor, act} from '../../../../../jest/test-utils';
+import {observable, runInAction} from 'mobx';
+
+import {
+  render,
+  fireEvent,
+  waitFor,
+  act,
+  within,
+} from '../../../../../jest/test-utils';
 import {
   basicModel,
+  createModel,
   downloadedModel,
   downloadingModel,
   largeMemoryModel,
   remoteModel,
+  remoteModelSibling,
 } from '../../../../../jest/fixtures/models';
+import {themeFixtures} from '../../../../../jest/fixtures/theme';
+import {routerModelsBody} from '../../../../../jest/fixtures/remoteModelList';
+import type {ServerType} from '../../../../utils/serverTypes';
 
 // Unmock useMemoryCheck for memory warning tests
 jest.unmock('../../../../hooks/useMemoryCheck');
@@ -38,6 +51,13 @@ jest.mock('@react-navigation/native', () => ({
 
 const customRender = (ui: React.ReactElement, options: any = {}) =>
   render(ui, {withBottomSheetProvider: true, withNavigation: true, ...options});
+
+/**
+ * Every `.svg` resolves to the same mock component, so the two header glyphs
+ * are told apart by the stroke they are given, not by their type.
+ */
+const glyphStroke = (glyphWrapper: any): string =>
+  glyphWrapper.props.children.props.stroke;
 
 describe('ModelCard', () => {
   beforeEach(() => {
@@ -444,66 +464,209 @@ describe('ModelCard', () => {
       );
     });
 
-    it('shows projection model warning badge when projection model is missing', async () => {
+    describe('download projection model action', () => {
       const visionModelWithMissingProjection = {
         ...downloadedModel,
         supportsMultimodal: true,
         defaultProjectionModel: 'missing/projection-model',
       };
+      const missingProjector = {
+        ...downloadedModel,
+        id: 'missing/projection-model',
+        modelType: ModelType.PROJECTION,
+        isDownloaded: false,
+        size: 851_234_567,
+        progress: 0,
+      };
 
-      // Mock getProjectionModelStatus to return missing state
-      modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
-        isAvailable: false,
-        state: 'missing',
+      beforeEach(() => {
+        modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
+          isAvailable: false,
+          state: 'missing',
+        });
       });
 
-      // Mock vision preference to be enabled (required for warning to show)
-      modelStore.getModelVisionPreference = jest.fn().mockReturnValue(true);
+      it('offers the projector as one button with its size', async () => {
+        modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
+          isAvailable: false,
+          state: 'missing',
+          projectionModel: missingProjector,
+        });
+        const {getByTestId, getByText} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
 
-      const {getByTestId} = customRender(
-        <ModelCard model={visionModelWithMissingProjection} />,
-      );
+        const offer = getByTestId('projection-warning-badge');
+        expect(
+          getByText(l10n.en.models.modelCard.projectorOffer.rowTitle),
+        ).toBeTruthy();
+        expect(getByText('851 MB')).toBeTruthy();
+        expect(offer.props.accessibilityRole).toBe('button');
+        expect(offer.props.accessibilityLabel).toBe(
+          'Download projection model, 851 MB',
+        );
+        expect(
+          StyleSheet.flatten(offer.props.style).minHeight,
+        ).toBeGreaterThanOrEqual(44);
+      });
 
-      // First expand the details to see the projection warning
-      const expandButton = getByTestId('expand-details-button');
-      fireEvent.press(expandButton);
+      it('falls back to Download without a projector size', async () => {
+        const {getByTestId, getByText, queryByText} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
 
-      await waitFor(() => {
+        expect(
+          getByText(l10n.en.models.modelCard.projectorOffer.download),
+        ).toBeTruthy();
+        expect(queryByText(/MB$/)).toBeNull();
+        expect(
+          getByTestId('projection-warning-badge').props.accessibilityLabel,
+        ).toBe(l10n.en.models.modelCard.labels.downloadProjectionModel);
+      });
+
+      it('shows on the collapsed card and downloads the selected projector', async () => {
+        const {getByTestId} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
+
+        await waitFor(() => {
+          expect(getByTestId('projection-warning-badge')).toBeTruthy();
+        });
+        fireEvent.press(getByTestId('projection-warning-badge'));
+
+        expect(modelStore.checkSpaceAndDownload).toHaveBeenCalledWith(
+          'missing/projection-model',
+        );
+      });
+
+      it('renders once when the card is expanded', async () => {
+        const {getAllByTestId, getByTestId} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
+
+        fireEvent.press(getByTestId('expand-details-button'));
+
+        await waitFor(() => {
+          expect(getAllByTestId('projection-warning-badge')).toHaveLength(1);
+        });
+      });
+
+      it('shows download progress in place of the offer while the projector downloads', async () => {
+        modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
+          isAvailable: true,
+          state: 'downloading',
+          projectionModel: {...missingProjector, progress: 34.4},
+        });
+        const {getByTestId, queryByTestId} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
+
+        const row = getByTestId('projector-download-progress');
+        expect(
+          within(row).getByText('Downloading projection model · 34%'),
+        ).toBeTruthy();
+        expect(
+          within(row).getByRole('progressbar').props.accessibilityValue.now,
+        ).toBe(34);
+        expect(queryByTestId('projection-warning-badge')).toBeNull();
+      });
+
+      it('follows the projector download and offers it again after a failure or cancel', async () => {
+        const projector = observable({...missingProjector, progress: 10});
+        const download = observable({active: true});
+        modelStore.getProjectionModelStatus = jest.fn(() =>
+          download.active
+            ? {
+                isAvailable: true,
+                state: 'downloading',
+                projectionModel: projector,
+              }
+            : {
+                isAvailable: false,
+                state: 'missing',
+                projectionModel: projector,
+              },
+        );
+        const {getByTestId, getByText, queryByTestId} = customRender(
+          <ModelCard model={visionModelWithMissingProjection} />,
+        );
+        expect(getByText('Downloading projection model · 10%')).toBeTruthy();
+
+        act(() => {
+          runInAction(() => {
+            projector.progress = 60;
+          });
+        });
+        expect(getByText('Downloading projection model · 60%')).toBeTruthy();
+
+        act(() => {
+          runInAction(() => {
+            download.active = false;
+          });
+        });
+        expect(queryByTestId('projector-download-progress')).toBeNull();
         expect(getByTestId('projection-warning-badge')).toBeTruthy();
       });
-    });
 
-    it('handles projection warning badge press to download missing projection model', async () => {
-      const visionModelWithMissingProjection = {
-        ...downloadedModel,
-        supportsMultimodal: true,
-        defaultProjectionModel: 'missing/projection-model',
-      };
+      it.each([
+        ['vision is off', {}, false],
+        ['the model is not downloaded', {isDownloaded: false}, true],
+      ])(
+        'shows no projector progress when %s',
+        async (_label, overrides, visionOn) => {
+          modelStore.getModelVisionPreference = jest
+            .fn()
+            .mockReturnValue(visionOn);
+          modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
+            isAvailable: true,
+            state: 'downloading',
+            projectionModel: {...missingProjector, progress: 50},
+          });
 
-      // Mock getProjectionModelStatus to return missing state
-      modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
-        isAvailable: false,
-        state: 'missing',
-      });
+          const {queryByTestId} = customRender(
+            <ModelCard
+              model={{...visionModelWithMissingProjection, ...overrides}}
+            />,
+          );
 
-      // Mock vision preference to be enabled (required for warning to show)
-      modelStore.getModelVisionPreference = jest.fn().mockReturnValue(true);
-
-      const {getByTestId} = customRender(
-        <ModelCard model={visionModelWithMissingProjection} />,
+          expect(queryByTestId('projector-download-progress')).toBeNull();
+          expect(queryByTestId('projection-warning-badge')).toBeNull();
+        },
       );
 
-      // First expand the details to see the projection warning
-      const expandButton = getByTestId('expand-details-button');
-      fireEvent.press(expandButton);
+      it.each([
+        ['vision is off', {}, false, 'missing'],
+        ['the projector is downloaded', {}, true, 'downloaded'],
+        ['the projector is downloading', {}, true, 'downloading'],
+        ['the model is not downloaded', {isDownloaded: false}, true, 'missing'],
+        [
+          'no projector is selected',
+          {defaultProjectionModel: undefined},
+          true,
+          'not_needed',
+        ],
+      ])(
+        'is absent when %s',
+        async (_label, overrides, visionOn, projectorState) => {
+          modelStore.getModelVisionPreference = jest
+            .fn()
+            .mockReturnValue(visionOn);
+          modelStore.getProjectionModelStatus = jest.fn().mockReturnValue({
+            isAvailable: projectorState === 'downloaded',
+            state: projectorState,
+          });
 
-      await waitFor(() => {
-        const warningBadge = getByTestId('projection-warning-badge');
-        fireEvent.press(warningBadge);
-      });
+          const {getByTestId, queryByTestId} = customRender(
+            <ModelCard
+              model={{...visionModelWithMissingProjection, ...overrides}}
+            />,
+          );
+          fireEvent.press(getByTestId('expand-details-button'));
 
-      expect(modelStore.checkSpaceAndDownload).toHaveBeenCalledWith(
-        'missing/projection-model',
+          await waitFor(() => {
+            expect(queryByTestId('projection-warning-badge')).toBeNull();
+          });
+        },
       );
     });
   });
@@ -638,5 +801,440 @@ describe('ModelCard', () => {
         remoteModel.serverId,
       );
     });
+  });
+
+  describe('MTP (speculative) capability skill', () => {
+    const mtpModel = createModel({
+      id: 'mtp-model',
+      name: 'mtp model',
+      isDownloaded: true,
+      ggufMetadata: {nextn_predict_layers: 1},
+    });
+
+    const plainModel = createModel({
+      id: 'plain-model',
+      name: 'plain model',
+      isDownloaded: true,
+      ggufMetadata: {nextn_predict_layers: 0},
+    });
+
+    // The capabilities line joins labels with ', ' in a single Text node, so a
+    // substring match is enough. Escape regex metacharacters in the label
+    // ("Speculative (MTP)") before building the matcher.
+    const mtpLabelPattern = new RegExp(
+      l10n.en.models.modelCapabilities.mtp.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&',
+      ),
+    );
+
+    it('appends the MTP skill in the expanded details when the model is MTP-capable', async () => {
+      const {getByTestId, getByText} = customRender(
+        <ModelCard model={mtpModel} />,
+      );
+
+      fireEvent.press(getByTestId('expand-details-button'));
+
+      await waitFor(() => {
+        expect(getByText(mtpLabelPattern)).toBeTruthy();
+      });
+    });
+
+    it('omits the MTP skill when the model is not MTP-capable', async () => {
+      const {getByTestId, queryByText} = customRender(
+        <ModelCard model={plainModel} />,
+      );
+
+      fireEvent.press(getByTestId('expand-details-button'));
+
+      await waitFor(() => {
+        expect(getByTestId('expand-details-button')).toBeTruthy();
+      });
+      expect(queryByText(mtpLabelPattern)).toBeNull();
+    });
+  });
+  describe('Remote model capabilities', () => {
+    const visionCell = `model-card-vision-capability-${remoteModel.id}`;
+    const contextCell = `model-card-context-length-${remoteModel.id}`;
+    const headerGlyph = `model-card-vision-${remoteModel.id}`;
+
+    const expand = (getByTestId: any) => {
+      act(() => {
+        fireEvent.press(getByTestId('expand-details-button'));
+      });
+    };
+
+    afterEach(() => {
+      runInAction(() => {
+        serverStore.remoteCaps = {};
+      });
+    });
+
+    it('offers the expand affordance and opens the details block', async () => {
+      const {getByTestId} = customRender(<ModelCard model={remoteModel} />);
+
+      expect(getByTestId('expand-details-button')).toBeTruthy();
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(getByTestId(visionCell)).toBeTruthy();
+      });
+    });
+
+    it('renders no on-device or local-file value in the expanded block', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps = {
+          [remoteModel.id]: {supportsVision: true, contextLength: 8192},
+        };
+      });
+      const {getByTestId, queryByTestId, queryByText} = customRender(
+        <ModelCard model={remoteModel} />,
+      );
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(getByTestId(visionCell)).toBeTruthy();
+      });
+
+      // The estimator has no local file to measure, so this row would read
+      // "Estimated memory: 0 B" — a device claim about someone else's hardware.
+      expect(queryByTestId('memory-requirement')).toBeNull();
+      // `author` is the server name, already in the header chip.
+      expect(queryByText(l10n.en.models.modelCard.labels.author)).toBeNull();
+      expect(
+        queryByText(l10n.en.models.modelDescription.parameters),
+      ).toBeNull();
+      expect(
+        queryByText(l10n.en.models.modelCard.labels.architecture),
+      ).toBeNull();
+      expect(queryByTestId('open-huggingface-url')).toBeNull();
+      expect(queryByTestId('vision-skill-touchable')).toBeNull();
+
+      expect(getByTestId(contextCell)).toBeTruthy();
+      expect(
+        queryByText(l10n.en.models.modelCard.labels.visionSupported),
+      ).toBeTruthy();
+    });
+
+    it('reports vision as unknown, never unsupported, when the server has no /props', async () => {
+      const {getByTestId, queryByTestId, queryByText} = customRender(
+        <ModelCard model={remoteModel} />,
+      );
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(getByTestId(visionCell)).toBeTruthy();
+      });
+
+      expect(
+        queryByText(l10n.en.models.modelCard.labels.visionUnknown),
+      ).toBeTruthy();
+      expect(
+        queryByText(l10n.en.models.modelCard.labels.visionNotSupported),
+      ).toBeNull();
+      expect(queryByTestId(contextCell)).toBeNull();
+    });
+
+    it('reflects capabilities that land while the card is already open', async () => {
+      const {getByTestId, queryByTestId, queryByText} = customRender(
+        <ModelCard model={remoteModel} />,
+      );
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(
+          queryByText(l10n.en.models.modelCard.labels.visionUnknown),
+        ).toBeTruthy();
+      });
+      expect(queryByTestId(contextCell)).toBeNull();
+
+      act(() => {
+        runInAction(() => {
+          serverStore.remoteCaps = {
+            [remoteModel.id]: {supportsVision: true, contextLength: 8192},
+          };
+        });
+      });
+
+      expect(
+        queryByText(l10n.en.models.modelCard.labels.visionSupported),
+      ).toBeTruthy();
+      expect(getByTestId(contextCell)).toBeTruthy();
+    });
+
+    it('keeps capability entries per model, not per server', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps = {
+          [remoteModel.id]: {supportsVision: true},
+          [remoteModelSibling.id]: {supportsVision: false},
+        };
+      });
+      const {getByTestId, queryByText} = customRender(
+        <ModelCard model={remoteModelSibling} />,
+      );
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(
+          queryByText(l10n.en.models.modelCard.labels.visionNotSupported),
+        ).toBeTruthy();
+      });
+    });
+
+    it('carries the capability value in the accessibility label', async () => {
+      runInAction(() => {
+        serverStore.remoteCaps = {[remoteModel.id]: {supportsVision: true}};
+      });
+      const {getByTestId, getAllByLabelText} = customRender(
+        <ModelCard model={remoteModel} />,
+      );
+      expand(getByTestId);
+
+      // Header glyph and expanded cell, reading the same value — the pair is
+      // the assertion, since a header that disagreed with the body would
+      // otherwise still satisfy a single-match query.
+      await waitFor(() => {
+        expect(getAllByLabelText('Vision: Supported')).toHaveLength(2);
+      });
+    });
+
+    it('announces an unresolved capability as unknown in both places', async () => {
+      const {getByTestId, getAllByLabelText} = customRender(
+        <ModelCard model={remoteModel} />,
+      );
+      expand(getByTestId);
+
+      await waitFor(() => {
+        expect(getAllByLabelText('Vision: Unknown')).toHaveLength(2);
+      });
+    });
+
+    it('shows the vision glyph without the model ever being activated', () => {
+      runInAction(() => {
+        serverStore.remoteCaps = {[remoteModel.id]: {supportsVision: true}};
+      });
+      const {getByTestId} = customRender(<ModelCard model={remoteModel} />);
+
+      expect(glyphStroke(getByTestId(headerGlyph))).toBe(
+        themeFixtures.lightTheme.colors.iconModelTypeVision,
+      );
+    });
+
+    it('keeps the text glyph when the server reports no vision', () => {
+      runInAction(() => {
+        serverStore.remoteCaps = {[remoteModel.id]: {supportsVision: false}};
+      });
+      const {getByTestId} = customRender(<ModelCard model={remoteModel} />);
+
+      expect(glyphStroke(getByTestId(headerGlyph))).toBe(
+        themeFixtures.lightTheme.colors.iconModelTypeText,
+      );
+    });
+
+    describe('capabilities the models list already carried', () => {
+      // The card fixture id and the captured row are joined here so the store
+      // derivation runs over a real body: `${serverId}/${row.id}` is the key a
+      // remote card looks itself up by.
+      const rowFor = (id: string, sourceId: string) => ({
+        ...(routerModelsBody.data.find(r => r.id === sourceId) as any),
+        id,
+      });
+
+      const listServer = (serverType?: ServerType, rows?: any[]) => {
+        runInAction(() => {
+          serverStore.servers = [
+            {
+              id: remoteModel.serverId!,
+              name: 'router',
+              url: 'http://localhost:8080',
+              serverType,
+            },
+          ];
+          serverStore.serverModels.set(
+            remoteModel.serverId!,
+            rows ?? [rowFor(remoteModel.remoteModelId!, 'gemma-4-e2b')],
+          );
+        });
+      };
+
+      afterEach(() => {
+        runInAction(() => {
+          serverStore.servers = [];
+          serverStore.serverModels.clear();
+        });
+      });
+
+      it('states vision and the window without the model ever being activated', async () => {
+        listServer('llama.cpp');
+
+        const {getByTestId, queryByText} = customRender(
+          <ModelCard model={remoteModel} />,
+        );
+
+        expect(glyphStroke(getByTestId(headerGlyph))).toBe(
+          themeFixtures.lightTheme.colors.iconModelTypeVision,
+        );
+        expand(getByTestId);
+        await waitFor(() => {
+          expect(
+            queryByText(l10n.en.models.modelCard.labels.visionSupported),
+          ).toBeTruthy();
+        });
+        expect(getByTestId(contextCell)).toBeTruthy();
+        expect(serverStore.fetchRemoteModelCaps).not.toHaveBeenCalled();
+      });
+
+      it('says not supported for a sibling the same list describes as text-only', async () => {
+        listServer('llama.cpp', [
+          rowFor(remoteModel.remoteModelId!, 'gemma-4-e2b'),
+          rowFor(remoteModelSibling.remoteModelId!, 'gemma-3-4b'),
+        ]);
+
+        const {getByTestId, queryByText} = customRender(
+          <ModelCard model={remoteModelSibling} />,
+        );
+        expand(getByTestId);
+
+        await waitFor(() => {
+          expect(
+            queryByText(l10n.en.models.modelCard.labels.visionNotSupported),
+          ).toBeTruthy();
+        });
+      });
+
+      it('changes nothing visible when the model is then activated', async () => {
+        listServer('llama.cpp');
+
+        const {getByTestId, queryByText} = customRender(
+          <ModelCard model={remoteModel} />,
+        );
+        expand(getByTestId);
+        await waitFor(() => {
+          expect(getByTestId(contextCell)).toBeTruthy();
+        });
+        const before = [
+          glyphStroke(getByTestId(headerGlyph)),
+          getByTestId(visionCell).props.accessibilityLabel,
+          getByTestId(contextCell).props.children,
+        ];
+
+        act(() => {
+          runInAction(() => {
+            serverStore.remoteCaps = {
+              [remoteModel.id]: {supportsVision: true, contextLength: 8192},
+            };
+          });
+        });
+
+        expect([
+          glyphStroke(getByTestId(headerGlyph)),
+          getByTestId(visionCell).props.accessibilityLabel,
+          getByTestId(contextCell).props.children,
+        ]).toEqual(before);
+        expect(
+          queryByText(l10n.en.models.modelCard.labels.visionSupported),
+        ).toBeTruthy();
+      });
+
+      it('fills in when the first fetch lands, with no user action', async () => {
+        // Cold start: hydration has restored the server but no list yet.
+        runInAction(() => {
+          serverStore.servers = [
+            {
+              id: remoteModel.serverId!,
+              name: 'router',
+              url: 'http://localhost:8080',
+              serverType: 'llama.cpp',
+            },
+          ];
+        });
+
+        const {getByTestId, queryByTestId, queryByText} = customRender(
+          <ModelCard model={remoteModel} />,
+        );
+        expand(getByTestId);
+        await waitFor(() => {
+          expect(
+            queryByText(l10n.en.models.modelCard.labels.visionUnknown),
+          ).toBeTruthy();
+        });
+        expect(queryByTestId(contextCell)).toBeNull();
+
+        act(() => {
+          runInAction(() => {
+            serverStore.serverModels.set(remoteModel.serverId!, [
+              rowFor(remoteModel.remoteModelId!, 'gemma-4-e2b'),
+            ]);
+          });
+        });
+
+        expect(
+          queryByText(l10n.en.models.modelCard.labels.visionSupported),
+        ).toBeTruthy();
+        expect(getByTestId(contextCell)).toBeTruthy();
+        expect(glyphStroke(getByTestId(headerGlyph))).toBe(
+          themeFixtures.lightTheme.colors.iconModelTypeVision,
+        );
+      });
+
+      it('reads nothing off a server of another type', async () => {
+        listServer('Ollama');
+
+        const {getByTestId, queryByTestId, queryByText} = customRender(
+          <ModelCard model={remoteModel} />,
+        );
+
+        expect(glyphStroke(getByTestId(headerGlyph))).toBe(
+          themeFixtures.lightTheme.colors.iconModelTypeText,
+        );
+        expand(getByTestId);
+        await waitFor(() => {
+          expect(
+            queryByText(l10n.en.models.modelCard.labels.visionUnknown),
+          ).toBeTruthy();
+        });
+        expect(queryByTestId(contextCell)).toBeNull();
+      });
+    });
+
+    it('gives every remote card an addressable root', () => {
+      const {getByTestId} = customRender(<ModelCard model={remoteModel} />);
+      expect(getByTestId(`model-card-${remoteModel.id}`)).toBeTruthy();
+    });
+  });
+
+  it('renders no vision cell on a local card', async () => {
+    const {getByTestId, queryByTestId} = customRender(
+      <ModelCard model={downloadedModel} />,
+    );
+
+    act(() => {
+      fireEvent.press(getByTestId('expand-details-button'));
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('memory-requirement')).toBeTruthy();
+    });
+    expect(
+      queryByTestId(`model-card-vision-capability-${downloadedModel.filename}`),
+    ).toBeNull();
+  });
+
+  it('gives a local card no spoken vision stop at all', async () => {
+    const {getByTestId, queryAllByLabelText} = customRender(
+      <ModelCard model={downloadedModel} />,
+    );
+
+    act(() => {
+      fireEvent.press(getByTestId('expand-details-button'));
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('memory-requirement')).toBeTruthy();
+    });
+    // The local card states vision through the toggle, which is its own
+    // labelled control; a second unlabelled-value announcement on the header
+    // glyph would be new noise on every text model.
+    expect(queryAllByLabelText(/^Vision:/)).toHaveLength(0);
   });
 });

@@ -3,6 +3,11 @@ import {FIREBASE_FUNCTIONS_URL} from '@env';
 export const HF_DOMAIN = 'https://huggingface.co';
 export const HF_API_BASE = `${HF_DOMAIN}/api/models`;
 
+export const REPO_URL = 'https://github.com/a-ghorbani/pocketpal-ai';
+export const APPLE_EULA_URL =
+  'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+export const APPLE_MEDIA_TERMS_URL =
+  'https://www.apple.com/legal/internet-services/itunes/us/terms.html';
 // ─── HF 镜像（中国大陆网络加速）───────────────────────────────────────
 // 数据层始终保存规范的 huggingface.co URL（解析校验、去重、token 门控均依赖
 // 规范域名）；镜像改写只发生在真正发起网络请求的收口处（HF API 请求、

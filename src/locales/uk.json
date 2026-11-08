@@ -31,7 +31,8 @@
     "close": "Закрити",
     "clear": "Очистити все",
     "gallery": "Галерея",
-    "stop": "Зупинити"
+    "stop": "Зупинити",
+    "noResults": "Результатів немає"
   },
   "settings": {
     "modelInitializationSettings": "Налаштування ініціалізації моделі",
@@ -161,13 +162,97 @@
     "ttsAvailabilityLowMemoryWarning": "У вашому пристрої мало пам'яті — програма може працювати нестабільно.",
     "requestTimeout": "Тайм-аут запиту (секунди)",
     "requestTimeoutHelp": "Максимальний час очікування відповіді від повільного сервера. Залиште поле порожнім, щоб використовувати значення за замовчуванням.",
-    "requestTimeoutPlaceholder": "Необов’язкове — залиште порожнім, щоб використовувати значення за замовчуванням"
+    "requestTimeoutPlaceholder": "Необов’язкове — залиште порожнім, щоб використовувати значення за замовчуванням",
+    "serverType": "Тип сервера",
+    "serverTypeHelp": "Визначається автоматично; змініть, якщо неправильно.",
+    "internetSearch": {
+      "title": "Пошук в Інтернеті",
+      "description": "Дозвольте Pals шукати в інтернеті за допомогою власних інструментів. Використовуйте власний ключ API — PocketPal ніколи не зберігає ваші ключі й не маршрутизує ваші запити.",
+      "providerLabel": "Постачальник пошуку",
+      "providerGated": "Незабаром",
+      "keyLabel": "Ключ API",
+      "keyIsSet": "Ключ для {{provider}} встановлено.",
+      "keyNotSet": "Для {{provider}} не встановлено ключ.",
+      "setKeyButton": "Встановити ключ",
+      "updateKeyButton": "Оновити ключ",
+      "clearKeyButton": "Очистити ключ",
+      "keyInputPlaceholder": "Вставте свій ключ API для {{provider}}",
+      "keyUpdateError": "Не вдалося оновити ключ. Спробуйте ще раз.",
+      "showKeyAccessibilityLabel": "Показати ключ API",
+      "hideKeyAccessibilityLabel": "Сховати ключ API",
+      "resultCountLabel": "Результатів на пошук",
+      "resultCountDescription": "Менша кількість результатів залишає більше місця в контексті моделі.",
+      "consentTitle": "Пошукові запити залишають ваш пристрій",
+      "consentDescription": "Коли Pal шукає в інтернеті, ваш запит надсилається вибраному постачальнику через інтернет. Коли Pal читає сторінку, URL-адреса та вміст сторінки можуть натомість надсилатися до стандартного сервісу читання (r.jina.ai), якщо у вибраного постачальника немає власного засобу читання. Ключі та запити ніколи не надсилаються до PocketPal.",
+      "consentAccept": "Зрозуміло",
+      "consentRequired": "Прийміть застереження вище, щоб встановити ключ і ввімкнути пошук.",
+      "consentGivenTitle": "Пошук в інтернеті ввімкнено",
+      "consentGivenDescription": "Запити та читання сторінок можуть залишати ваш пристрій, як описано вище.",
+      "consentRevoke": "Відкликати",
+      "keyOptional": "Для {{provider}} ключ не потрібен. Додайте його, щоб отримати вищі ліміти."
+    },
+    "languageSheetTitle": "Мова",
+    "languageSearchPlaceholder": "Пошук мов",
+    "speculativeDecoding": "Спекулятивне декодування",
+    "speculativeDecodingDescription": "Використовуйте невелику модель-чернетку (або вбудовану модель MTP) для прогнозування токенів та прискорення генерації. Експериментальна функція.",
+    "speculativeNotMTPCapable": "Активна модель не підтримує спекулятивне декодування, і сумісної моделі-чернетки не вибрано, тож для неї воно лишається вимкненим і не діє. До моделей із підтримкою воно застосовується автоматично.",
+    "speculativeDraftModel": "Модель-чернетка",
+    "speculativeDraftModelDescription": "Створює чернетки токенів для активної моделі.",
+    "speculativeDraftModelNone": "Немає (вбудована MTP)",
+    "speculativeDraftModelIgnoredOverridden": "Активна модель має власну модель-чернетку, тож цей вибір ігнорується.",
+    "speculativeDraftModelIgnoredIncompatible": "Ця чернетка несумісна з активною моделлю, тож вона ігнорується.",
+    "speculativeDraftModelIgnoredNotCapable": "Ця модель не містить шарів-чернеток, тож її не можна використати як модель-чернетку.",
+    "speculativeDraftKeyCacheType": "Тип кешу ключів чернетки",
+    "speculativeDraftValueCacheType": "Тип кешу значень чернетки",
+    "speculativeDraftNGpuLayers": "Шари графічного процесора для чернетки",
+    "speculativeDraftNGpuLayersDescription": "Кількість шарів моделі-чернетки, які буде перенесено на графічний процесор.",
+    "speculativeDraftCacheTypeInactiveDescription": "Застосовується, щойно запрацює спекулятивне декодування.",
+    "purchases": {
+      "title": "Покупки",
+      "statusOwned": "Придбано",
+      "statusUnlocking": "Розблокування",
+      "link": "Увійдіть, щоб користуватися на інших пристроях"
+    },
+    "scanServerQr": "Сканувати QR-код сервера",
+    "scanQrPermissionMessage": "Дозвольте доступ до камери, щоб сканувати QR-код сервера. Адресу також можна ввести вручну.",
+    "scanQrNotServer": "Це не адреса сервера",
+    "scanQrUnavailable": "Тут сканувати не вийде. Введіть адресу сервера вручну.",
+    "scanQrNotReady": "Сканер готується. Адресу також можна ввести вручну.",
+    "routerModels": {
+      "cancel": "Скасувати",
+      "unloading": "Вивантаження…",
+      "stateLoading": "Завантаження",
+      "stateLoaded": "Завантажено",
+      "loadingPercent": "Завантаження, {{percent}} відсотків",
+      "unloadModel": "Вивантажити {{model}}",
+      "cancelLoadingModel": "Скасувати завантаження {{model}}",
+      "loadFailed": "Ця модель не завантажилася.",
+      "unloadNotReleased": "Сервер не звільнив цю модель.",
+      "serverUnreachable": "Не вдалося зв'язатися з цим сервером.",
+      "waitStopped": "Очікування цієї моделі припинено.",
+      "failureWithServerWords": "{{label}}\n\n“{{message}}”",
+      "dismiss": "Відхилити",
+      "unloadBoundTitle": "Вивантажити цю модель?",
+      "unloadBoundBody": "Цей чат її використовує. Вона завантажиться знову, коли ви надішлете наступне повідомлення.",
+      "unloadBoundConfirm": "Вивантажити"
+    },
+    "account": {
+      "title": "Обліковий запис",
+      "deleteAccount": "Видалити обліковий запис",
+      "confirmTitle": "Видалити обліковий запис?",
+      "confirmMessage": "Ваш обліковий запис PalsHub і його бібліотеку буде видалено назавжди. Pals, придбані через App Store або Google Play, можна буде відновити на цьому пристрої за допомогою вашого облікового запису в магазині. Записи про покупки зберігаються в анонімізованому вигляді з юридичних причин.",
+      "confirmWithoutApple": "Не вдалося отримати підтвердження від Apple. Все одно видалити обліковий запис?",
+      "deleted": "Ваш обліковий запис видалено.",
+      "signInAgain": "Будь ласка, увійдіть знову",
+      "creatorSupport": "Облікові записи авторів видаляє наша команда підтримки: {{contact}}",
+      "failed": "Не вдалося видалити, спробуйте ще раз"
+    }
   },
   "memory": {
     "shortWarning": "Попередження про пам'ять",
     "multimodalWarning": "Цей пристрій може не мати достатніх ресурсів для роботи з мультимодальними моделями.",
     "memoryTight": "Не вистачає пам'яті",
-    "lowMemory": "Недостатньо пам'яті",
+    "lowMemory": "Бракує пам'яті",
     "memoryDetailMessage": "Ця модель потребує ~{{needed}}, але лише ~{{available}} вважається придатною для використання. Точність оцінок покращується в міру використання програми.",
     "estimatedMemory": "Орієнтовний обсяг пам'яті: ~{{size}}",
     "alerts": {
@@ -348,7 +433,11 @@
         "author": "Автор",
         "requiresProjectionModel": "Потрібна модель проекції",
         "downloadProjectionModel": "Завантажити модель прогнозування",
-        "viewModelCardOnHuggingFace": "Переглянути картку моделі на Hugging Face"
+        "viewModelCardOnHuggingFace": "Переглянути картку моделі на Hugging Face",
+        "visionSupported": "Підтримується",
+        "visionNotSupported": "Не підтримується",
+        "visionUnknown": "Невідомо",
+        "draftOnlyReason": "Модель лише для чернеток. Виберіть її в розділі «Налаштування» → «Спекулятивне декодування»."
       },
       "accessibility": {
         "expandDetails": "Розгорнути детальну інформацію",
@@ -409,7 +498,9 @@
       "multilingual": "Багатомовний",
       "rewriting": "Переписання",
       "creativity": "Творче письмо",
-      "vision": "Бачення"
+      "vision": "Бачення",
+      "mtp": "Спекулятивна (MTP)",
+      "mtpDraft": "Спекулятивна чернетка"
     },
     "hubRun": {
       "title": "Завантажити Модель",
@@ -457,16 +548,16 @@
     "supportProject": "Підтримайте проект",
     "supportProjectDescription": "Якщо вам подобається користуватися PocketPal AI, будь ласка, розгляньте можливість підтримати проект таким чином:",
     "githubButton": "Позначити зірочкою на GitHub",
-    "orText": "або",
     "orBy": "або за допомогою",
-    "sponsorButton": "Станьте спонсором",
     "versionCopiedTitle": "Скопійовано версію",
     "versionCopiedDescription": "Інформація про версію скопійована в буфер обміну",
     "privacyPolicy": "Політика конфіденційності",
     "termsOfService": "Умови надання послуг",
     "tour": "Огляд",
     "tourDescription": "Перегляньте вітальні екрани ще раз, щоб дізнатися, що пропонує PocketPal AI.",
-    "showIntroButton": "Показати вступ знову"
+    "showIntroButton": "Показати вступ знову",
+    "openSourceNotices": "Повідомлення щодо програмного забезпечення з відкритим кодом",
+    "phononNoticesCredit": "Модель голосу Phonon та голоси від Gradium, що розповсюджуються за ліцензією Apache-2.0. Створено на базі Pocket TTS та кодека Mimi від Kyutai."
   },
   "feedback": {
     "title": "Надіслати Відгук",
@@ -515,7 +606,10 @@
       "tokensPerSec": "{{value}} токенів/сек",
       "ttft": "{{value}} мс TTFT",
       "interrupted": "Перервано",
-      "truncated": "Перервано — ймовірно, контекст вичерпано"
+      "truncated": "Перервано — ймовірно, контекст вичерпано",
+      "draftAccepted": "чернетка: {{accepted}}/{{total}} ({{pct}}%)",
+      "promptTokensPerSec": "{{value}} токенів запиту/сек",
+      "cachedTokens": "{{value}} з кешу"
     },
     "exportUtils": {
       "fileSaved": "Файл збережено",
@@ -549,7 +643,7 @@
       "activateModelButton": "Вибрати модель",
       "loading": "Завантаження...",
       "gettingReadyTitle": "{{name}} готується",
-      "gettingReadyDescription": "Ми повідомимо, щойно ваш приятель буде готовий до спілкування. Натисніть банер угорі, щоб побачити, як справи."
+      "gettingReadyDescription": "Ми повідомимо вас, щойно ваш Pal зможе почати чат. Натисніть на банер у верхній частині екрана, щоб дізнатися, як просуваються справи."
     },
     "chatInput": {
       "inputPlaceholder": "Повідомлення",
@@ -558,7 +652,8 @@
         "disableThinking": "Вимкнути режим мислення",
         "thinkingEnabled": "Увімкнено режим мислення",
         "thinkingDisabled": "Режим мислення вимкнено",
-        "thinkText": "Мислення"
+        "thinkText": "Мислення",
+        "cycleEffort": "Зусилля на міркування: {{level}}. Подвійний дотик, щоб перемкнути рівень зусиль"
       }
     },
     "contentReportSheet": {
@@ -709,7 +804,8 @@
       "exportCurrentSession": "Експортувати поточну сесію",
       "exportAllSessions": "Експортувати всі сесії",
       "exportChatSession": "Експортувати сеанс чату",
-      "importSessions": "Імпортувати сесії"
+      "importSessions": "Імпортувати сесії",
+      "exportCurrentSessionMarkdown": "Експортувати як Markdown"
     },
     "hfTokenSheet": {
       "title": "Токен Hugging Face",
@@ -741,7 +837,20 @@
     },
     "modelSettingsSheet": {
       "modelSettings": "Налаштування Моделі",
-      "saveChanges": "Зберегти зміни"
+      "saveChanges": "Зберегти зміни",
+      "reasoningSection": "Міркування",
+      "isReasoningModel": "Модель із міркуванням",
+      "isReasoningModelHelp": "Показувати елемент керування мисленням для цієї моделі, навіть якщо його не визначено автоматично.",
+      "supportsEffort": "Підтримує градації зусиль",
+      "effortValues": "Рівні зусиль, які підтримує ця модель",
+      "effortLevels": {
+        "minimal": "Мінімальний",
+        "low": "Низький",
+        "medium": "Середній",
+        "high": "Високий",
+        "xhigh": "Дуже високий",
+        "max": "Максимальний"
+      }
     },
     "modelsHeaderRight": {
       "menuTitleHf": "Моделі Hugging Face",
@@ -773,12 +882,16 @@
       "talentNames": {
         "render_html": "Попередній перегляд HTML",
         "calculate": "Математичні вирази",
-        "datetime": "Дата й час"
+        "datetime": "Дата й час",
+        "web_search": "Пошук в інтернеті",
+        "read_url": "Читання веб-сторінки"
       },
       "talentDescriptions": {
         "render_html": "Відображати HTML-документи вбудовано в чаті",
         "calculate": "Обчислення математичних виразів",
-        "datetime": "Отримати поточну дату й час"
+        "datetime": "Отримати поточну дату й час",
+        "web_search": "Пошук актуальної інформації в інтернеті (потрібен ключ API в налаштуваннях)",
+        "read_url": "Читання повного вмісту веб-сторінки (потрібен ключ API в налаштуваннях)"
       },
       "greeting": {
         "sectionLabel": "Привіт",
@@ -887,7 +1000,8 @@
       },
       "warnings": {
         "promptChanged": "Системний запит було змінено вручну"
-      }
+      },
+      "generationBusy": "Відповідь ще генерується. Спробуйте ще раз, коли вона завершиться."
     },
     "sidebarContent": {
       "menuItems": {
@@ -921,8 +1035,11 @@
         "threeWeeksAgo": "3 тижні тому",
         "fourWeeksAgo": "4 тижні тому",
         "lastMonth": "Минулого місяця",
-        "older": "Старші"
-      }
+        "older": "Старші",
+        "pinned": "Закріплені"
+      },
+      "pin": "Закріпити",
+      "unpin": "Відкріпити"
     },
     "usageStats": {
       "tooltip": {
@@ -963,6 +1080,13 @@
     "toolMetrics": {
       "tokens": "{{count}} токен",
       "elapsed": "{{seconds}} сек"
+    },
+    "completionSettings": {
+      "serverDefault": "типове значення сервера",
+      "usingServerDefault": "Використовується значення сервера за замовчуванням: {{value}}",
+      "usingServerDefaultUnreported": "Використовується значення сервера за замовчуванням (не вказано)",
+      "resetToServerDefault": "Типове значення сервера: {{value}} · Скинути",
+      "resetToServerDefaultAccessibilityLabel": "Скинути {{name}} до значення сервера за замовчуванням, {{value}}"
     }
   },
   "palsScreen": {
@@ -1016,8 +1140,6 @@
       "download": "Завантажити",
       "getFree": "Отримати Безкоштовно"
     },
-    "premiumPalDescription": "Преміум-користувач із спільноти palshub.ai",
-    "premiumInfoText": "Завітайте на сайт palshub.ai, щоб знайти нових друзів",
     "sortOptions": {
       "newest": "Новійша",
       "oldest": "Старіша",
@@ -1035,21 +1157,54 @@
       "categories": "Категорії",
       "tags": "Теги",
       "systemPrompt": "Системне повідомлення",
-      "downloaded": "Завантажено",
+      "downloaded": "Завантажений",
       "success": "Успіх",
       "palAddedToCollection": "Pal додано до вашої колекції!",
       "error": "Помилка",
       "failedToLoadDetails": "Не вдалося завантажити інформацію про Pal",
       "failedToDownload": "Не вдалося завантажити pal",
-      "premiumPalMessage": "Це Преміум-Pal.\n• Якщо ви вже розблокували його за допомогою свого облікового запису Palshub, просто увійдіть, щоб переглянути повну інформацію.\n• Ще не розблокували? Зайдіть у додаток palshub.ai, щоб дізнатися більше.",
-      "notAvailable": "Н/Д",
-      "buyOnPalshub": "Купити на Palshub",
-      "finalizingPurchase": "Завершується оформлення вашої покупки…",
-      "processingPurchase": "Обробка — доступ буде відкрито незабаром.",
-      "checkoutSessionExpired": "Термін дії вашої сесії закінчився. Увійдіть знову, щоб продовжити.",
-      "signInAgain": "Увійти знову",
-      "palNotAvailable": "Цей pal наразі недоступний для покупки.",
-      "checkoutFailed": "Щось пішло не так. Спробуйте ще раз."
+      "notAvailable": "Н/Д"
+    },
+    "purchase": {
+      "buy": "{{price}}",
+      "open": "Відкрити",
+      "install": "Встановити",
+      "pending": "В очікуванні",
+      "unlocking": "Розблокування",
+      "retry": "Повторити",
+      "supportCode": "Код підтримки: {{code}}",
+      "noLongerAvailable": "Цей Pal більше недоступний. Ви можете {{refundLink}}.",
+      "refundLink": "попросити в Apple повернення коштів",
+      "notCompleted": "Не вдалося завершити цю покупку. Google поверне вам кошти.",
+      "withdrawnRefunding": "Цей Pal знято з продажу. Зверніться до підтримки щодо повернення коштів.",
+      "invalid": "Не вдалося підтвердити цю покупку.",
+      "heldInvalid": "Не вдалося розблокувати цю покупку. Зверніться до підтримки й назвіть цей код.",
+      "recommendedModel": "Рекомендована модель",
+      "sampleExchange": "Приклад розмови",
+      "signInLine": "Вже придбали? Увійдіть",
+      "licenseNotice": "Ви купуєте ліцензію на використання цього Pal.",
+      "termsOfSale": "Умови продажу",
+      "appleMediaTerms": "Умови медійних сервісів Apple",
+      "linkPrompt": "Увійдіть, щоб користуватися ним і на інших своїх пристроях",
+      "linkSignIn": "Увійти",
+      "dismiss": "Не зараз",
+      "linkConflict": "Ці покупки прив'язані до іншого облікового запису.",
+      "restorePurchases": "Відновити покупки",
+      "badgePending": "В очікуванні",
+      "badgeUnlocking": "Розблоковується",
+      "badgeUpdate": "Доступне оновлення",
+      "updatePrompt": "Доступна нова версія від автора.",
+      "updatePromptWithNote": "Доступна нова версія від автора: {{note}}.",
+      "updateButton": "Оновити",
+      "updateConfirmText": "Ваші зміни в частинах, які змінив автор, буде замінено.",
+      "updateConfirm": "Оновити",
+      "updateCancel": "Скасувати",
+      "modelStep": {
+        "download": "Завантажити · {{size}}",
+        "startChat": "Почати чат",
+        "needsMemory": "Для найменшої моделі цього Pal потрібен пристрій з обсягом пам'яті не менше {{size}}.",
+        "noModelFits": "Цьому пристрою не вистачає пам'яті для цього Pal."
+      }
     }
   },
   "validation": {
@@ -1163,7 +1318,21 @@
     "increaseContextReloading": "Перезавантаження моделі з більшим контекстом…",
     "increaseContextSuccess": "Контекст збільшено до {{target}} токенів.",
     "increaseContextFailure": "Не вдалося збільшити розмір контексту. Було відновлено попереднє значення.",
-    "palLoadHint": "Цей pal зазвичай потребує більше місця, ніж дозволяє поточний розмір контексту."
+    "palLoadHint": "Цей pal зазвичай потребує більше місця, ніж дозволяє поточний розмір контексту.",
+    "webSearch": {
+      "searched": "Виконано пошук: {{query}}",
+      "noResults": "Немає результатів",
+      "noResultsFor": "Немає результатів для {{query}}",
+      "resultsCount": "{{count}} результатів",
+      "resultsCountOne": "1 результат",
+      "searchResultsTitle": "Результати пошуку",
+      "showResultsAccessibilityLabel": "Показати результати веб-пошуку для {{query}}",
+      "openLinkError": "Не вдалося відкрити це посилання."
+    },
+    "contextFullRemote": "У розмові закінчилося місце. Почніть новий чат.",
+    "speculativeInitFailed": "Цьому пристрою не вдалося запустити спекулятивне декодування для цієї моделі — найімовірніше, бракує пам'яті для контексту чернетки. Вимкніть спекулятивне декодування в розділі «Налаштування» → «Розширені налаштування» та спробуйте ще раз.",
+    "routerLoading": "Завантаження моделі…",
+    "routerLoadingPercent": "Завантаження моделі · {{percent}}%"
   },
   "benchmark": {
     "title": "Бенчмарк",
@@ -1189,7 +1358,8 @@
       "testWarning": "Примітка: Тест для більших моделей може тривати до 2–5 хвилин, і його неможливо перервати після запуску.",
       "keepScreenOpen": "Будь ласка, не закривайте це вікно.",
       "initializingModel": "Ініціалізація моделі...",
-      "modelMaxValue": "(макс: {{maxValue}})"
+      "modelMaxValue": "(макс: {{maxValue}})",
+      "testFailed": "Не вдалося запустити тест. Дочекайтеся завершення відповіді та спробуйте ще раз."
     },
     "dialogs": {
       "advancedSettings": {
@@ -1397,7 +1567,11 @@
       "tr": "Турецька",
       "uk": "Українська",
       "vi": "В’єтнамська"
-    }
+    },
+    "engineChipPhonon": "Phonon",
+    "enginePhononTagline": "Швидко запускається та не вимагає багато оперативної пам’яті. Тільки англійською мовою.",
+    "enginePhononCredit": "Модель та голоси від Gradium (Apache-2.0), створені на основі Mimi від Kyutai.",
+    "engineTierNatural": "природна англійська"
   },
   "htmlPreview": {
     "defaultTitle": "Попередній перегляд",
@@ -1501,6 +1675,163 @@
   "downloadBanner": {
     "titleByPal": "{{name}} завантажується",
     "titleByModel": "{{name}} завантажується",
-    "extraInProgress": "+{{count}} ще триває"
+    "extraInProgress": "+{{count}} ще триває",
+    "failedTitle": "Завантаження не завершилося",
+    "retry": "Повторити"
+  },
+  "voiceInput": {
+    "micLabel": "Диктувати",
+    "recordingLabel": "Записується",
+    "stopLabel": "Зупинитися і зробити транскрипцію",
+    "cancelLabel": "Скасувати голосовий ввід",
+    "transcribingLabel": "Транскрибується…",
+    "setupLabel": "Налаштування голосового введення",
+    "settingTitle": "Голосовий ввід",
+    "settingDescription": "Натисніть на значок мікрофона в чаті, щоб диктувати; мова транскрибується на вашому пристрої.",
+    "unsupportedDeviceHelper": "Цей пристрій не відповідає рекомендованим технічним характеристикам. Голосовий ввід, ймовірно, працюватиме повільно або взагалі не працюватиме.",
+    "spokenLanguageLabel": "Розмовна мова",
+    "spokenLanguageAuto": "Автоматичне виявлення",
+    "spokenLanguageDetected": "Визначено автоматично: {{language}}",
+    "resetLanguageCta": "Скинути",
+    "recordingLanguageAuto": "Мова: автоматично",
+    "recordingLanguage": "Мова: {{code}} (натисніть, щоб скинути налаштування)",
+    "waitingForChatLabel": "Транскрибування після завершення відповіді…",
+    "tierSizeLabel": "{{sizeMb}} МБ",
+    "installCta": "Завантажити",
+    "downloadingLabel": "Завантажується…",
+    "retryCta": "Спробувати ще раз",
+    "removeCta": "Вилучити",
+    "errorPermissionDenied": "Для голосового введення потрібен доступ до мікрофона.",
+    "errorPermissionBlocked": "Доступ до мікрофона заблоковано. Увімкніть його в налаштуваннях.",
+    "errorTranscribeFailed": "Не вдалося розпізнати текст — спробуйте ще раз.",
+    "errorNotInstalled": "Завантажте голосову модель, щоб користуватися голосовим введенням.",
+    "errorInsufficientMemory": "Для голосового введення з цією моделлю чату недостатньо пам'яті. Спробуйте використовувати меншу модель.",
+    "errorMicUnavailable": "Мікрофон не реагує. Спробуйте ще раз або перейдіть до меншої моделі чату.",
+    "errorTranscriptPartial": "Частину надиктованого не вдалося транскрибувати.",
+    "openSettingsLabel": "Відкрити налаштування",
+    "insufficientStorage": "Недостатньо місця — звільніть {{requiredMb}} МБ для встановлення цієї моделі (доступно {{freeMb}} МБ).",
+    "setupSheetTitle": "Налаштувати голосовий ввід",
+    "setupSheetBody": "Одне швидке завантаження — і ви зможете диктувати в автономному режимі.",
+    "tierNameBase": "Base",
+    "tierNameSmall": "Small",
+    "tierNameLargeTurbo": "Large Turbo",
+    "tierHintBase": "За замовчуванням, швидка",
+    "tierHintSmall": "Точніша, але повільніша. Краще для інших мов",
+    "tierHintLargeTurbo": "Дуже повільна на більшості телефонів",
+    "useCta": "Використати",
+    "inUseLabel": "Використовується",
+    "modelSectionHelper": "Використовується для голосового вводу та голосового режиму без рук.",
+    "memoryAlertTitle": "Пам'яті не вистачає",
+    "memoryAlertBody": "Голосове введення потребує пам'яті на додачу до цієї моделі чату. Це може працювати дуже повільно, або програма може закритися.",
+    "memoryAlertTryAnyway": "Спробувати все одно"
+  },
+  "plus": {
+    "eyebrow": "PocketPal Plus",
+    "headline": "Розкрийте локальний ШІ на повну.",
+    "subline": "Завдяки «Plus» PocketPal залишається безкоштовним і відкритим програмним забезпеченням. Додаткові функції — це наш знак вдячності.",
+    "unsupportedSubline": "Додаткові функції на цьому телефоні поки що не працюють. Ви все одно можете підтримати PocketPal.",
+    "thanksHeadline": "Дякуємо за те, що допомагаєте підтримувати роботу PocketPal.",
+    "thanksSubline": "На цьому пристрої функція «Plus» розблокована.",
+    "features": {
+      "handsFreeVoice": "Голосовий режим без рук",
+      "localApiServer": "Локальний сервер API"
+    },
+    "ready": "Доступно",
+    "needsRam": "Потрібно {{gb}} ГБ ОЗП",
+    "comingSoon": "Незабаром",
+    "speedLine": "Швидкість залежить від вашого телефону та моделі ШІ.",
+    "inDevelopment": "Функції в розробці можуть змінитися або не вийти зовсім.",
+    "priceCaption": "Сплатіть стільки, скільки вважаєте за потрібне. Будь-яка сума надає доступ до однакових функцій.",
+    "buyError": "Покупка не відбулася. Спробуйте ще раз.",
+    "getPlus": "Отримати Plus · {{price}}",
+    "getPlusAnyway": "Все одно отримати Plus · {{price}}",
+    "loading": "Завантаження",
+    "pending": "В очікуванні",
+    "pendingTitle": "Очікуємо, поки магазин підтвердить ваш платіж.",
+    "pendingBody": "Коли платіж пройде, Plus розблокується сам. Цей екран можна закрити.",
+    "unavailableTitle": "Покупки зараз недоступні.",
+    "unavailableBody": "Не вдалося зв'язатися з магазином. Спробуйте пізніше або відновіть попередню покупку.",
+    "done": "Готово",
+    "oneTimePurchase": "Одноразова покупка",
+    "restore": "Відновити",
+    "openSource": "Відкритий код ↗",
+    "licence": "Одноразова покупка ліцензії на використання Plus.",
+    "terms": "Умови",
+    "appleMediaTerms": "Умови медійних сервісів Apple",
+    "noPurchaseFound": "Покупки Plus не знайдено.",
+    "restoreFailed": "Не вдалося зв'язатися з магазином. Спробуйте ще раз.",
+    "sidebar": {
+      "title": "PocketPal Plus",
+      "unlocked": "Розблоковано",
+      "subtitleOne": "{{first}}",
+      "subtitleTwo": "{{first}}, {{second}}",
+      "subtitleMore": "{{first}}, {{second}} та інше"
+    },
+    "optIn": "Вимк",
+    "optInNote": "На цьому телефоні ця функція вимкнена. Якщо ви наважитеся, увімкніть її в налаштуваннях.",
+    "offInSettingsNote": "Вимкнено в налаштуваннях.",
+    "chatStaysFree": "Функція «Plus» є необов’язковою. Чат залишається безкоштовним.",
+    "chooseAmount": "Виберіть суму"
+  },
+  "voiceMode": {
+    "settingTitle": "Голосове керування без використання рук",
+    "settingDescription": "Поспілкуйтеся з моделлю в чаті та послухайте її відповіді.",
+    "unsupportedDeviceHelper": "На цьому телефоні програма може працювати повільно.",
+    "startingTitle": "Починаю",
+    "startingHint": "Завантаження функції розпізнавання мови та голосу. Перший раз це може зайняти трохи більше часу.",
+    "startFailed": "Не вдалося запустити голосовий режим. Спробуйте ще раз.",
+    "micFailed": "Не вдалося скористатися мікрофоном, тому голосовий режим завершився.",
+    "listeningTitle": "Слухає",
+    "listeningHint": "Коли закінчите, зробіть паузу або натисніть на хмаринку, щоб надіслати",
+    "thinkingTitle": "Думає",
+    "thinkingHint": "Натисніть на хмару, щоб скасувати",
+    "speakingTitle": "Розмовляє",
+    "speakingHint": "Натисніть на хмару, щоб перервати",
+    "mutedTitle": "Мікрофон вимкнено",
+    "mutedHint": "Натисніть на мікрофон, щоб знову почати говорити",
+    "errorTranscribe": "Не вдалося розпізнати. Спробуйте ще раз.",
+    "errorReply": "Не вдалося отримати відповідь. Спробуйте ще раз.",
+    "errorSpeech": "Не вдалося відтворити відповідь уголос.",
+    "pullDownHint": "Потягніть вниз, щоб переглянути чат",
+    "showChatLabel": "Показати чат",
+    "swipeUpHint": "Проведіть пальцем вгору, щоб перейти до голосового режиму",
+    "cloudLabel": "Хмаринка голосового режиму",
+    "openViewLabel": "Відкрити режим голосового перегляду",
+    "micSwitchLabel": "Мікрофон",
+    "endLabel": "Вийти з голосового режиму",
+    "setupTitle": "Налаштувати голосовий режим",
+    "setupBody": "На вашому телефоні працюють дві невеликі моделі, завдяки яким ви можете спілкуватися в автономному режимі.",
+    "sttRowTitle": "Розпізнавання мови",
+    "sttProgress": "{{done}} із {{total}}",
+    "sttDownloadFailed": "Завантаження не вдалося. Спробуйте ще раз.",
+    "installedLabel": "Встановлено",
+    "voiceRowTitle": "Голос",
+    "voiceRowReady": "{{voice}} · готовий",
+    "voiceRowMissing": "Оберіть природний голос. Системний голос не може говорити в голосовому режимі.",
+    "chooseVoiceCta": "Виберіть голос",
+    "micNote": "Далі ми попросимо надати доступ до мікрофона.",
+    "micDenied": "Для роботи голосового режиму потрібен доступ до мікрофона.",
+    "continueCta": "Продовжити",
+    "memoryTightTitle": "Пам'яті не вистачає",
+    "memoryTightBody": "У голосовому режимі одночасно завантажуються три моделі. На цьому телефоні це може працювати повільно, або програма може закритися.",
+    "memoryWontFitTitle": "Недостатньо пам'яті",
+    "memoryWontFitBody": "Розпізнавання мови не поміститься в пам'яті разом із цією моделлю чату. Щоб скористатися голосовим режимом, оберіть меншу модель.",
+    "memoryChatRow": "Модель чату · {{name}}",
+    "memoryVoiceRow": "Голос · {{name}}",
+    "memoryNeeded": "Потрібно",
+    "continueAnywayCta": "Продовжити все одно",
+    "chooseSmallerModelCta": "Оберіть меншу модель",
+    "startLabel": "Увімкнути голосовий режим",
+    "startLockedLabel": "Голосовий режим без рук, PocketPal Plus",
+    "startLockedHint": "Відкриває короткий попередній перегляд. Набір тексту та диктування залишаються безкоштовними.",
+    "teaserTitle": "Голосова розмова — це функція Plus",
+    "teaserBody": "Розмовляйте, не тримаючи трубку. Пристрій відповідає вголос.",
+    "teaserGetPlus": "Отримати Plus",
+    "teaserKeepTyping": "Продовжуйте друкувати, це безкоштовно",
+    "sttRowModel": "Whisper {{tier}} · {{size}}",
+    "memorySttRowModel": "Розпізнавання мови · Whisper {{tier}}",
+    "voiceRowFileMissing": "{{voice}} ще не завантажено. Натисніть «Продовжити» — і ми його завантажимо.",
+    "voiceRowFileFailed": "Не вдалося завантажити {{voice}}. Підключіться до інтернету та спробуйте ще раз.",
+    "memoryNeededOfTotal": "{{needed}} із {{total}} на цьому телефоні"
   }
 }

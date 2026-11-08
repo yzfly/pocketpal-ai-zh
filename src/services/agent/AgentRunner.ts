@@ -5,6 +5,7 @@ import type {
 } from '../../utils/completionTypes';
 import type {ChatMessage} from '../../utils/types';
 import type {AgentToolCall, AgentToolOutcome} from '../../utils/types';
+import {stopQuietly} from '../../utils/stopQuietly';
 
 import type {
   AgentEvent,
@@ -14,7 +15,12 @@ import type {
 } from './AgentRunner.types';
 import type {TalentResult} from '../talents/types';
 
-const DEFAULT_MAX_TURNS = 5;
+export const DEFAULT_MAX_TURNS = 5;
+
+const MAX_IN_FLIGHT_TOOL_CALLS = 4;
+
+const BUDGET_EXHAUSTED_NUDGE =
+  '(Tool budget exhausted. Answer now using only the information gathered above; if it is insufficient, say what is missing.)';
 
 /**
  * Bridge a synchronous-callback engine into an async iterator. The
@@ -116,15 +122,24 @@ function normalizeToolCallIds(
   }));
 }
 
-/**
- * Execute one tool call and produce an `AgentToolOutcome`. Errors are
- * captured as `result.type === 'error'`; the outcome is always
- * produced (never thrown) so the loop stays driven by the iterator.
- */
+const NO_FUNCTION_NAME = 'Unknown talent (no function name)';
+
+function cancelledOutcome(call: AgentToolCall): AgentToolOutcome {
+  const toolName = call.function?.name ?? '';
+  const summary = `${toolName || NO_FUNCTION_NAME}: cancelled`;
+  return {
+    callId: call.id,
+    toolName,
+    result: {type: 'error', summary, errorMessage: 'cancelled'},
+    responseContent: summary,
+  };
+}
+
 async function executeOne(
   call: AgentToolCall,
   allowedTalentNames: string[],
   talentLookup: (name: string) => ReturnType<AgentRunOptions['talentLookup']>,
+  signal?: AbortSignal,
 ): Promise<AgentToolOutcome> {
   const fnName = call.function?.name ?? '';
   const callId = call.id;
@@ -132,7 +147,7 @@ async function executeOne(
   if (!fnName || !allowedTalentNames.includes(fnName)) {
     const summary = fnName
       ? `Talent "${fnName}" is not enabled for this Pal`
-      : 'Unknown talent (no function name)';
+      : NO_FUNCTION_NAME;
     const result: TalentResult = {
       type: 'error',
       summary,
@@ -166,7 +181,9 @@ async function executeOne(
   }
 
   try {
-    const toolResult = await handler.execute(parsedArgs);
+    const toolResult = await (signal
+      ? handler.execute(parsedArgs, {signal})
+      : handler.execute(parsedArgs));
     return {
       callId,
       toolName: fnName,
@@ -253,29 +270,28 @@ export async function* runAgent(
 
   yield {type: 'run_started', messageId};
 
-  // When the consumer aborts mid-stream (e.g. user taps the stop
-  // button while the engine is generating tokens), the runner is the
-  // only layer that has BOTH the abort signal AND the engine handle —
-  // so it owns the abort→engine.stopCompletion translation. Without
-  // this, the signal would only be observed between turns and the
-  // in-flight engine.completion call could keep running native
-  // generation while the JS layer believed the run had stopped. The
-  // async IIFE handles all return shapes (Promise that resolves /
-  // rejects, sync function returning undefined, sync throw) without
-  // ever propagating an error out of the abort handler.
+  // The runner is the only layer holding both the abort signal and the
+  // engine, so it owns the abort -> engine.stopCompletion translation, for
+  // as long as a completion it started is unsettled.
+  const stopEngine = () => stopQuietly(() => engine.stopCompletion?.());
+  let unsettledCompletion: Promise<void> | null = null;
+  const started: Promise<AgentToolOutcome>[] = [];
+  const toolController = new AbortController();
   const onAbort = () => {
-    (async () => {
-      try {
-        await engine.stopCompletion?.();
-      } catch (err) {
-        console.warn('[agent] engine.stopCompletion failed:', err);
-      }
-    })();
+    toolController.abort();
+    if (unsettledCompletion) {
+      stopEngine();
+    }
   };
-  signal?.addEventListener('abort', onAbort);
+  signal?.addEventListener('abort', onAbort, {once: true});
+  if (signal?.aborted) {
+    toolController.abort();
+  }
+  const toolSignal = signal ? toolController.signal : undefined;
 
   let messages = initialParams.messages;
   let turn = 0;
+  let forceFinal = false;
   // Holds the engine's CompletionResult after each turn finishes.
   // Mutated from inside the streaming-bridge `.then` handler (the
   // `as CompletionResult | null` cast is a TS hint so that the
@@ -286,12 +302,15 @@ export async function* runAgent(
   const callIdSeed = Date.now();
 
   try {
-    while (turn < maxTurns) {
-      if (signal?.aborted) {
-        break;
-      }
+    while (turn < maxTurns || forceFinal) {
+      const isForcedFinal = forceFinal;
 
       yield {type: 'step_started', turn, isFollowUp: turn > 0};
+
+      if (signal?.aborted) {
+        yield {type: 'step_finished', turn, toolCalls: undefined};
+        break;
+      }
 
       // Per-iteration locals for marker detection. Declared INSIDE the
       // while body so each turn gets a fresh value automatically — no
@@ -309,7 +328,9 @@ export async function* runAgent(
 
       // Bridge engine streaming callback into the iterator.
       const queue = new EventQueue<AgentEvent>();
-      const turnParams: ApiCompletionParams = {...initialParams, messages};
+      const turnParams: ApiCompletionParams = isForcedFinal
+        ? {...initialParams, messages, tools: undefined}
+        : {...initialParams, messages};
 
       // Track engine failure separately so we can fully await the
       // promise (no unhandled rejection) before yielding the
@@ -345,7 +366,13 @@ export async function* runAgent(
             }
             if (delta.content) {
               accumulatedText += delta.content;
-              if (!markerSeenThisStep && triggerMarkers.length > 0) {
+              // Forced final has no tools, so a marker-shaped string in the
+              // answer must not flip the UI into tool-call mode.
+              if (
+                !isForcedFinal &&
+                !markerSeenThisStep &&
+                triggerMarkers.length > 0
+              ) {
                 const matched = triggerMarkers.find(m =>
                   accumulatedText.includes(m),
                 );
@@ -365,6 +392,7 @@ export async function* runAgent(
           engineError = err instanceof Error ? err : new Error(String(err));
           queue.finish();
         });
+      unsettledCompletion = completionPromise;
 
       // Drain the queue until the engine completes. The queue closes
       // when `completionPromise` resolves (success or failure both
@@ -380,6 +408,7 @@ export async function* runAgent(
       // Wait for the promise to settle (it can only fulfill at this
       // point; the .catch above swallows rejection into engineError).
       await completionPromise;
+      unsettledCompletion = null;
 
       if (engineError) {
         yield {type: 'run_failed', error: engineError};
@@ -391,7 +420,10 @@ export async function* runAgent(
       // writer lands them on step.toolCalls with ids that match the
       // upcoming outcomes by construction.
       const finishedResult = lastResult;
-      const rawToolCalls = finishedResult?.tool_calls ?? [];
+      // Forced final is text-only; ignore any tool_calls a confused model emits.
+      const rawToolCalls = isForcedFinal
+        ? []
+        : (finishedResult?.tool_calls ?? []);
       const callsWithoutMetrics =
         rawToolCalls.length === 0
           ? undefined
@@ -415,6 +447,10 @@ export async function* runAgent(
 
       yield {type: 'step_finished', turn, toolCalls: calls};
 
+      if (isForcedFinal) {
+        break;
+      }
+
       if (!finishedResult) {
         break;
       }
@@ -424,23 +460,56 @@ export async function* runAgent(
         break;
       }
 
-      const outcomes: AgentToolOutcome[] = [];
       for (const call of calls) {
         yield {type: 'tool_call_started', call};
-        const outcome = await executeOne(
-          call,
-          allowedTalentNames,
-          talentLookup,
-        );
+      }
+      const slots = calls.map(() => {
+        let resolve!: (outcome: AgentToolOutcome) => void;
+        let reject!: (error: unknown) => void;
+        const promise = new Promise<AgentToolOutcome>((res, rej) => {
+          resolve = res;
+          reject = rej;
+        });
+        promise.catch(() => {});
+        return {promise, resolve, reject};
+      });
+      let next = 0;
+      let running = 0;
+      const pump = () => {
+        while (next < calls.length) {
+          if (toolController.signal.aborted) {
+            for (; next < calls.length; next += 1) {
+              slots[next].resolve(cancelledOutcome(calls[next]));
+            }
+            return;
+          }
+          if (running >= MAX_IN_FLIGHT_TOOL_CALLS) {
+            return;
+          }
+          const slot = slots[next];
+          const pending = executeOne(
+            calls[next],
+            allowedTalentNames,
+            talentLookup,
+            toolSignal,
+          );
+          next += 1;
+          running += 1;
+          started.push(pending);
+          pending.then(slot.resolve, slot.reject).then(() => {
+            running -= 1;
+            pump();
+          });
+        }
+      };
+      pump();
+      const outcomes: AgentToolOutcome[] = [];
+      for (const slot of slots) {
+        const outcome = await slot.promise;
         outcomes.push(outcome);
         yield {type: 'tool_call_finished', outcome};
       }
 
-      // Stop-mid-tool: if the abort fired during execution, the
-      // outcomes for in-flight calls have been emitted (we don't
-      // cancel synchronous-ish talents). Bail out at this turn
-      // boundary; the next turn would just be a follow-up the user
-      // doesn't want.
       if (signal?.aborted) {
         break;
       }
@@ -464,6 +533,19 @@ export async function* runAgent(
         finishedResult.reasoning_content,
       );
       turn += 1;
+
+      if (turn >= maxTurns) {
+        // Cap reached mid tool-request: run one closing no-tools completion so
+        // the run never ends on an unanswered tool request.
+        forceFinal = true;
+        messages = [
+          ...(messages ?? []),
+          {
+            role: 'user',
+            content: BUDGET_EXHAUSTED_NUDGE,
+          } as unknown as NonNullable<ApiCompletionParams['messages']>[number],
+        ];
+      }
     }
 
     const result: AgentRunResult = {
@@ -483,8 +565,17 @@ export async function* runAgent(
     };
     yield {type: 'run_finished', result};
   } catch (error) {
+    toolController.abort();
     yield {type: 'run_failed', error: error as Error};
   } finally {
+    toolController.abort();
     signal?.removeEventListener('abort', onAbort);
+    if (unsettledCompletion) {
+      if (!signal?.aborted) {
+        stopEngine();
+      }
+      await unsettledCompletion;
+    }
+    await Promise.allSettled(started);
   }
 }

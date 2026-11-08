@@ -1,0 +1,82 @@
+import {profileFor} from '../api/servers';
+import type {Samplers} from './samplerParams';
+import {
+  Model,
+  ModelOrigin,
+  RemoteModelCaps,
+  RemoteSessionBinding,
+} from './types';
+
+/**
+ * Whether stored capabilities describe the backend the live session is bound
+ * to. Caps carry the url they were probed against; the session carries the url
+ * it was built with. A server edit moves neither, so this is the only
+ * comparison that answers "do these describe what we are talking to".
+ *
+ * No binding (or one for another model) means there is no live session to
+ * contradict, and an entry with no `probedUrl` predates the field — both are
+ * taken at face value.
+ */
+export function capsMatchBinding(
+  caps: RemoteModelCaps | undefined,
+  binding: RemoteSessionBinding | undefined,
+  modelId: string,
+): boolean {
+  if (!caps) {
+    return false;
+  }
+  if (!binding || binding.modelId !== modelId) {
+    return true;
+  }
+  return caps.probedUrl === undefined || caps.probedUrl === binding.url;
+}
+
+/**
+ * Resolve the effective capabilities of a remote model. The remote leg of
+ * `resolveModelCaps`, which is what every caller goes through.
+ *
+ * Capabilities that describe a different backend than the session is bound to
+ * resolve to unknown, which fails closed.
+ */
+export function resolveRemoteCaps(
+  model: Model | undefined,
+  remoteCaps: Record<string, RemoteModelCaps>,
+  binding: RemoteSessionBinding | undefined,
+): RemoteModelCaps {
+  if (!model || model.origin !== ModelOrigin.REMOTE) {
+    return {};
+  }
+
+  const perModel = remoteCaps[model.id];
+  if (!capsMatchBinding(perModel, binding, model.id)) {
+    return {};
+  }
+
+  const resolved: RemoteModelCaps = {};
+  if (perModel.contextLength !== undefined) {
+    resolved.contextLength = perModel.contextLength;
+  }
+  if (perModel.supportsVision !== undefined) {
+    resolved.supportsVision = perModel.supportsVision;
+  }
+  if (perModel.samplerDefaults !== undefined) {
+    resolved.samplerDefaults = perModel.samplerDefaults;
+  }
+  return resolved;
+}
+
+/**
+ * The server's own generation defaults for the live session: undefined
+ * outside a session on a server type that reports them, and a missing key
+ * for a default that was not reported.
+ */
+export function samplerDefaultsFor(
+  model: Model | undefined,
+  remoteCaps: Record<string, RemoteModelCaps>,
+  binding: RemoteSessionBinding | undefined,
+): Samplers | undefined {
+  if (!binding || !profileFor(binding.serverType).hasProps) {
+    return undefined;
+  }
+  return resolveRemoteCaps(model, remoteCaps, binding).samplerDefaults ?? {};
+}

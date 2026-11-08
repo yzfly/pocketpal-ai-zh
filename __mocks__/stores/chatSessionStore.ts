@@ -44,6 +44,7 @@ export const mockChatSessionStore = {
   saveDraft: jest.fn(),
   getDraft: jest.fn().mockReturnValue(''),
   clearDraft: jest.fn(),
+  restoreUnsentText: jest.fn(),
   // Selection mode state
   isSelectionMode: false,
   selectedSessionIds: new Set<string>(),
@@ -52,6 +53,8 @@ export const mockChatSessionStore = {
   deleteSession: jest.fn().mockResolvedValue(undefined),
   setActiveSession: jest.fn().mockResolvedValue(undefined),
   addMessageToCurrentSession: jest.fn().mockResolvedValue(undefined),
+  addMessageToSession: jest.fn().mockResolvedValue(undefined),
+  deleteMessageFromSession: jest.fn().mockResolvedValue(undefined),
   resetActiveSession: jest.fn(),
   updateSessionTitle: jest.fn().mockResolvedValue(undefined),
   updateSessionTitleBySessionId: jest.fn().mockResolvedValue(undefined),
@@ -89,7 +92,9 @@ export const mockChatSessionStore = {
   deselectAllSessions: jest.fn(),
   bulkDeleteSessions: jest.fn().mockResolvedValue(undefined),
   bulkExportSessions: jest.fn().mockResolvedValue(undefined),
+  togglePinSession: jest.fn().mockResolvedValue(undefined),
   dateGroupNames: {
+    pinned: 'Pinned',
     today: 'Today',
     yesterday: 'Yesterday',
     thisWeek: 'This week',
