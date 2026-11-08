@@ -12,6 +12,10 @@ import type {Engine, Voice} from '../types';
 import {ensureVoiceFileAt} from '../voiceFileDownload';
 import {ensureVoiceFile, hasVoiceFile} from '../voiceFiles';
 
+// 中文版镜像期望值：独立于 applyHfMirror 实现构造，避免同义反复断言
+const toMirror = (url: string) =>
+  url.replace('https://huggingface.co', 'https://hf-mirror.com');
+
 const kokoroDir = '/path/to/documents/tts/kokoro';
 const kittenDir = '/path/to/documents/tts/kitten';
 const supertonicDir = '/path/to/documents/tts/supertonic';
@@ -101,7 +105,7 @@ describe('voice files', () => {
       });
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: `${KOKORO_VOICES_BASE_URL}/af_bella.bin`,
+          fromUrl: toMirror(`${KOKORO_VOICES_BASE_URL}/af_bella.bin`),
           toFile: `${bellaPath}.part`,
         }),
       );
@@ -176,7 +180,7 @@ describe('voice files', () => {
 
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: `${SUPERTONIC_VOICES_BASE_URL}/F2.json`,
+          fromUrl: toMirror(`${SUPERTONIC_VOICES_BASE_URL}/F2.json`),
           toFile: `${supertonicDir}/F2.json.part`,
         }),
       );
@@ -355,7 +359,9 @@ describe('voice files', () => {
 
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: `${KITTEN_MODEL_BASE_URL}/voices/expr-voice-2-f.json`,
+          fromUrl: toMirror(
+            `${KITTEN_MODEL_BASE_URL}/voices/expr-voice-2-f.json`,
+          ),
           toFile: `${kittenDir}/voices/expr-voice-2-f.json.part`,
         }),
       );

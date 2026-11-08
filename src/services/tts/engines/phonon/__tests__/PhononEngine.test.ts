@@ -147,12 +147,12 @@ describe('PhononEngine', () => {
         PHONON_ANDROID_FILES.length + PHONON_VOICE_PINS.length,
       );
       expect(urls).toContain(
-        'https://huggingface.co/gradium/phonon-31m-en/resolve/52433c46975bfa13144c56204c9f4ee1c5b148aa/model.q8.gguf',
+        'https://hf-mirror.com/gradium/phonon-31m-en/resolve/52433c46975bfa13144c56204c9f4ee1c5b148aa/model.q8.gguf',
       );
       const zoey = PHONON_VOICE_PINS.find(v => v.name === 'Zoey')!;
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({
-          fromUrl: `https://huggingface.co/gradium/phonon-voices/resolve/da6c9ec0d47be8df5c87c730a3aa97187f3229c3/voices/${zoey.voiceId}.safetensors`,
+          fromUrl: `https://hf-mirror.com/gradium/phonon-voices/resolve/da6c9ec0d47be8df5c87c730a3aa97187f3229c3/voices/${zoey.voiceId}.safetensors`,
           toFile: `${ANDROID_DIR}/voices/Zoey.safetensors`,
         }),
       );
@@ -246,7 +246,7 @@ describe('PhononEngine', () => {
 
       const urls = downloadedUrls();
       expect(urls[0]).toMatch(
-        /^https:\/\/huggingface\.co\/palshub\/phonon-31m-en-coreml\/resolve\/[^/]+\/phonon-31m-en-coreml\.manifest\.tsv$/,
+        /^https:\/\/hf-mirror\.com\/palshub\/phonon-31m-en-coreml\/resolve\/[^/]+\/phonon-31m-en-coreml\.manifest\.tsv$/,
       );
       expect(RNFS.downloadFile).toHaveBeenCalledWith(
         expect.objectContaining({toFile: `${IOS_DIR}/manifest.tsv`}),

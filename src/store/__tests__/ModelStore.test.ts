@@ -42,6 +42,7 @@ import {classify} from '../../services/deviceRules/classify';
 import {getVisionModelSizeBreakdown} from '../../utils/multimodalHelpers';
 import {MODEL_LIST_VERSION} from '../ModelStore';
 import * as parseModule from '../../services/deviceRules/parse';
+import * as chinesePresets from '../chineseModelPresets';
 import {parseDeviceRules} from '../../services/deviceRules/parse';
 import {fetchRules} from '../../services/deviceRules/rules';
 import {readDeviceSignals} from '../../services/deviceRules/signals';
@@ -1409,6 +1410,11 @@ describe('ModelStore', () => {
       });
 
       it('drops only the gated floor presets when the app version is unknown', async () => {
+        // 中文版用 Spark-X2.6 取代了上游带版本门槛的 Spark-X2.5 预设；
+        // 这里关掉中文偏好，只验证上游的版本门槛逻辑本身。
+        const prefsSpy = jest
+          .spyOn(chinesePresets, 'applyChinesePreferences')
+          .mockImplementation(rules => rules);
         const gatedIds = new Set(
           Object.values(
             androidBundledRules.tiers as Record<
@@ -1436,6 +1442,7 @@ describe('ModelStore', () => {
         expect(unknown.map(m => m.id)).toEqual(
           knownIds.filter(id => !gatedIds.has(id)),
         );
+        prefsSpy.mockRestore();
       });
     });
 

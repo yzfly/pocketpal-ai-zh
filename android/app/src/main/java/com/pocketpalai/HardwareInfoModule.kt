@@ -211,6 +211,7 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
       }
 
       readMaxCpuFreqMhz()?.let { cpuInfo.putInt("maxFreqMhz", it) }
+      readPerfCoreCount()?.let { cpuInfo.putInt("perfCoreCount", it) }
 
       promise.resolve(cpuInfo)
     } catch (e: Exception) {
@@ -277,6 +278,24 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
         }
       }
       if (maxKhz > 0L) (maxKhz / 1000).toInt() else null
+    } catch (e: Throwable) {
+      null
+    }
+  }
+
+  // 中文版：统计“性能核”数量，供默认推理线程数使用。最高频率低于全机最高
+  // 频率 75% 的核心视为小核（如骁龙 865 的 A55 1.8GHz vs 2.84GHz）；没有
+  // 明显小核簇的芯片（如骁龙 8 Elite）会返回全部核心数。读不到时返回 null。
+  private fun readPerfCoreCount(): Int? {
+    return try {
+      val coreCount = Runtime.getRuntime().availableProcessors().coerceIn(1, 16)
+      val freqs = (0 until coreCount).mapNotNull { core ->
+        val node = File("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_max_freq")
+        if (node.exists()) node.readText().trim().toLongOrNull() else null
+      }.filter { it > 0L }
+      if (freqs.size < coreCount) return null
+      val maxKhz = freqs.maxOrNull() ?: return null
+      freqs.count { it * 4 >= maxKhz * 3 }
     } catch (e: Throwable) {
       null
     }

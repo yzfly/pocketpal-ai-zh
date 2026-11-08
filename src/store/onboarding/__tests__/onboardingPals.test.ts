@@ -5,6 +5,10 @@ import {
   resolvePalForTopic,
 } from '../onboardingPals';
 import {TOPIC_KEYS} from '../types';
+import {
+  chineseExtraCandidates,
+  chineseSystemPromptSuffix,
+} from '../../chineseModelPresets';
 
 const ID_PATTERN = /^[^/]+\/[^/]+\/[^/]+\.gguf$/;
 
@@ -77,4 +81,28 @@ describe('onboardingPals', () => {
       expect(entry.author.length).toBeGreaterThan(0);
     },
   );
+
+  describe('中文版引导页选型', () => {
+    const curatedIds = new Set(
+      Object.values(chineseExtraCandidates)
+        .flat()
+        .map(c => `${c.hfRepo}/${c.hfFilename}`),
+    );
+
+    it.each(allEntries)(
+      '%s/%s 条目来自中文版推荐列表（与推荐预设的 id 一致）',
+      (_palKey, _tier, entry) => {
+        expect(curatedIds.has(entryId(entry))).toBe(true);
+      },
+    );
+
+    it.each(ONBOARDING_PALS.map(p => [p.key, p] as const))(
+      'pal %s 三档按体积递增，且系统提示词带中文回答约定',
+      (_key, pal) => {
+        const sizes = pal.models.map(m => m.sizeBytes);
+        expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
+        expect(pal.systemPrompt.endsWith(chineseSystemPromptSuffix)).toBe(true);
+      },
+    );
+  });
 });

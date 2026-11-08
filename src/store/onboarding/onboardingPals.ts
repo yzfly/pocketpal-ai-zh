@@ -22,6 +22,11 @@
  */
 
 import type {TopicKey} from './types';
+import {
+  chineseOnboardingModels,
+  chineseSystemPromptSuffix,
+} from '../chineseModelPresets';
+import type {RuleCandidate} from '../../services/deviceRules/types';
 
 export type OnboardingModelTier = 'quick' | 'balanced' | 'best';
 
@@ -346,21 +351,56 @@ const PAL_MUSE: OnboardingPalDef = {
   ],
 };
 
+// 中文版：把上游写死的三档模型换成 chineseModelPresets 的推荐（见该文件说明），
+// 并在系统提示词后追加中文回答约定。上游定义保持原样，方便后续同步。
+const candidateEntry = (
+  tier: OnboardingModelTier,
+  c: RuleCandidate,
+): OnboardingPalModelEntry =>
+  palEntry({
+    tier,
+    recommended: tier === 'balanced',
+    repo: c.hfRepo,
+    filename: c.hfFilename,
+    params: c.params ?? 0,
+    displayName: c.displayName ?? c.model,
+    sizeBytes: c.sizeBytes ?? 0,
+  });
+
+const withChineseModels = (pal: OnboardingPalDef): OnboardingPalDef => {
+  const picks = chineseOnboardingModels[pal.key];
+  return {
+    ...pal,
+    systemPrompt: pal.systemPrompt + chineseSystemPromptSuffix,
+    models: [
+      candidateEntry('quick', picks.quick),
+      candidateEntry('balanced', picks.balanced),
+      candidateEntry('best', picks.best),
+    ],
+  };
+};
+
+const ZH_PIP = withChineseModels(PAL_PIP);
+const ZH_CODIE = withChineseModels(PAL_CODIE);
+const ZH_SAGE = withChineseModels(PAL_SAGE);
+const ZH_ECHO = withChineseModels(PAL_ECHO);
+const ZH_MUSE = withChineseModels(PAL_MUSE);
+
 export const ONBOARDING_PALS: readonly OnboardingPalDef[] = [
-  PAL_PIP,
-  PAL_CODIE,
-  PAL_SAGE,
-  PAL_ECHO,
-  PAL_MUSE,
+  ZH_PIP,
+  ZH_CODIE,
+  ZH_SAGE,
+  ZH_ECHO,
+  ZH_MUSE,
 ];
 
 export const TOPIC_TO_PAL: Record<TopicKey, OnboardingPalDef> = {
-  smartchat: PAL_PIP,
-  coding: PAL_CODIE,
-  education: PAL_SAGE,
-  roleplay: PAL_ECHO,
-  creative_writing: PAL_MUSE,
-  else: PAL_PIP,
+  smartchat: ZH_PIP,
+  coding: ZH_CODIE,
+  education: ZH_SAGE,
+  roleplay: ZH_ECHO,
+  creative_writing: ZH_MUSE,
+  else: ZH_PIP,
 };
 
 export const resolvePalForTopic = (topic: TopicKey | null): OnboardingPalDef =>

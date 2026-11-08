@@ -561,7 +561,7 @@
     "openSourceNotices": "开源声明",
     "phononNoticesCredit": "Phonon 语音模型与语音由 Gradium 提供，采用 Apache-2.0 许可。基于 Pocket TTS 和 Kyutai 的 Mimi 编解码器构建。",
     "chineseEdition": "中文版",
-    "chineseEditionDescription": "中文版由「云中江树」维护：内置 HF 镜像加速、Qwen 模型优先推荐、默认中文界面。",
+    "chineseEditionDescription": "中文版由「云中江树」维护：内置 HF 镜像加速、中文开源模型优先推荐、最新 llama.cpp 推理引擎、默认中文界面。",
     "chineseEditionGithubButton": "中文版 GitHub 仓库",
     "chineseEditionWechatButton": "微信公众号「云中江树」",
     "chineseEditionWechatCopiedTitle": "已复制",
@@ -652,20 +652,6 @@
         "thinkingDisabled": "思考模式已禁用",
         "thinkText": "思考",
         "cycleEffort": "推理强度：{{level}}。双击可切换强度级别"
-      },
-      "voiceInput": {
-        "start": "开始语音输入",
-        "stop": "停止录音",
-        "transcribing": "正在转写…",
-        "errorTitle": "语音输入",
-        "downloadTitle": "下载语音识别模型",
-        "downloadMessage": "语音输入需要下载 SenseVoice 语音识别模型（约 {{size}} MB），全程在设备本地运行。是否立即下载？",
-        "download": "下载",
-        "downloadFailed": "语音识别模型下载失败，请检查网络后重试。",
-        "transcribeFailed": "转写失败，请重试。",
-        "recordFailed": "录音失败，请重试。",
-        "permissionDenied": "语音输入需要麦克风权限，请在系统设置中开启。",
-        "emptyResult": "未识别到语音，请重试。"
       }
     },
     "contentReportSheet": {

@@ -19,6 +19,8 @@ export interface CPUInfo {
   socModel?: string;
   hardware?: string;
   maxFreqMhz?: number;
+  /** 中文版：性能核数量（排除明显偏慢的小核簇），Android only. */
+  perfCoreCount?: number;
 }
 
 export interface GPUInfo {

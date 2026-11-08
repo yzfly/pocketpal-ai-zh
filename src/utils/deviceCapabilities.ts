@@ -43,6 +43,7 @@ export interface CpuInfo {
   hasDotProd?: boolean;
   hasSve?: boolean;
   hasI8mm?: boolean;
+  perfCoreCount?: number;
 }
 
 /**
@@ -169,6 +170,7 @@ export async function getCpuInfo(): Promise<CpuInfo | null> {
       hasDotProd: info.hasDotProd,
       hasSve: info.hasSve,
       hasI8mm: info.hasI8mm,
+      perfCoreCount: info.perfCoreCount,
     };
   } catch (error) {
     console.warn('Failed to get CPU info:', error);
@@ -191,7 +193,15 @@ export async function getCpuCoreCount(): Promise<number> {
  * @returns Promise<number> Recommended thread count
  */
 export async function getRecommendedThreadCount(): Promise<number> {
-  const cores = await getCpuCoreCount();
+  const cpuInfo = await getCpuInfo();
+  const cores = cpuInfo?.cores || 4;
+  // 中文版：有明显小核簇时只用性能核。llama.cpp 解码受内存带宽限制，把
+  // 小核拉进来会拖慢整体（K30 Pro / 骁龙 865 实测 Qwen3.5 2B：4 线程
+  // 16.4 tok/s，6 线程 12.7，8 线程 10.5）。
+  const perf = cpuInfo?.perfCoreCount;
+  if (perf !== undefined && perf >= 2 && perf < cores) {
+    return perf;
+  }
   return cores <= 4 ? cores : Math.floor(cores * 0.8);
 }
 

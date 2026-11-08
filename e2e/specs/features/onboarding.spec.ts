@@ -32,10 +32,11 @@ const TIMEOUT = 15000;
 // each entry id is `${repo}/${filename}`. Picked by topic on screen 5;
 // the matching model is the one ModelRadioGroup renders on screen 6 with
 // the Recommended badge.
+// 中文版的选型见 src/store/chineseModelPresets.ts 的 chineseOnboardingModels。
 const PIP_BALANCED_MODEL_ID =
-  'lmstudio-community/gemma-3-1b-it-GGUF/gemma-3-1b-it-Q8_0.gguf';
+  'unsloth/Qwen3.5-2B-MTP-GGUF/Qwen3.5-2B-Q4_0.gguf';
 const CODIE_BALANCED_MODEL_ID =
-  'lmstudio-community/Qwen3.5-2B-GGUF/Qwen3.5-2B-Q4_K_M.gguf';
+  'unsloth/Qwen3.5-2B-MTP-GGUF/Qwen3.5-2B-Q4_0.gguf';
 
 const isDisplayedSafe = async (testId: string): Promise<boolean> =>
   browser

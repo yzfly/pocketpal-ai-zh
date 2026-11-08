@@ -600,11 +600,11 @@
     "openSourceNotices": "Open-source notices",
     "phononNoticesCredit": "Phonon voice model and voices by Gradium, licensed under Apache-2.0. Built on Pocket TTS and the Mimi codec by Kyutai.",
     "chineseEdition": "Chinese Edition",
-    "chineseEditionDescription": "This Chinese edition is maintained by 云中江树 (yzfly): built-in HF mirror acceleration, Qwen-first model recommendations, and a Chinese-first interface.",
+    "chineseEditionDescription": "This Chinese edition is maintained by yzfly (Yunzhong Jiangshu): built-in HF mirror acceleration, Chinese open models recommended first, the latest llama.cpp engine, and a Chinese-first interface.",
     "chineseEditionGithubButton": "Chinese Edition on GitHub",
-    "chineseEditionWechatButton": "WeChat Official Account: 云中江树",
+    "chineseEditionWechatButton": "WeChat Official Account: Yunzhong Jiangshu",
     "chineseEditionWechatCopiedTitle": "Copied",
-    "chineseEditionWechatCopiedDescription": "\"云中江树\" copied to clipboard. Search it in WeChat to follow."
+    "chineseEditionWechatCopiedDescription": "The account name has been copied. Search for it in WeChat to follow."
   },
   "feedback": {
     "title": "Send Feedback",
@@ -712,20 +712,6 @@
         "thinkingDisabled": "Thinking mode disabled",
         "thinkText": "Think",
         "cycleEffort": "Reasoning effort: {{level}}. Double tap to cycle effort level"
-      },
-      "voiceInput": {
-        "start": "Start voice input",
-        "stop": "Stop recording",
-        "transcribing": "Transcribing…",
-        "errorTitle": "Voice Input",
-        "downloadTitle": "Download Speech Recognition Model",
-        "downloadMessage": "Voice input requires the SenseVoice speech recognition model (about {{size}} MB). It runs fully on-device. Download now?",
-        "download": "Download",
-        "downloadFailed": "Failed to download the speech recognition model. Please check your network connection and try again.",
-        "transcribeFailed": "Transcription failed. Please try again.",
-        "recordFailed": "Recording failed. Please try again.",
-        "permissionDenied": "Microphone permission is required for voice input. Please enable it in system settings.",
-        "emptyResult": "No speech detected. Please try again."
       }
     },
     "contentReportSheet": {
