@@ -32,9 +32,10 @@ export const createStyles = (theme: Theme) =>
     scrollviewContainer: {
       padding: theme.spacing.default,
     },
+    // 外层滚动区已有内边距，表单不再二次缩进，和弹层标题对齐
     form: {
       gap: theme.spacing.default,
-      padding: theme.spacing.default,
+      paddingVertical: theme.spacing.default,
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borders.default,
     },

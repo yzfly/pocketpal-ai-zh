@@ -8,7 +8,6 @@ export const createStyles = (theme: Theme) =>
     },
     container: {
       flex: 1,
-      padding: 2,
       backgroundColor: theme.colors.surface,
     },
     listContainer: {

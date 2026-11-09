@@ -3,6 +3,7 @@ import {View} from 'react-native';
 
 import {Text, Chip, Tooltip} from 'react-native-paper';
 import {BottomSheetFlatList} from '@gorhom/bottom-sheet';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {ModelTypeTag, Sheet} from '../../../../components';
 
@@ -15,7 +16,7 @@ import {ModelFileCard} from './ModelFileCard';
 import {HuggingFaceModel, ModelFile} from '../../../../utils/types';
 import {
   extractHFModelTitle,
-  formatNumber,
+  formatCount,
   L10nContext,
   timeAgo,
   isVisionRepo,
@@ -67,7 +68,7 @@ export const DetailsView = ({hfModel}: DetailsViewProps) => {
     <View style={styles.content}>
       <View style={styles.header}>
         <View style={styles.authorRow}>
-          <Text variant="headlineSmall" style={styles.modelAuthor}>
+          <Text variant="bodyMedium" style={styles.modelAuthor}>
             {hfModel.author}
           </Text>
           {isVision && (
@@ -101,39 +102,32 @@ export const DetailsView = ({hfModel}: DetailsViewProps) => {
           </Tooltip>
         </View>
         <View style={styles.modelStats}>
-          <Chip
-            icon="clock"
-            compact
-            style={styles.stat}
-            textStyle={styles.statText}
-            mode="outlined">
-            {timeAgo(hfModel.lastModified, l10n, 'long')}
-          </Chip>
-          <Chip
-            icon="download"
-            compact
-            style={styles.stat}
-            textStyle={styles.statText}
-            mode="outlined">
-            {formatNumber(hfModel.downloads, 0)}
-          </Chip>
-          <Chip
-            icon="heart"
-            compact
-            style={styles.stat}
-            textStyle={styles.statText}
-            mode="outlined">
-            {formatNumber(hfModel.likes, 0)}
-          </Chip>
-          {hfModel.trendingScore > 20 && (
-            <Chip
-              icon="trending-up"
-              style={styles.stat}
-              compact
-              mode="outlined">
-              🔥
-            </Chip>
-          )}
+          {/* 与搜索列表一致的图标+文字，不用会截断“2.3 万”的 Chip */}
+          {[
+            {
+              icon: 'clock-outline',
+              text: timeAgo(hfModel.lastModified, l10n, 'long'),
+            },
+            {
+              icon: 'download-outline',
+              text: formatCount(hfModel.downloads, l10n, 0),
+            },
+            {icon: 'heart-outline', text: formatCount(hfModel.likes, l10n, 0)},
+            ...(hfModel.trendingScore > 20
+              ? [{icon: 'trending-up', text: l10n.models.details.trending}]
+              : []),
+          ].map(item => (
+            <View key={item.icon} style={styles.statItem}>
+              <Icon
+                name={item.icon}
+                size={14}
+                color={theme.colors.onSurfaceVariant}
+              />
+              <Text variant="labelMedium" style={styles.statLabel}>
+                {item.text}
+              </Text>
+            </View>
+          ))}
         </View>
         <Text variant="titleLarge" style={styles.sectionTitle}>
           {l10n.models.details.title}

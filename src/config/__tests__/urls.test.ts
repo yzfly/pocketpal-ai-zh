@@ -98,3 +98,24 @@ describe('HF 镜像改写', () => {
     });
   });
 });
+
+describe('ModelScope mapping', () => {
+  const {toModelScopeUrl, canonicalizeHfUrl} = require('../urls');
+  const HF =
+    'https://huggingface.co/unsloth/Qwen3.5-0.8B-MTP-GGUF/resolve/main/sub/dir/model.gguf';
+  const MS =
+    'https://modelscope.cn/models/unsloth/Qwen3.5-0.8B-MTP-GGUF/resolve/master/sub/dir/model.gguf';
+
+  it('maps main-branch resolve links from HF or the mirror', () => {
+    expect(toModelScopeUrl(HF)).toBe(MS);
+    expect(toModelScopeUrl(HF.replace('huggingface.co', 'hf-mirror.com'))).toBe(
+      MS,
+    );
+    expect(toModelScopeUrl(HF.replace('/main/', '/v1/'))).toBeNull();
+    expect(toModelScopeUrl('https://example.com/a.gguf')).toBeNull();
+  });
+
+  it('canonicalizes ModelScope links back to huggingface.co', () => {
+    expect(canonicalizeHfUrl(MS)).toBe(HF);
+  });
+});

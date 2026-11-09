@@ -60,6 +60,9 @@ export const OnboardingTopChrome: React.FC<{step: OnboardingChromeStep}> =
               <Stepper
                 total={4}
                 current={step as number}
+                accessibilityLabel={t.stepLabel
+                  .replace('{{current}}', String(step))
+                  .replace('{{total}}', '4')}
                 style={styles.stepperOverride}
               />
             </View>

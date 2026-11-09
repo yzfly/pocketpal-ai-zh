@@ -45,7 +45,9 @@ export const defaultCompletionParams: CompletionParams = {
   n_probs: 0, // If greater than 0, the response also contains the probabilities of top N tokens for each generated token given the sampling settings.
   stop: ['</s>'],
   jinja: true, // Whether to use Jinja templating for chat formatting
-  enable_thinking: true, // Whether to enable thinking mode for compatible models
+  // 口袋AI：默认关闭思考。手机上的小模型（如 0.8B）开思考会先用英文长篇推理、
+  // 迟迟不给答案；需要时在输入栏点“思考”开启。
+  enable_thinking: false,
   // emit_partial_completion: true, // This is not used in the current version of llama.rn
 };
 

@@ -1,13 +1,5 @@
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {
-  Alert,
-  LayoutAnimation,
-  Platform,
-  StyleSheet,
-  UIManager,
-  View,
-} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import {Alert, LayoutAnimation, Platform, UIManager, View} from 'react-native';
 import {
   Button,
   IconButton,
@@ -49,7 +41,6 @@ import {createStyles} from './styles';
 import {EngineLogo} from './EngineLogo';
 import {ENGINE_META} from './engineMeta';
 import {HeroRow} from './HeroRow';
-import {getEngineAccent} from './VoiceAvatar';
 import {l10n as locales, t} from '../../locales';
 
 type L10n = (typeof locales)['en'];
@@ -323,7 +314,8 @@ export const VoicePickerView: React.FC = observer(() => {
     const key = `${voice.engine}:${voice.id}`;
     const isSelected = key === selectedKey;
     const isPreviewing = ttsStore.isPreviewingVoice(voice);
-    const accent = getEngineAccent(voice.engine);
+    // 口袋AI：黑白主题，选中色跟随主题而非引擎品牌色
+    const accent = theme.colors.primary;
     return (
       <TouchableRipple
         key={key}
@@ -411,8 +403,8 @@ export const VoicePickerView: React.FC = observer(() => {
           <Button
             mode="contained"
             onPress={handleRetry}
-            buttonColor={meta.accent}
-            textColor="#FFFFFF"
+            buttonColor={theme.colors.primary}
+            textColor={theme.colors.onPrimary}
             style={styles.engineGroupCta}
             labelStyle={styles.engineGroupCtaLabel}
             testID={`tts-${engineId}-retry-button`}>
@@ -446,8 +438,8 @@ export const VoicePickerView: React.FC = observer(() => {
           mode="contained"
           onPress={handleInstall}
           disabled={lowDisk}
-          buttonColor={meta.accent}
-          textColor="#FFFFFF"
+          buttonColor={theme.colors.primary}
+          textColor={theme.colors.onPrimary}
           style={styles.engineGroupCta}
           labelStyle={styles.engineGroupCtaLabel}
           testID={`tts-${engineId}-install-button`}>
@@ -497,13 +489,6 @@ export const VoicePickerView: React.FC = observer(() => {
         key={engineId}
         style={styles.engineGroup}
         testID={`tts-engine-group-${engineId}`}>
-        <LinearGradient
-          colors={[meta.gradientFrom, meta.gradientTo]}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
-          style={[StyleSheet.absoluteFill, styles.engineGroupGradientFill]}
-          pointerEvents="none"
-        />
         <TouchableRipple
           onPress={() => toggleExpanded(engineId)}
           testID={`tts-engine-group-toggle-${engineId}`}>
@@ -512,15 +497,19 @@ export const VoicePickerView: React.FC = observer(() => {
               engineId={engineId}
               size={36}
               progress={ringProgress}
-              ringColor={meta.accent}
-              haloColor={isActive ? meta.accent : undefined}
+              ringColor={theme.colors.primary}
+              haloColor={isActive ? theme.colors.primary : undefined}
             />
             <View style={styles.engineGroupHeaderText}>
               <Text style={styles.engineGroupTitle}>
                 {engineTitle(engineId, l10n)}
               </Text>
               {tierLabel ? (
-                <Text style={[styles.engineGroupTier, {color: meta.accent}]}>
+                <Text
+                  style={[
+                    styles.engineGroupTier,
+                    {color: theme.colors.onSurfaceVariant},
+                  ]}>
                   {tierLabel}
                 </Text>
               ) : null}

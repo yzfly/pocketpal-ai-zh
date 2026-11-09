@@ -51,6 +51,7 @@ export const TalentSection = observer(() => {
                   </View>
                   <Switch
                     testID={`talent-switch-${engine.name}`}
+                    accessibilityLabel={title}
                     value={isEnabled}
                     onValueChange={checked => {
                       const current = value ?? [];

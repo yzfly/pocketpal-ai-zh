@@ -62,10 +62,4 @@ export const createStyles = ({theme}: {theme: Theme}) =>
       color: theme.colors.onSurfaceVariant,
       ...theme.fonts.bodySmall,
     },
-
-    logo: {
-      width: 96,
-      height: 96,
-      borderRadius: 24,
-    },
   });

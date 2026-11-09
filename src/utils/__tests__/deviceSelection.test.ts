@@ -40,7 +40,7 @@ describe('Hexagon device selection', () => {
         n_gpu_layers: 99,
         default_flash_attn_type: 'off',
         valid_flash_attn_types: ['off'],
-        experimental: true,
+        tag: 'Recommended',
       });
       expect(
         await resolveDeviceSelection({devices: ['HTP*'], n_gpu_layers: 37}),

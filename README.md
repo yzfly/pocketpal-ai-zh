@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/pocketpal-dark-v2.png" alt="口袋AI logo" width="120" />
+<img src="src/assets/brand/mark-512.png" alt="口袋AI logo" width="120" />
 
 # 口袋AI
 
@@ -26,8 +26,8 @@
 - **中文模型优先**：推荐列表以国内团队的开源模型为主（通义千问、面壁、蚂蚁、小米、腾讯等），按手机实测速度与能力排序，并移除了被新版本取代或中文能力偏弱的旧模型
 - **最新推理引擎**：llama.cpp 升级到 v0.9.0（上游 App 目前为 v0.8.0），Hexagon NPU 与 OpenCL 加速库同步重新编译
 - **默认中文界面**：首次启动即为简体中文（可切换繁体中文及其他 10+ 种语言）
-- **小白友好的模型名**：模型按用途命名（口袋助手 mini / 标准版 / 专业版 / 旗舰版、小钢炮、混元翻译……），并附一句话说明，不用懂量化、参数量；默认推荐 2B 标准版，兼顾速度与效果，大多数手机都不卡
-- **国内可用的账号**：邮箱 + 密码注册登录，基于腾讯云开发 CloudBase，国内直连；登录是可选的，不登录也能完整使用
+- **小白友好的模型名**：模型按用途命名（口袋助手 mini / 标准版 / 专业版 / 旗舰版、小钢炮、混元翻译……），并附一句话说明，不用懂量化、参数量；默认推荐 0.8B mini，下载最小（约 0.5 GB）、所有手机都不卡，也能看图；想要更聪明可选 2B 标准版
+- **国内可用的账号**：邮箱 + 密码注册登录，基于 Supabase Auth，经国内服务器中转直连；登录是可选的，不登录也能完整使用
 - **应用内更新**：启动时自动检查新版本（国内地址），一键下载、校验并安装
 - **黑白极简界面**：参考 Vercel / Geist 的黑白配色与小圆角
 - **纯本地助手**：移除了上游的 PalsHub 在线市场和 Plus 付费功能，所有功能免费
@@ -80,9 +80,9 @@ App 里显示的是右侧的中文名。
 
 ## 🔄 发布更新（维护者）
 
-1. 提高 `android/app/build.gradle` 的 `versionCode`，用**同一个发布密钥**签名构建 APK（签名不同无法覆盖安装）。
+1. 提高 `android/app/build.gradle` 的 `versionCode`，用**同一个发布密钥**签名构建 APK（签名不同无法覆盖安装）：构建前在环境变量或 `.env` 中设置 `APP_RELEASE_STORE_FILE`（仓库外的绝对路径）、`APP_RELEASE_KEY_ALIAS`、`APP_RELEASE_STORE_PASSWORD`、`APP_RELEASE_KEY_PASSWORD`。
 2. 生成更新清单：`node scripts/make-update-manifest.js <apk> <apk 的 https 下载地址> notes.txt > update.json`（`--min <versionCode>` 可强制旧版本更新）。
-3. 把 APK 和 `update.json` 上传到国内可直连的地址（推荐 CloudBase 静态网站托管），`.env` 中 `UPDATE_MANIFEST_URL` 指向 `update.json`。
+3. 把 APK 和 `update.json` 上传到国内可直连的地址（如国内对象存储或自有服务器），`.env` 中 `UPDATE_MANIFEST_URL` 指向 `update.json`。
 
 ## 🛠️ 本地开发
 
@@ -90,7 +90,7 @@ App 里显示的是右侧的中文名。
 git clone git@github.com:yzfly/pocketpal-ai-zh.git
 cd pocketpal-ai-zh
 yarn install
-cp .env.example .env   # 填入 CloudBase 环境 ID、区域、Publishable Key 与更新清单地址（不要提交）
+cp .env.example .env   # 填入账号中转地址 ACCOUNT_API_URL、Supabase Publishable Key 与更新清单地址（不要提交）
 
 # iOS
 cd ios && pod install && cd ..

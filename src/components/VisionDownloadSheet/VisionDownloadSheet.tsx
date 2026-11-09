@@ -94,7 +94,13 @@ export const VisionDownloadSheet: React.FC<VisionDownloadSheetProps> = ({
             {l10n.models.multimodal.visionControls.visionEnabled}
           </Text>
         </View>
-        <Switch value={visionEnabled} onValueChange={handleVisionToggle} />
+        <Switch
+          value={visionEnabled}
+          onValueChange={handleVisionToggle}
+          accessibilityLabel={
+            l10n.models.multimodal.visionControls.visionEnabled
+          }
+        />
       </View>
     </View>
   );

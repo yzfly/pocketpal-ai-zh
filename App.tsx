@@ -89,6 +89,19 @@ const SwitchPoint: React.FC<SwitchPointProps> = observer(({drawer}) => {
   return <>{drawer}</>;
 });
 
+// 口袋AI：页面组件只包装一次。原先在 render 里调用 gestureHandlerRootHOC，
+// 每次切换主题/语言都会生成新组件类型，所有页面被重新挂载（设置页跳回顶部）。
+const WrappedChatScreen = gestureHandlerRootHOC(ChatScreen);
+const WrappedPalsScreen = gestureHandlerRootHOC(PalsScreen);
+const WrappedModelsScreen = gestureHandlerRootHOC(ModelsScreen);
+const WrappedBenchmarkScreen = gestureHandlerRootHOC(BenchmarkScreen);
+const WrappedSettingsScreen = gestureHandlerRootHOC(SettingsScreen);
+const WrappedAboutScreen = gestureHandlerRootHOC(AboutScreen);
+const WrappedDevToolsScreen = gestureHandlerRootHOC(DevToolsScreen);
+const WrappedBenchmarkRunnerScreen = gestureHandlerRootHOC(
+  BenchmarkRunnerScreen,
+);
+
 const App = observer(() => {
   const theme = useTheme();
   useNavigationBarAppearance();
@@ -109,7 +122,7 @@ const App = observer(() => {
     asrStore.init().catch(() => {
       // init() swallows its own errors; catch to satisfy no-floating-promises.
     });
-    // Restore the CloudBase session (no-op when not configured).
+    // Restore the account session (no-op when not configured).
     accountService.init().catch(() => {});
     // Check for an in-app update (Android, throttled; no-op when unconfigured).
     if (!__E2E__) {
@@ -134,6 +147,8 @@ const App = observer(() => {
                         <Drawer.Navigator
                           screenOptions={{
                             headerLeft: () => <HeaderLeft />,
+                            overlayAccessibilityLabel:
+                              currentL10n.common.a11y.closeDrawer,
                             drawerStyle: {
                               width:
                                 screenWidth > 400 ? 320 : screenWidth * 0.8,
@@ -149,14 +164,14 @@ const App = observer(() => {
                           )}>
                           <Drawer.Screen
                             name={ROUTES.CHAT}
-                            component={gestureHandlerRootHOC(ChatScreen)}
+                            component={WrappedChatScreen}
                             options={{
                               headerShown: false,
                             }}
                           />
                           <Drawer.Screen
                             name={ROUTES.PALS}
-                            component={gestureHandlerRootHOC(PalsScreen)}
+                            component={WrappedPalsScreen}
                             options={{
                               headerRight: () => <PalHeaderRight />,
                               headerStyle: styles.headerWithoutDivider,
@@ -165,7 +180,7 @@ const App = observer(() => {
                           />
                           <Drawer.Screen
                             name={ROUTES.MODELS}
-                            component={gestureHandlerRootHOC(ModelsScreen)}
+                            component={WrappedModelsScreen}
                             options={{
                               headerRight: () => <ModelsHeaderRight />,
                               headerStyle: styles.headerWithoutDivider,
@@ -174,7 +189,7 @@ const App = observer(() => {
                           />
                           <Drawer.Screen
                             name={ROUTES.BENCHMARK}
-                            component={gestureHandlerRootHOC(BenchmarkScreen)}
+                            component={WrappedBenchmarkScreen}
                             options={{
                               headerStyle: styles.headerWithoutDivider,
                               title: currentL10n.screenTitles.benchmark,
@@ -182,7 +197,7 @@ const App = observer(() => {
                           />
                           <Drawer.Screen
                             name={ROUTES.SETTINGS}
-                            component={gestureHandlerRootHOC(SettingsScreen)}
+                            component={WrappedSettingsScreen}
                             options={{
                               headerStyle: styles.headerWithoutDivider,
                               title: currentL10n.screenTitles.settings,
@@ -190,7 +205,7 @@ const App = observer(() => {
                           />
                           <Drawer.Screen
                             name={ROUTES.APP_INFO}
-                            component={gestureHandlerRootHOC(AboutScreen)}
+                            component={WrappedAboutScreen}
                             options={{
                               headerStyle: styles.headerWithoutDivider,
                               title: currentL10n.screenTitles.appInfo,
@@ -201,7 +216,7 @@ const App = observer(() => {
                           {isDebugMode && (
                             <Drawer.Screen
                               name={ROUTES.DEV_TOOLS}
-                              component={gestureHandlerRootHOC(DevToolsScreen)}
+                              component={WrappedDevToolsScreen}
                               options={{
                                 headerStyle: styles.headerWithoutDivider,
                                 title: 'Dev Tools',
@@ -220,9 +235,7 @@ const App = observer(() => {
                           {__E2E__ && (
                             <Drawer.Screen
                               name={ROUTES.BENCHMARK_RUNNER}
-                              component={gestureHandlerRootHOC(
-                                BenchmarkRunnerScreen,
-                              )}
+                              component={WrappedBenchmarkRunnerScreen}
                               options={{
                                 headerStyle: styles.headerWithoutDivider,
                                 title: 'Benchmark Runner',

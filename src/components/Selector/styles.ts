@@ -26,10 +26,17 @@ export const createStyles = (theme: Theme) =>
     buttonDisabled: {
       opacity: 0.6,
     },
+    // 文字靠左、箭头靠右（原来按钮文字居中，看着像缩进错位）
     selectedText: {
+      flex: 1,
+      textAlign: 'left',
+      marginHorizontal: 0,
       color: theme.colors.onSurface,
     },
     placeholderText: {
+      flex: 1,
+      textAlign: 'left',
+      marginHorizontal: 0,
       color: theme.colors.onSurfaceVariant,
     },
     disabledText: {

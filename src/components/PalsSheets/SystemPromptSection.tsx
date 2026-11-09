@@ -400,7 +400,9 @@ export const SystemPromptSection = observer(
             {/* Template Mode Toggle */}
             <View style={styles.templateModeHeader}>
               <Text style={[theme.fonts.titleMedium]}>
-                {showTemplateMode ? 'Template Mode' : 'System Prompt'}
+                {showTemplateMode
+                  ? l10n.components.systemPromptSection.template.modeTitle
+                  : l10n.components.systemPromptSection.systemPrompt.label}
               </Text>
               <IconButton
                 icon={showTemplateMode ? 'eye' : 'code-tags'}
@@ -414,9 +416,11 @@ export const SystemPromptSection = observer(
               /* Template Mode - Show raw template */
               <FormField
                 name="systemPrompt"
-                label="Template (Advanced)"
-                sublabel="Edit the raw template with {{parameter}} placeholders"
-                placeholder="You are {{role}} in {{setting}}..."
+                label={l10n.components.systemPromptSection.template.label}
+                sublabel={l10n.components.systemPromptSection.template.sublabel}
+                placeholder={
+                  l10n.components.systemPromptSection.template.placeholder
+                }
                 multiline
                 required
                 disabled={useAIPrompt && isGenerating}
@@ -430,7 +434,7 @@ export const SystemPromptSection = observer(
                 <Text
                   style={[theme.fonts.bodyMedium, styles.renderedPromptText]}>
                   {renderedSystemPrompt ||
-                    'Configure parameters above to see the final prompt...'}
+                    l10n.components.systemPromptSection.template.emptyPreview}
                 </Text>
               </View>
             )}

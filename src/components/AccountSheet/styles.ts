@@ -22,32 +22,16 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.onSurfaceVariant,
       marginTop: -6,
     },
-    codeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    codeInput: {
-      flex: 1,
-    },
-    codeButton: {
-      minWidth: 112,
-    },
-    captchaBox: {
-      gap: 8,
-      padding: 12,
-      borderRadius: 8,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline,
-    },
-    captchaImage: {
-      height: 56,
-      width: '100%',
-    },
     submit: {
       marginTop: 8,
     },
     submitContent: {
       height: 48,
+    },
+    // “去注册/去登录”做成明显可点的链接
+    switchLabel: {
+      color: theme.colors.primary,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
     },
   });

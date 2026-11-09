@@ -12,8 +12,8 @@ export const styles = StyleSheet.create({
     marginVertical: 16,
   },
   multimodalSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 12,
   },
   reasoningRow: {

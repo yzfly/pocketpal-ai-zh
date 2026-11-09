@@ -140,7 +140,8 @@ export async function getDeviceOptions(): Promise<DeviceOption[]> {
     n_gpu_layers: 0,
     default_flash_attn_type: 'off',
     valid_flash_attn_types: ['auto', 'on', 'off'], // CPU supports all
-    tag: 'Recommended', // CPU is the recommended/default option for reliability
+    // CPU is recommended only when there is no NPU to prefer
+    tag: hexagonDevice ? undefined : 'Recommended',
     platform: 'android',
   });
 
@@ -167,14 +168,14 @@ export async function getDeviceOptions(): Promise<DeviceOption[]> {
     // Conservative: only allow 'off' to avoid runtime errors
     options.push({
       id: 'hexagon',
-      label: 'Hexagon',
-      description: 'Qualcomm NPU (Experimental, fastest but may be unstable)',
+      label: 'NPU',
+      description:
+        'Qualcomm Hexagon NPU (v73+). Used by default when available; falls back to CPU if it fails to load',
       devices: [hexagonDevice.deviceName],
       n_gpu_layers: 99,
       default_flash_attn_type: 'off',
       valid_flash_attn_types: ['off'], // Conservative: only 'off' is guaranteed safe
-      tag: 'Experimental',
-      experimental: true,
+      tag: 'Recommended',
       platform: 'android',
       deviceInfo: hexagonDevice,
     });
@@ -328,7 +329,7 @@ export async function getRecommendedDeviceId(): Promise<
     return 'auto';
   }
 
-  // Android: Always recommend CPU for reliability
-  // Users can manually choose GPU or Hexagon if they want to experiment
-  return 'cpu';
+  // Android: prefer the NPU (Hexagon v73+) when present. The native layer only
+  // exposes HTP on supported SoCs, and ModelStore falls back to CPU on failure.
+  return (await isHexagonAvailable()) ? 'hexagon' : 'cpu';
 }

@@ -1,8 +1,9 @@
 import React, {useContext} from 'react';
-import {Image, View} from 'react-native';
+import {View} from 'react-native';
 import {Button, Text} from 'react-native-paper';
 import {observer} from 'mobx-react';
 
+import {BrandMark} from '../BrandMark';
 import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
 import {modelStore, palStore} from '../../store';
@@ -79,16 +80,30 @@ export const ChatEmptyPlaceholder = observer(
     const {title, description, buttonText, onPress} = getContent();
 
     if (hasActiveModel) {
-      return <View />;
+      // 已加载模型的新对话：简洁的就绪提示，替代原来的空白页
+      const copy = l10n.components.chatEmptyPlaceholder;
+      const modelName = modelStore.activeModel?.name ?? '';
+      return (
+        <View
+          testID="chat-ready-placeholder"
+          style={[
+            styles.container,
+            {marginBottom: bottomComponentHeight + 100},
+          ]}>
+          <BrandMark size={56} />
+          <View>
+            <Text style={styles.title}>
+              {copy.readyTitle.replace('{{name}}', modelName)}
+            </Text>
+            <Text style={styles.description}>{copy.readyDescription}</Text>
+          </View>
+        </View>
+      );
     }
     return (
       <View
         style={[styles.container, {marginBottom: bottomComponentHeight + 100}]}>
-        <Image
-          source={require('../../assets/pocketpal-dark-v2.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <BrandMark size={72} />
         <View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/pocketpal-dark-v2.png" alt="PocketPal AI logo" width="120" />
+<img src="src/assets/brand/mark-512.png" alt="PocketPal AI logo" width="120" />
 
 # PocketPal AI
 

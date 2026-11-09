@@ -243,7 +243,7 @@ class PalStore {
             },
           ],
           capabilities: {video: true},
-          color: ['#9E204F', '#F6E1EA'], // Original Lookie colors
+          color: ['#3A3A3A', '#EDEDED'], // 口袋AI：黑白主题（原 Lookie 酒红）
           source: 'local',
         };
 

@@ -5,37 +5,37 @@ import {Theme} from '../../../utils/types';
 export const createStyles = (theme: Theme) =>
   StyleSheet.create({
     card: {
-      borderRadius: 24, // Updated to match rounded-3xl (24px)
-      margin: 6,
-      //overflow: 'hidden',
+      // 口袋AI：统一 16 的内边距、12 的圆角、细描边，不用阴影。
+      borderRadius: 12,
+      marginHorizontal: 16,
+      marginVertical: 6,
       backgroundColor: theme.colors.background,
-      borderColor: theme.colors.outline,
-      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderWidth: StyleSheet.hairlineWidth * 2,
     },
     cardContent: {
-      paddingBottom: 6,
-      paddingTop: 0,
-      //paddingHorizontal: 12,
+      paddingBottom: 4,
     },
     downloadProgressContainer: {
-      marginHorizontal: 18,
-      marginTop: 6,
+      marginHorizontal: 16,
+      marginTop: 4,
       marginBottom: 12,
     },
     progressBar: {
-      height: 8,
-      borderRadius: 5,
+      height: 4,
+      borderRadius: 2,
     },
     downloadSpeed: {
       textAlign: 'right',
       fontSize: 12,
       marginTop: 4,
+      color: theme.colors.onSurfaceVariant,
     },
     warningContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 8,
-      marginBottom: 12,
+      marginHorizontal: 16,
+      marginBottom: 8,
     },
     warningContent: {
       flex: 1,
@@ -44,6 +44,7 @@ export const createStyles = (theme: Theme) =>
     },
     warningIcon: {
       margin: 0,
+      marginLeft: -8,
     },
     warningText: {
       color: theme.colors.error,
@@ -52,145 +53,89 @@ export const createStyles = (theme: Theme) =>
       flexWrap: 'wrap',
     },
     visionToggleContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: theme.colors.border,
       padding: 12,
-      gap: 8,
-    },
-    compactHeader: {
-      paddingHorizontal: 18,
-      paddingVertical: 12,
-    },
-    headerContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    headerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-      minWidth: 0,
-      gap: 10,
-    },
-    headerRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
       gap: 8,
     },
     modelTypeIcon: {
       flexShrink: 0,
     },
-    compactModelName: {
-      //fontSize: 16,
-      //fontWeight: '600',
-      color: theme.colors.onSurface,
-      flex: 1,
-    },
-    sizeInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 8,
-    },
-    sizeInfoText: {
-      fontSize: 12,
-      color: theme.colors.onSurfaceVariant,
-      marginLeft: 4,
-    },
     tagline: {
       fontSize: 13,
       lineHeight: 18,
-      color: theme.colors.onSurfaceVariant,
-      marginBottom: 8,
+      color: theme.colors.onSurface,
+      marginTop: 4,
     },
     serverLink: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginRight: 8,
+      flexShrink: 0,
     },
     serverLinkText: {
       fontSize: 12,
-      color: theme.colors.primary,
+      color: theme.colors.onSurfaceVariant,
       marginLeft: 4,
       textDecorationLine: 'underline',
     },
     statusDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    activeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    activeBadgeText: {
+      fontSize: 11,
+      color: theme.colors.onSurfaceVariant,
     },
     detailsContent: {
-      paddingHorizontal: 18,
-      paddingBottom: 18,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
       gap: 12,
-    },
-    descriptionContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16, // rounded-2xl
-      padding: 12,
-    },
-    descriptionText: {
-      fontSize: 14,
-      color: theme.colors.onSurface,
-      lineHeight: 20, // leading-relaxed
-    },
-    technicalDetailsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-    },
-    technicalDetailCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16, // rounded-2xl
-      padding: 10,
-      flex: 1,
-      minWidth: '45%', // Approximate 2-column grid
-    },
-    technicalDetailLabel: {
-      fontSize: 12,
-      color: theme.colors.onSurfaceVariant,
-      marginBottom: 3,
-    },
-    technicalDetailValue: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: theme.colors.onSurface,
     },
     hfLinkButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       paddingVertical: 12,
       paddingHorizontal: 12,
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16, // rounded-2xl
-      borderWidth: 2,
-      borderColor: theme.colors.primaryContainer,
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: theme.colors.border,
+      minHeight: 48,
     },
     hfLinkContent: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     hfLinkText: {
-      fontSize: 12,
-      color: theme.colors.primary,
+      fontSize: 13,
+      color: theme.colors.onSurface,
       marginLeft: 8,
     },
     // Action buttons section
     actionButtonsContainer: {
-      paddingHorizontal: 18,
+      paddingHorizontal: 16,
+      paddingTop: 12,
       paddingBottom: 12,
     },
     actionButtonsRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8, // gap-2 equivalent
+      gap: 4,
     },
     primaryActionButton: {
       flex: 1,
-      borderRadius: 16, // rounded-2xl
-      borderWidth: 1,
-      height: 40,
+      borderRadius: 8,
+      marginRight: 4,
     },
     draftOnlyHint: {
       fontSize: 12,
@@ -198,13 +143,11 @@ export const createStyles = (theme: Theme) =>
       marginTop: 8,
     },
     iconButton: {
-      padding: 10, // p-2.5 equivalent
-      borderRadius: 16, // rounded-2xl
-      backgroundColor: 'transparent',
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 40,
-      minHeight: 40,
+      width: 44,
+      height: 44,
     },
     visionToggleHeader: {
       flexDirection: 'row',
@@ -228,8 +171,9 @@ export const createStyles = (theme: Theme) =>
       fontStyle: 'italic',
     },
     projectionModelsContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: theme.colors.border,
       padding: 12,
     },
     projectorOffer: {
@@ -240,8 +184,9 @@ export const createStyles = (theme: Theme) =>
       marginTop: 8,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderRadius: 16,
-      backgroundColor: theme.colors.surface,
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: theme.colors.border,
     },
     projectorOfferTitle: {
       flex: 1,
@@ -271,22 +216,94 @@ export const createStyles = (theme: Theme) =>
       borderRadius: 3,
     },
     storageErrorText: {
-      marginHorizontal: 20,
+      marginHorizontal: 16,
     },
-    fullModelNameContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
-      padding: 12,
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 14,
     },
-    fullModelNameLabel: {
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    modelName: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+    },
+    sizeText: {
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+      fontVariant: ['tabular-nums'],
+      flexShrink: 0,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 6,
+    },
+    metaText: {
+      flex: 1,
       fontSize: 12,
       color: theme.colors.onSurfaceVariant,
-      marginBottom: 4,
-      fontWeight: '500',
     },
-    fullModelNameText: {
+    primaryActionContent: {
+      height: 44,
+    },
+    primaryActionLabel: {
       fontSize: 14,
+      marginVertical: 0,
+    },
+    detailsToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      height: 44,
+      paddingLeft: 8,
+      paddingRight: 0,
+      borderRadius: 8,
+    },
+    chevronUp: {
+      transform: [{rotate: '180deg'}],
+    },
+    detailsToggleText: {
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+    },
+    specList: {
+      borderTopWidth: StyleSheet.hairlineWidth * 2,
+      borderTopColor: theme.colors.border,
+      paddingTop: 12,
+      marginTop: -4,
+    },
+    specTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 4,
+    },
+    specRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+      gap: 12,
+    },
+    specRowLast: {
+      borderBottomWidth: 0,
+    },
+    specLabel: {
+      width: 72,
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+    },
+    specValue: {
+      flex: 1,
+      fontSize: 13,
       color: theme.colors.onSurface,
-      lineHeight: 20,
     },
   });

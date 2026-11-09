@@ -22,7 +22,7 @@ import {hfStore} from '../../../../store';
 import {HuggingFaceModel} from '../../../../utils/types';
 import {
   extractHFModelTitle,
-  formatNumber,
+  formatCount,
   timeAgo,
   L10nContext,
   isVisionRepo,
@@ -109,7 +109,7 @@ export const SearchView = observer(
                 color={theme.colors.onSurfaceVariant}
               />
               <Text variant="labelSmall" style={styles.statText}>
-                {formatNumber(item.downloads)}
+                {formatCount(item.downloads, l10n)}
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -119,7 +119,7 @@ export const SearchView = observer(
                 color={theme.colors.onSurfaceVariant}
               />
               <Text variant="labelSmall" style={styles.statText}>
-                {formatNumber(item.likes)}
+                {formatCount(item.likes, l10n)}
               </Text>
             </View>
             {Boolean(item.gated) && (

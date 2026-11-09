@@ -225,35 +225,25 @@ describe('SquarePalCard', () => {
     it('shows delete confirmation when delete button is pressed', () => {
       jest.spyOn(Alert, 'alert');
       const pal = createLocalPal();
-      const {UNSAFE_getAllByType} = render(
+      const {getByTestId} = render(
         <SquarePalCard pal={pal} onPress={mockOnPress} isLocal={true} />,
       );
 
-      // Find and press delete button (IconButton with TrashIcon)
-      const iconButtons = UNSAFE_getAllByType(
-        require('react-native-paper').IconButton,
-      );
-      // Delete button is the second one (after share button)
-      const deleteButton = iconButtons[1];
-
-      fireEvent.press(deleteButton);
+      // 删除在“更多”菜单里
+      fireEvent.press(getByTestId('pal-more-button'));
+      fireEvent.press(getByTestId('pal-delete-button'));
       expect(Alert.alert).toHaveBeenCalled();
     });
 
     it('calls exportPal when share button is pressed', async () => {
       const pal = createLocalPal();
-      const {UNSAFE_getAllByType} = render(
+      const {getByTestId} = render(
         <SquarePalCard pal={pal} onPress={mockOnPress} isLocal={true} />,
       );
 
-      // Find and press share button (IconButton with ShareIcon)
-      const iconButtons = UNSAFE_getAllByType(
-        require('react-native-paper').IconButton,
-      );
-      const shareButton = iconButtons[0]; // Share button is first
-
+      fireEvent.press(getByTestId('pal-more-button'));
       await act(async () => {
-        fireEvent.press(shareButton);
+        fireEvent.press(getByTestId('pal-share-button'));
       });
 
       await waitFor(() => {
@@ -451,17 +441,15 @@ describe('SquarePalCard', () => {
   });
 
   describe('Action Buttons Visibility', () => {
-    it('shows share and delete buttons for local pals', () => {
+    it('shows a More menu with share and delete for local pals', () => {
       const pal = createLocalPal();
-      const {UNSAFE_getAllByType} = render(
+      const {getByTestId} = render(
         <SquarePalCard pal={pal} onPress={mockOnPress} isLocal={true} />,
       );
 
-      const iconButtons = UNSAFE_getAllByType(
-        require('react-native-paper').IconButton,
-      );
-      // Should have at least 2 icon buttons (share and delete)
-      expect(iconButtons.length).toBeGreaterThanOrEqual(2);
+      fireEvent.press(getByTestId('pal-more-button'));
+      expect(getByTestId('pal-share-button')).toBeTruthy();
+      expect(getByTestId('pal-delete-button')).toBeTruthy();
     });
 
     it('does not show share and delete buttons for PalsHub pals', () => {
@@ -535,23 +523,19 @@ describe('SquarePalCard', () => {
       exportPal.mockRejectedValueOnce(new Error('Share failed'));
 
       const pal = createLocalPal();
-      const {UNSAFE_getAllByType} = render(
+      const {getByTestId} = render(
         <SquarePalCard pal={pal} onPress={mockOnPress} isLocal={true} />,
       );
 
-      const iconButtons = UNSAFE_getAllByType(
-        require('react-native-paper').IconButton,
-      );
-      const shareButton = iconButtons[0];
-
+      fireEvent.press(getByTestId('pal-more-button'));
       await act(async () => {
-        fireEvent.press(shareButton);
+        fireEvent.press(getByTestId('pal-share-button'));
       });
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'Share Error',
-          'Failed to share pal. Please try again.',
+          'Error',
+          'Could not share this pal. Please try again.',
           [{text: 'OK'}],
         );
       });
@@ -583,7 +567,7 @@ describe('SquarePalCard', () => {
         await waitFor(() => {
           expect(Alert.alert).toHaveBeenCalledWith(
             'Error',
-            'Failed to start chat. Please try again.',
+            'Could not start the chat. Please try again.',
           );
         });
       }

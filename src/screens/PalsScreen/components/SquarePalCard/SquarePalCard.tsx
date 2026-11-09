@@ -1,4 +1,4 @@
-import React, {useContext} from 'react';
+import React, {useContext, useState} from 'react';
 import {View, TouchableOpacity, Image, Alert} from 'react-native';
 
 import {observer} from 'mobx-react-lite';
@@ -10,10 +10,10 @@ import {
   LockIcon,
   ChatIcon,
   CameraIcon,
-  TrashIcon,
-  ShareIcon,
+  DotsVerticalIcon,
 } from '../../../../assets/icons';
 
+import {Menu} from '../../../../components';
 import {useTheme} from '../../../../hooks';
 
 import {createStyles} from './styles';
@@ -209,6 +209,7 @@ export const SquarePalCard: React.FC<SquarePalCardProps> = observer(
     const styles = createStyles(theme);
     const l10n = useContext(L10nContext);
     const navigation = useNavigation();
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     // Check if pal needs a model warning
     // Only for local pals (downloaded pals) that have a default model
@@ -229,7 +230,7 @@ export const SquarePalCard: React.FC<SquarePalCardProps> = observer(
         await activatePalAndNavigate(localPal);
       } catch (error) {
         console.error('Error starting chat:', error);
-        Alert.alert('Error', 'Failed to start chat. Please try again.');
+        Alert.alert(l10n.common.error, l10n.palsScreen.startChatError);
       }
     };
 
@@ -258,8 +259,8 @@ export const SquarePalCard: React.FC<SquarePalCardProps> = observer(
         await exportPal(pal.id);
       } catch (error) {
         console.error('Error sharing pal:', error);
-        Alert.alert('Share Error', 'Failed to share pal. Please try again.', [
-          {text: 'OK'},
+        Alert.alert(l10n.common.error, l10n.palsScreen.shareError, [
+          {text: l10n.common.ok},
         ]);
       }
     };
@@ -323,40 +324,47 @@ export const SquarePalCard: React.FC<SquarePalCardProps> = observer(
                     )}
                   </View>
 
-                  {/* Action buttons */}
-                  <View style={styles.headerActions}>
-                    {/* Share button for local pals only */}
-                    {isLocal && (
-                      <IconButton
-                        icon={() => (
-                          <ShareIcon
-                            stroke={theme.colors.onSurface}
-                            width={16}
-                            height={16}
-                          />
-                        )}
-                        size={20}
-                        style={styles.actionButton}
-                        onPress={handleShare}
+                  {/* 本机助手：分享/删除收进“更多”菜单，不再常驻红色垃圾桶 */}
+                  {isLocal && (
+                    <Menu
+                      visible={isMoreOpen}
+                      onDismiss={() => setIsMoreOpen(false)}
+                      anchor={
+                        <IconButton
+                          testID="pal-more-button"
+                          hitSlop={10}
+                          icon={() => (
+                            <DotsVerticalIcon
+                              stroke={theme.colors.onSurfaceVariant}
+                              width={18}
+                              height={18}
+                            />
+                          )}
+                          size={20}
+                          style={styles.actionButton}
+                          accessibilityLabel={l10n.palsScreen.moreActions}
+                          onPress={() => setIsMoreOpen(true)}
+                        />
+                      }>
+                      <Menu.Item
+                        testID="pal-share-button"
+                        label={l10n.palsScreen.sharePal}
+                        onPress={() => {
+                          setIsMoreOpen(false);
+                          handleShare();
+                        }}
                       />
-                    )}
-
-                    {/* Delete button for local pals only */}
-                    {isLocal && (
-                      <IconButton
-                        icon={() => (
-                          <TrashIcon
-                            stroke={theme.colors.error}
-                            width={16}
-                            height={16}
-                          />
-                        )}
-                        size={20}
-                        style={styles.actionButton}
-                        onPress={handleDelete}
+                      <Menu.Item
+                        testID="pal-delete-button"
+                        label={l10n.common.delete}
+                        danger
+                        onPress={() => {
+                          setIsMoreOpen(false);
+                          handleDelete();
+                        }}
                       />
-                    )}
-                  </View>
+                    </Menu>
+                  )}
                 </View>
 
                 {/* Middle content */}

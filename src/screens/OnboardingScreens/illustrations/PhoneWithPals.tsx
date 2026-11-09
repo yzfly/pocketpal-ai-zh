@@ -54,7 +54,10 @@ export const PhoneWithPals: React.FC<PhoneWithPalsProps> = ({width = 170}) => {
   //   [2] mid-right  = pink-peach
   //   [3] lower-left = pale blue
   //   [4] bottom     = coral / salmon
-  const palFills = ['#EAB06C', '#94A3A0', '#ECBFB6', '#D0DBE1', '#F1A184'];
+  // 口袋AI 黑白品牌：助手小方块改为灰阶（浅色模式浅灰、深色模式深灰，保证眼睛可见）
+  const palFills = theme.dark
+    ? ['#3A3A3A', '#525252', '#2E2E2E', '#474747', '#5E5E5E']
+    : ['#E3E3E3', '#C9C9C9', '#EDEDED', '#D6D6D6', '#BDBDBD'];
   // Geometric centers in viewBox space. Shifted ~5 units right vs the
   // earlier port so the cluster centers in the phone interior (phone
   // mid-x ≈ 42.5) instead of skewing left.

@@ -1,7 +1,7 @@
 import * as RNFS from '@dr.pogodin/react-native-fs';
 import {initWhisper} from 'whisper.rn';
 
-import {ASR_MODEL_VERSION} from '../../../constants';
+import {ASR_MODEL_VERSION, ASR_TIERS} from '../../../constants';
 import {WhisperAsrEngine} from '../index';
 
 const mockExists = RNFS.exists as jest.Mock;
@@ -9,6 +9,7 @@ const mockReadFile = RNFS.readFile as jest.Mock;
 const mockWriteFile = RNFS.writeFile as jest.Mock;
 const mockUnlink = RNFS.unlink as jest.Mock;
 const mockDownloadFile = RNFS.downloadFile as jest.Mock;
+const mockHash = RNFS.hash as jest.Mock;
 const mockInitWhisper = initWhisper as jest.Mock;
 
 describe('WhisperAsrEngine', () => {
@@ -16,6 +17,7 @@ describe('WhisperAsrEngine', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockHash.mockResolvedValue(ASR_TIERS.small.sha256);
     engine = new WhisperAsrEngine();
   });
 
@@ -80,6 +82,34 @@ describe('WhisperAsrEngine', () => {
       await expect(engine.downloadModel('small')).rejects.toThrow();
       expect(mockWriteFile).not.toHaveBeenCalled();
       expect(mockUnlink).toHaveBeenCalled();
+    });
+
+    it('falls back to the ModelScope mirror after a 429', async () => {
+      mockExists.mockResolvedValue(false);
+      mockDownloadFile
+        .mockReturnValueOnce({promise: Promise.resolve({statusCode: 429})})
+        .mockReturnValueOnce({promise: Promise.resolve({statusCode: 200})});
+      await engine.downloadModel('small');
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2);
+      expect(mockDownloadFile.mock.calls[1][0].fromUrl).toBe(
+        ASR_TIERS.small.mirrorUrls[0],
+      );
+      expect(mockWriteFile).toHaveBeenCalled();
+    });
+
+    it('rejects a file whose checksum does not match and tries the next source', async () => {
+      mockExists.mockResolvedValue(true);
+      mockDownloadFile.mockReturnValue({
+        promise: Promise.resolve({statusCode: 200}),
+      });
+      mockHash.mockResolvedValue('0'.repeat(64));
+      await expect(engine.downloadModel('small')).rejects.toThrow(
+        /Checksum mismatch/,
+      );
+      expect(mockDownloadFile).toHaveBeenCalledTimes(
+        1 + ASR_TIERS.small.mirrorUrls.length,
+      );
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
   });
 

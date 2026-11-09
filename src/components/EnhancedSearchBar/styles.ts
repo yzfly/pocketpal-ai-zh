@@ -20,15 +20,12 @@ export const createStyles = (theme: Theme) =>
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.surface,
+      // 填充底色代替几乎看不见的细边框
+      backgroundColor: theme.colors.surfaceVariant,
       borderRadius: 20,
       paddingHorizontal: 16,
       paddingVertical: 6,
-      height: 40,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.dark
-        ? theme.colors.outline + '50'
-        : theme.colors.outline + '30',
+      height: 44,
     },
     searchIcon: {
       marginRight: 8,

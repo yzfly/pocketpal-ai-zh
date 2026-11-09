@@ -14,14 +14,19 @@ export const createStyles = (theme: Theme) =>
     card: {
       marginBottom: 16,
     },
+    // 外层已有 16 内边距，卡片内容不再二次缩进
+    cardContent: {
+      paddingHorizontal: 0,
+    },
     description: {
       flex: 1,
       color: theme.colors.onSurfaceVariant,
       paddingRight: 8,
       fontSize: 12,
     },
+    // 未加载模型只是提示，不用错误红
     warning: {
-      color: theme.colors.error,
+      color: theme.colors.onSurfaceVariant,
       marginVertical: 8,
       textAlign: 'center',
     },
@@ -96,8 +101,9 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.onSurfaceVariant,
       fontSize: 12,
     },
+    // 提示而非报错：中性底色
     warningContainer: {
-      backgroundColor: theme.colors.errorContainer,
+      backgroundColor: theme.colors.surfaceVariant,
       padding: 16,
       borderRadius: 8,
       marginBottom: 16,
@@ -107,7 +113,7 @@ export const createStyles = (theme: Theme) =>
       paddingLeft: 8,
     },
     warningText: {
-      color: theme.colors.error,
+      color: theme.colors.onSurfaceVariant,
       marginVertical: 4,
     },
     resultsHeader: {

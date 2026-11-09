@@ -123,6 +123,17 @@ const WHISPER_CPP_BASE_URL =
   'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
 
 /**
+ * 口袋AI：hf-mirror 对这些文件经常返回 429。ModelScope 上这两个仓库的文件
+ * 与 HF 官方 SHA-256 完全一致（2026-11-09 核对），作为国内备用源；下载后仍逐一校验。
+ */
+const WHISPER_CPP_MIRROR_BASES = [
+  'https://modelscope.cn/models/viggocx/whisper.cpp/resolve/master',
+  'https://modelscope.cn/models/iceCream2025/whisper.cpp/resolve/master',
+];
+const mirrorsFor = (filename: string) =>
+  WHISPER_CPP_MIRROR_BASES.map(base => `${base}/${filename}`);
+
+/**
  * Per-tier model manifests. Each tier is an independent on-disk install with
  * its own subdirectory and sentinel. `estimatedBytes` is the exact summed
  * HuggingFace byte total of the downloaded file(s), feeding the disk-space
@@ -138,6 +149,8 @@ export const ASR_TIERS: Record<AsrTier, AsrTierManifest> = {
     tier: 'base',
     modelFilename: 'ggml-base-q8_0.bin',
     modelUrl: `${WHISPER_CPP_BASE_URL}/ggml-base-q8_0.bin`,
+    mirrorUrls: mirrorsFor('ggml-base-q8_0.bin'),
+    sha256: 'c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9',
     estimatedBytes: 81_768_585,
     runtimeBytes: 330_000_000,
   },
@@ -145,6 +158,8 @@ export const ASR_TIERS: Record<AsrTier, AsrTierManifest> = {
     tier: 'small',
     modelFilename: 'ggml-small-q8_0.bin',
     modelUrl: `${WHISPER_CPP_BASE_URL}/ggml-small-q8_0.bin`,
+    mirrorUrls: mirrorsFor('ggml-small-q8_0.bin'),
+    sha256: '49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f',
     estimatedBytes: 264_464_607,
     runtimeBytes: 650_000_000,
   },
@@ -152,6 +167,8 @@ export const ASR_TIERS: Record<AsrTier, AsrTierManifest> = {
     tier: 'large-turbo',
     modelFilename: 'ggml-large-v3-turbo-q5_0.bin',
     modelUrl: `${WHISPER_CPP_BASE_URL}/ggml-large-v3-turbo-q5_0.bin`,
+    mirrorUrls: mirrorsFor('ggml-large-v3-turbo-q5_0.bin'),
+    sha256: '394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2',
     estimatedBytes: 574_041_195,
     runtimeBytes: 1_200_000_000,
   },

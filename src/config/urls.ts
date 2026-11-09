@@ -39,10 +39,35 @@ const swapDomain = (url: string, from: string, to: string): string => {
 export const applyHfMirror = (url: string): string =>
   hfMirrorEnabled ? swapDomain(url, HF_DOMAIN, HF_MIRROR_DOMAIN) : url;
 
-// 反向规范化：镜像 URL → huggingface.co。与运行时开关无关，用于
+// ─── 魔搭 ModelScope（国内模型文件下载首选）────────────────────────────
+// hf-mirror 对新版 Xet 存储的仓库只做 302 跳转到 cas-bridge.xethub.hf.co
+// （美国，国内不可达/极慢），导致模型下载卡在 0%。魔搭同步了 unsloth 等
+// 常用 GGUF 仓库，路径一致：/models/{owner}/{repo}/resolve/master/{file}。
+// 只改写 main 分支的 resolve 链接，便于无损还原。
+export const MODELSCOPE_DOMAIN = 'https://modelscope.cn';
+
+const HF_RESOLVE_RE =
+  /^https:\/\/(?:huggingface\.co|hf-mirror\.com)\/([^/]+)\/([^/]+)\/resolve\/main\/(.+)$/;
+const MS_RESOLVE_RE =
+  /^https:\/\/(?:www\.)?modelscope\.cn\/models\/([^/]+)\/([^/]+)\/resolve\/master\/(.+)$/;
+
+/** huggingface.co（或镜像）的 main 分支文件链接 → 魔搭同名文件链接；不适用返回 null */
+export const toModelScopeUrl = (url: string): string | null => {
+  const m = HF_RESOLVE_RE.exec(url);
+  return m
+    ? `${MODELSCOPE_DOMAIN}/models/${m[1]}/${m[2]}/resolve/master/${m[3]}`
+    : null;
+};
+
+// 反向规范化：镜像/魔搭 URL → huggingface.co。与运行时开关无关，用于
 // URL 比对（如 Android 恢复下载时按 URL 匹配模型）以及请求前的归一。
-export const canonicalizeHfUrl = (url: string): string =>
-  swapDomain(url, HF_MIRROR_DOMAIN, HF_DOMAIN);
+export const canonicalizeHfUrl = (url: string): string => {
+  const ms = MS_RESOLVE_RE.exec(url);
+  if (ms) {
+    return `${HF_DOMAIN}/${ms[1]}/${ms[2]}/resolve/main/${ms[3]}`;
+  }
+  return swapDomain(url, HF_MIRROR_DOMAIN, HF_DOMAIN);
+};
 
 // 带认证请求的统一收口。强制两条不变量：
 // 1. token 绝不与镜像域名组合（先归一再决定，防止已是镜像的 URL —— 如

@@ -37,7 +37,9 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
   const [deviceInfo, setDeviceInfo] = useState({
     model: RNDeviceInfo.getModel(),
     systemName: Platform.OS === 'ios' ? 'iOS' : 'Android',
-    systemVersion: String(Platform.Version || ''),
+    // Android 上 Platform.Version 是 API 级别（31），显示系统版本号（12）
+    systemVersion:
+      RNDeviceInfo.getSystemVersion() || String(Platform.Version || ''),
     brand: RNDeviceInfo.getBrand(),
     cpuArch: [] as string[],
     isEmulator: false,
@@ -103,7 +105,9 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
         const newDeviceInfo = {
           model: RNDeviceInfo.getModel(),
           systemName: Platform.OS === 'ios' ? 'iOS' : 'Android',
-          systemVersion: String(Platform.Version || ''),
+          // Android 上 Platform.Version 是 API 级别（31），显示系统版本号（12）
+          systemVersion:
+            RNDeviceInfo.getSystemVersion() || String(Platform.Version || ''),
           brand: RNDeviceInfo.getBrand(),
           version: RNDeviceInfo.getVersion(),
           buildNumber: RNDeviceInfo.getBuildNumber(),
@@ -176,11 +180,16 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
             </Text>
             <Text variant="bodySmall" style={styles.headerSummary}>
               {t(l10n.benchmark.deviceInfoCard.deviceSummary, {
-                brand: deviceInfo.brand,
+                // 型号已含品牌（Redmi K30 Pro）时不再重复
+                brand: deviceInfo.model
+                  .toLowerCase()
+                  .startsWith(deviceInfo.brand.toLowerCase())
+                  ? ''
+                  : deviceInfo.brand,
                 model: deviceInfo.model,
                 systemName: deviceInfo.systemName,
                 systemVersion: deviceInfo.systemVersion,
-              })}
+              }).trim()}
             </Text>
             <Text variant="bodySmall" style={styles.headerSummary}>
               {t(l10n.benchmark.deviceInfoCard.coreSummary, {

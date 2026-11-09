@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {View, ScrollView} from 'react-native';
 import {Chip} from 'react-native-paper';
 import {observer} from 'mobx-react-lite';
 
 import {useTheme} from '../../../../hooks';
 import {createStyles} from './styles';
-import {PAL_FILTER_LABELS} from '../../../../utils/palshub-display';
+import {L10nContext} from '../../../../utils';
 
 export type FilterType = 'all' | 'video';
 
@@ -23,10 +23,12 @@ export const FilterChips: React.FC<FilterChipsProps> = observer(
   ({activeFilter, onFilterChange}) => {
     const theme = useTheme();
     const styles = createStyles(theme);
+    // 随界面语言实时切换（原 PAL_FILTER_LABELS 只在启动时取一次语言）
+    const l10n = useContext(L10nContext);
 
     const visibleFilters: FilterOption[] = [
-      {key: 'all', label: PAL_FILTER_LABELS.all},
-      {key: 'video', label: PAL_FILTER_LABELS.video},
+      {key: 'all', label: l10n.palsScreen.filters.all},
+      {key: 'video', label: l10n.palsScreen.filters.video},
     ];
 
     return (

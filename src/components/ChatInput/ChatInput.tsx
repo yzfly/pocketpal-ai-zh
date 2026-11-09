@@ -542,7 +542,7 @@ export const ChatInput = observer(
                   : textInputProps?.editable !== false
               }
               testID="chat-input"
-              accessibilityLabel="Message input"
+              accessibilityLabel={l10n.common.a11y.messageInput}
             />
           </View>
 
@@ -565,11 +565,12 @@ export const ChatInput = observer(
                     anchor={
                       <TouchableOpacity
                         style={styles.plusButton}
+                        hitSlop={8}
                         disabled={!isPlusButtonEnabled}
                         onPress={
                           isPlusButtonEnabled ? handlePlusButtonPress : () => {}
                         }
-                        accessibilityLabel="Add image"
+                        accessibilityLabel={l10n.common.a11y.addImage}
                         accessibilityRole="button">
                         <PlusIcon width={20} height={20} stroke={plusColor} />
                       </TouchableOpacity>
@@ -603,7 +604,8 @@ export const ChatInput = observer(
                       },
                     ]}
                     onPress={onPalBtnPress}
-                    accessibilityLabel="Select Pal"
+                    hitSlop={8}
+                    accessibilityLabel={l10n.common.a11y.selectPal}
                     accessibilityRole="button">
                     <Animated.View
                       style={{
@@ -644,6 +646,7 @@ export const ChatInput = observer(
                 {showThinkingToggle && !isCameraActive && (
                   <TouchableOpacity
                     testID="thinking-toggle"
+                    hitSlop={8}
                     style={[
                       styles.thinkingToggleLeft,
                       isThinkingEnabled && {backgroundColor: onSurfaceColor},
@@ -735,7 +738,7 @@ export const ChatInput = observer(
                       },
                     ]}
                     onPress={onStartCamera}
-                    accessibilityLabel="Start video analysis"
+                    accessibilityLabel={l10n.common.a11y.startVideo}
                     accessibilityRole="button">
                     <VideoRecorderIcon
                       width={16}

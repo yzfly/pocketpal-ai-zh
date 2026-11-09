@@ -1,8 +1,8 @@
 import React, {useEffect, useRef, useState, useContext} from 'react';
 import type {TextInputInstance} from 'react-native';
-import {View, Keyboard} from 'react-native';
+import {View, Keyboard, Pressable} from 'react-native';
 
-import {Button, Text, Switch, Chip} from 'react-native-paper';
+import {Button, Text, Switch, Chip, Icon} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import {MaskedView} from '../../../components/libraryViews';
 
@@ -37,6 +37,8 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
 }) => {
   const l10n = useContext(L10nContext);
   const [isDialogVisible, setDialogVisible] = useState<boolean>(false);
+  // 口袋AI：模板、标记、停止词默认收起，普通用户通常无需修改
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [localChatTemplate, setLocalChatTemplate] = useState(
     chatTemplate.chatTemplate,
   );
@@ -100,13 +102,18 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
         <Text>{label}</Text>
         <Switch
           testID={`${testID}-switch`}
+          accessibilityLabel={label}
           value={isEnabled}
           onValueChange={value => onChange(toggleName, value)}
         />
       </View>
       {isEnabled && tokenName && (
         <TextInput
-          placeholder={`${label} Token`}
+          placeholder={
+            testID === 'BOS'
+              ? l10n.models.modelSettings.tokenSettings.bosTokenPlaceholder
+              : l10n.models.modelSettings.tokenSettings.eosTokenPlaceholder
+          }
           value={token}
           onChangeText={text => onChange(tokenName, text)}
           testID={`${testID}-input`}
@@ -118,25 +125,34 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
   const renderTemplateSection = () => (
     <View style={styles.settingsSection}>
       <View style={styles.chatTemplateRow}>
-        <Text style={styles.chatTemplateLabel} variant="labelLarge">
+        <Text style={styles.chatTemplateLabel}>
           {l10n.models.modelSettings.template.label}
         </Text>
-        <MaskedView
-          style={styles.chatTemplateContainer}
-          maskElement={
-            <View style={styles.chatTemplateMaskContainer}>
-              <Text variant="labelSmall">
-                {chatTemplate.chatTemplate.trim().slice(0, 30)}
-              </Text>
-            </View>
-          }>
-          <LinearGradient
-            colors={[theme.colors.onSurface, 'transparent']}
-            style={styles.chatTemplatePreviewGradient}
-            start={{x: 0.7, y: 0}}
-            end={{x: 1, y: 0}}
-          />
-        </MaskedView>
+        {chatTemplate.chatTemplate.trim() === '' ? (
+          <Text
+            variant="labelMedium"
+            style={styles.templateDefault}
+            testID="template-default-label">
+            {l10n.models.modelSettings.template.defaultPreview}
+          </Text>
+        ) : (
+          <MaskedView
+            style={styles.chatTemplateContainer}
+            maskElement={
+              <View style={styles.chatTemplateMaskContainer}>
+                <Text variant="labelSmall">
+                  {chatTemplate.chatTemplate.trim().slice(0, 30)}
+                </Text>
+              </View>
+            }>
+            <LinearGradient
+              colors={[theme.colors.onSurface, 'transparent']}
+              style={styles.chatTemplatePreviewGradient}
+              start={{x: 0.7, y: 0}}
+              end={{x: 1, y: 0}}
+            />
+          </MaskedView>
+        )}
         <Button
           onPress={() => {
             setLocalChatTemplate(chatTemplate.chatTemplate);
@@ -151,7 +167,7 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
   const renderStopWords = () => (
     <View style={styles.settingItem}>
       <View style={styles.stopLabel}>
-        <Text variant="labelSmall" style={styles.settingLabel}>
+        <Text style={styles.settingLabel}>
           {l10n.models.modelSettings.stopWords.label}
         </Text>
       </View>
@@ -207,62 +223,87 @@ export const ModelSettings: React.FC<ModelSettingsProps> = ({
         />
       </View>
 
-      {/* Token Settings Section */}
+      {/* System Prompt Section */}
       <View style={styles.settingsSection}>
-        {renderTokenSetting(
-          'BOS',
-          l10n.models.modelSettings.tokenSettings.bos,
-          chatTemplate.addBosToken ?? false,
-          chatTemplate.bosToken,
-          'addBosToken',
-          'bosToken',
-        )}
-
-        <Divider style={styles.divider} />
-
-        {renderTokenSetting(
-          'EOS',
-          l10n.models.modelSettings.tokenSettings.eos,
-          chatTemplate.addEosToken ?? false,
-          chatTemplate.eosToken,
-          'addEosToken',
-          'eosToken',
-        )}
-
-        <Divider style={styles.divider} />
-
-        {renderTokenSetting(
-          'add-generation-prompt',
-          l10n.models.modelSettings.tokenSettings.addGenerationPrompt,
-          chatTemplate.addGenerationPrompt ?? false,
-          undefined,
-          'addGenerationPrompt',
-        )}
-
-        <Divider style={styles.divider} />
-
-        {/* System Prompt Section */}
-        <View style={styles.settingsSection}>
-          <TextInput
-            testID="system-prompt-input"
-            defaultValue={chatTemplate.systemPrompt ?? ''}
-            onChangeText={text => {
-              onChange('systemPrompt', text);
-            }}
-            multiline
-            numberOfLines={3}
-            style={styles.textArea}
-            label={l10n.models.modelSettings.tokenSettings.systemPrompt}
-          />
-        </View>
-
-        <Divider style={styles.divider} />
-
-        {renderTemplateSection()}
+        <TextInput
+          testID="system-prompt-input"
+          defaultValue={chatTemplate.systemPrompt ?? ''}
+          onChangeText={text => {
+            onChange('systemPrompt', text);
+          }}
+          multiline
+          numberOfLines={3}
+          style={styles.textArea}
+          label={l10n.models.modelSettings.tokenSettings.systemPrompt}
+        />
       </View>
 
       <Divider style={styles.divider} />
-      {renderStopWords()}
+
+      <Pressable
+        testID="model-settings-advanced-toggle"
+        accessibilityRole="button"
+        accessibilityState={{expanded: showAdvanced}}
+        onPress={() => setShowAdvanced(v => !v)}
+        style={styles.advancedToggle}>
+        <View style={styles.advancedToggleText}>
+          <Text style={styles.advancedToggleTitle}>
+            {l10n.models.modelSettings.advanced.title}
+          </Text>
+          <Text style={styles.advancedToggleHint}>
+            {l10n.models.modelSettings.advanced.hint}
+          </Text>
+        </View>
+        <Icon
+          source={showAdvanced ? 'chevron-up' : 'chevron-down'}
+          size={22}
+          color={theme.colors.onSurfaceVariant}
+        />
+      </Pressable>
+
+      {showAdvanced && (
+        <>
+          {/* Token Settings Section */}
+          <View style={styles.settingsSection}>
+            {renderTokenSetting(
+              'BOS',
+              l10n.models.modelSettings.tokenSettings.bos,
+              chatTemplate.addBosToken ?? false,
+              chatTemplate.bosToken,
+              'addBosToken',
+              'bosToken',
+            )}
+
+            <Divider style={styles.divider} />
+
+            {renderTokenSetting(
+              'EOS',
+              l10n.models.modelSettings.tokenSettings.eos,
+              chatTemplate.addEosToken ?? false,
+              chatTemplate.eosToken,
+              'addEosToken',
+              'eosToken',
+            )}
+
+            <Divider style={styles.divider} />
+
+            {renderTokenSetting(
+              'add-generation-prompt',
+              l10n.models.modelSettings.tokenSettings.addGenerationPrompt,
+              chatTemplate.addGenerationPrompt ?? false,
+              undefined,
+              'addGenerationPrompt',
+            )}
+
+            <Divider style={styles.divider} />
+
+            {renderTemplateSection()}
+          </View>
+
+          <Divider style={styles.divider} />
+          {renderStopWords()}
+        </>
+      )}
       {/** Chat Template Dialog */}
       <Sheet
         isVisible={isDialogVisible}

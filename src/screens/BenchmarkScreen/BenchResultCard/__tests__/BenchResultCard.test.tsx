@@ -168,7 +168,7 @@ describe('BenchResultCard', () => {
   });
 
   it('disables sharing for local models', () => {
-    const {getByText} = render(
+    const {queryByText, queryByTestId} = render(
       <BenchResultCard
         result={mockLocalModelResult}
         onDelete={mockOnDelete}
@@ -176,7 +176,9 @@ describe('BenchResultCard', () => {
       />,
     );
 
-    expect(getByText('Cannot share')).toBeTruthy();
+    // 本地模型不显示分享入口，也不显示“无法共享”提示
+    expect(queryByTestId('submit-benchmark-button')).toBeNull();
+    expect(queryByText('Cannot share')).toBeNull();
   });
 
   it('opens leaderboard when link is clicked', () => {

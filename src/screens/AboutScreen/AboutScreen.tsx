@@ -21,7 +21,7 @@ import {REPO_URL} from '../../config/urls';
 
 import {CopyIcon, GithubIcon, ChevronRightIcon} from '../../assets/icons';
 
-import {Sheet, TextInput} from '../../components';
+import {BrandMark, Sheet, TextInput} from '../../components';
 import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
 import {L10nContext} from '../../utils';
@@ -142,9 +142,12 @@ export const AboutScreen: React.FC = observer(() => {
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Text variant="titleLarge" style={styles.title}>
-                口袋AI
-              </Text>
+              <View style={styles.brandRow}>
+                <BrandMark size={56} />
+                <Text variant="titleLarge" style={styles.title}>
+                  口袋AI
+                </Text>
+              </View>
               <Text variant="bodyMedium" style={styles.description}>
                 {l10n.about.description}
               </Text>
@@ -179,12 +182,12 @@ export const AboutScreen: React.FC = observer(() => {
                       updateService.showDialog();
                     } else {
                       Alert.alert(
-                        '检查更新',
-                        updateService.error ?? '已经是最新版本',
+                        l10n.about.checkUpdate,
+                        updateService.error ?? l10n.about.upToDate,
                       );
                     }
                   }}>
-                  检查更新
+                  {l10n.about.checkUpdate}
                 </Button>
               )}
             </View>
@@ -236,7 +239,7 @@ export const AboutScreen: React.FC = observer(() => {
                   l10n.about.chineseEditionWechatCopiedDescription,
                 );
               }}
-              style={styles.actionButton}
+              style={[styles.actionButton, styles.stackedButton]}
               icon={ChevronRightButtonIcon}>
               {l10n.about.chineseEditionWechatButton}
             </Button>

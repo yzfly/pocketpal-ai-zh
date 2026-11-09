@@ -161,6 +161,7 @@ export const HeaderRight: React.FC = observer(() => {
       <IconButton
         icon={() => <EditBoxIcon stroke={theme.colors.primary} />}
         testID="reset-button"
+        accessibilityLabel={l10n.common.a11y.newChat}
         style={styles.chatBtn}
         onPress={() => {
           chatSessionStore.resetActiveSession();
@@ -176,6 +177,7 @@ export const HeaderRight: React.FC = observer(() => {
             style={styles.menuBtn}
             onPress={openMenu}
             testID="menu-button"
+            accessibilityLabel={l10n.common.a11y.moreOptions}
           />
         }>
         <Menu.Item

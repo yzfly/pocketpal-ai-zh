@@ -61,16 +61,16 @@ export const AssistantTurnFooter: React.FC<AssistantTurnFooterProps> = observer(
     const ttft = finiteNumber(timings?.time_to_first_token_ms);
 
     const timingParts: string[] = [];
-    if (msPerToken !== undefined) {
-      timingParts.push(
-        t(l10n.components.bubble.msPerToken, {value: msPerToken.toFixed()}),
-      );
-    }
+    // 口袋AI：速度和“毫秒/token”是同一件事，只留速度，读起来更直白
     if (tokensPerSec !== undefined) {
       timingParts.push(
         t(l10n.components.bubble.tokensPerSec, {
-          value: tokensPerSec.toFixed(2),
+          value: tokensPerSec.toFixed(1),
         }),
+      );
+    } else if (msPerToken !== undefined) {
+      timingParts.push(
+        t(l10n.components.bubble.msPerToken, {value: msPerToken.toFixed()}),
       );
     }
     // llama.rn reports both of these on local turns too, so origin gates them
@@ -94,9 +94,11 @@ export const AssistantTurnFooter: React.FC<AssistantTurnFooterProps> = observer(
       );
     }
     if (ttft !== undefined) {
-      timingParts.push(t(l10n.components.bubble.ttft, {value: ttft}));
+      timingParts.push(
+        t(l10n.components.bubble.ttft, {value: Math.round(ttft)}),
+      );
     }
-    const fullTimingsString = timingParts.join(', ');
+    const fullTimingsString = timingParts.join(' · ');
 
     const draftTokens = finiteNumber(timings?.draft_tokens);
     const draftAccepted = finiteNumber(timings?.draft_tokens_accepted) ?? 0;

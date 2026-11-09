@@ -24,9 +24,4 @@ export const createStyles = ({theme}: {theme: Theme}) =>
     button: {
       minWidth: 200,
     },
-    logo: {
-      width: 112,
-      height: 112,
-      borderRadius: 30,
-    },
   });

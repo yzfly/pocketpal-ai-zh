@@ -74,7 +74,10 @@ export const ModelsHeaderRight = observer(() => {
         }
         anchorPosition="bottom">
         {/* Filter section */}
-        <Menu.Item label="Filters" isGroupLabel />
+        <Menu.Item
+          label={l10n.components.modelsHeaderRight.groupFilters}
+          isGroupLabel
+        />
         <Menu.Item
           icon={({size}) => (
             <Image
@@ -94,7 +97,10 @@ export const ModelsHeaderRight = observer(() => {
         />
 
         {/* View section */}
-        <Menu.Item label="View" isGroupLabel />
+        <Menu.Item
+          label={l10n.components.modelsHeaderRight.groupView}
+          isGroupLabel
+        />
         <Menu.Item
           icon={filters.includes('grouped') ? 'layers' : 'layers-outline'}
           onPress={() => toggleFilter('grouped')}

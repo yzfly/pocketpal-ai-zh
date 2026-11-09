@@ -29,6 +29,7 @@ export const AutoSpeakRow: React.FC = observer(() => {
         </Text>
       </View>
       <Switch
+        accessibilityLabel={l10n.voiceAndSpeech.autoSpeakLabel}
         value={ttsStore.autoSpeakEnabled}
         onValueChange={v => ttsStore.setAutoSpeak(v)}
         testID="tts-auto-speak-switch"

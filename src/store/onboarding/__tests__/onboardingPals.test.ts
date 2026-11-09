@@ -38,7 +38,7 @@ describe('onboardingPals', () => {
   });
 
   it.each(ONBOARDING_PALS.map(p => [p.key, p] as const))(
-    'pal %s has 3 tiers in quick/balanced/best order with exactly one recommended (balanced)',
+    'pal %s has 3 tiers in quick/balanced/best order with exactly one recommended (quick)',
     (_key, pal) => {
       expect(pal.models).toHaveLength(3);
       expect(pal.models.map(m => m.tier)).toEqual([
@@ -48,7 +48,7 @@ describe('onboardingPals', () => {
       ]);
       const recommended = pal.models.filter(m => m.recommended);
       expect(recommended).toHaveLength(1);
-      expect(recommended[0].tier).toBe('balanced');
+      expect(recommended[0].tier).toBe('quick');
     },
   );
 

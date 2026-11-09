@@ -232,7 +232,7 @@ export const EnhancedSearchBar = ({
               style={styles.authorInput}
               autoFocus
               testID="author-filter-input"
-              accessibilityLabel="Filter by author"
+              accessibilityLabel={l10n.common.a11y.filterByAuthor}
             />
             {filters.author.length > 0 && (
               <TouchableOpacity

@@ -53,6 +53,7 @@ export const MicButton: React.FC<MicButtonProps> = observer(
         {asrStore.isSelectedTierReady ? (
           <Pressable
             style={[styles.button, style]}
+            hitSlop={6}
             onPress={onStart}
             disabled={asrStore.captureState === 'requesting_perm'}
             accessibilityRole="button"
@@ -63,6 +64,7 @@ export const MicButton: React.FC<MicButtonProps> = observer(
         ) : (
           <Pressable
             style={[styles.button, style]}
+            hitSlop={6}
             onPress={() => {
               Keyboard.dismiss();
               setSetupOpen(true);

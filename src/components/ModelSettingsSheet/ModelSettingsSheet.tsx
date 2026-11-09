@@ -212,6 +212,9 @@ export const ModelSettingsSheet: React.FC<ModelSettingsSheetProps> = memo(
           <View style={styles.reasoningRow}>
             <Text>{l10n.components.modelSettingsSheet.isReasoningModel}</Text>
             <Switch
+              accessibilityLabel={
+                l10n.components.modelSettingsSheet.isReasoningModel
+              }
               testID="reasoning-is-reasoning-switch"
               value={isReasoningModel}
               onValueChange={onIsReasoningModelChange}
@@ -225,6 +228,9 @@ export const ModelSettingsSheet: React.FC<ModelSettingsSheetProps> = memo(
               <View style={styles.reasoningRow}>
                 <Text>{l10n.components.modelSettingsSheet.supportsEffort}</Text>
                 <Switch
+                  accessibilityLabel={
+                    l10n.components.modelSettingsSheet.supportsEffort
+                  }
                   testID="reasoning-supports-effort-switch"
                   value={supportsEffort}
                   onValueChange={onSupportsEffortChange}

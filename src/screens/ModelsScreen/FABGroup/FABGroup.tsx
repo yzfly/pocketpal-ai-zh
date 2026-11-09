@@ -14,6 +14,8 @@ interface FABGroupProps {
   onAddRemoteModel: () => void;
   onManageServers?: () => void;
   hasServers?: boolean;
+  /** 列表向下滚动时隐藏，避免浮动按钮挡住卡片右侧的操作 */
+  visible?: boolean;
 }
 
 const iconStyle = {width: 24, height: 24};
@@ -39,6 +41,7 @@ export const FABGroup: React.FC<FABGroupProps> = ({
   onAddRemoteModel,
   onManageServers,
   hasServers,
+  visible = true,
 }) => {
   const [open, setOpen] = useState(false);
   const l10n = useContext(L10nContext);
@@ -107,7 +110,7 @@ export const FABGroup: React.FC<FABGroupProps> = ({
     <FAB.Group
       testID="fab-group"
       open={open}
-      visible={true}
+      visible={visible || open}
       icon={open ? 'close' : 'plus'}
       actions={actions}
       onStateChange={onStateChange}
@@ -120,7 +123,9 @@ export const FABGroup: React.FC<FABGroupProps> = ({
       }}
       fabStyle={styles.fab}
       backdropColor={theme.colors.surface}
-      accessibilityLabel={open ? 'Close menu' : 'Open menu'}
+      accessibilityLabel={
+        open ? l10n.models.buttons.fabClose : l10n.models.buttons.fabOpen
+      }
     />
   );
 };

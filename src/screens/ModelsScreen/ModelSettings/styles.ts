@@ -6,8 +6,28 @@ const screenHeight = Dimensions.get('window').height;
 
 export const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    advancedToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 48,
+      paddingVertical: 8,
+    },
+    advancedToggleText: {
+      flex: 1,
+      marginRight: 8,
+    },
+    advancedToggleTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+    },
+    advancedToggleHint: {
+      marginTop: 2,
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+    },
+    // 外层弹层已有 16 内边距，这里不再重复缩进，和下方“多模态/推理”分组对齐
     container: {
-      padding: 16,
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borders.default,
     },
@@ -18,6 +38,10 @@ export const createStyles = (theme: Theme) =>
     },
     chatTemplateLabel: {
       flex: 1,
+    },
+    templateDefault: {
+      flex: 2,
+      color: theme.colors.textSecondary,
     },
     chatTemplateContainer: {
       flex: 2,
@@ -51,8 +75,9 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: 8,
     },
     modelNameLabel: {
-      ...theme.fonts.titleMediumLight,
-      paddingVertical: 8,
+      fontSize: 16,
+      fontWeight: '600',
+      paddingBottom: 8,
     },
     divider: {
       marginVertical: 4,
@@ -66,11 +91,11 @@ export const createStyles = (theme: Theme) =>
       alignItems: 'center',
     },
     settingItem: {
-      marginBottom: 24,
-      paddingHorizontal: 4,
+      marginTop: 8,
+      marginBottom: 8,
     },
     settingLabel: {
-      marginBottom: 2,
+      marginBottom: 6,
     },
     settingValue: {
       textAlign: 'right',

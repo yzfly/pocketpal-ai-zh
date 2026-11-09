@@ -11,6 +11,7 @@ import {
 
 import {Model} from '../../utils/types';
 import {canonicalizeHfUrl, resolveHfRequest} from '../../config';
+import {hasModelScopeCandidate, pickDownloadSource} from './downloadSource';
 import {formatBytes, hasEnoughSpace, hfUserAgent} from '../../utils';
 import {ensureNotificationPermission} from '../../utils/androidPermission';
 import {uiStore} from '../../store';
@@ -291,6 +292,10 @@ export class DownloadManager {
       model.downloadUrl,
       isHuggingFaceUrl(model.downloadUrl) ? authToken : null,
     );
+    // 国内：优先魔搭（hf-mirror 对 Xet 存储的大文件会跳到海外，下载卡 0%）
+    if (hasModelScopeCandidate(req.url, req.authToken)) {
+      req.url = await pickDownloadSource(req.url, req.authToken);
+    }
 
     const isEnoughSpace = await hasEnoughSpace(model);
     if (!isEnoughSpace) {

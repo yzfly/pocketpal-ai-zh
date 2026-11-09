@@ -118,6 +118,7 @@ export const LocalApiServerCard: React.FC = observer(() => {
                 </Text>
               </View>
               <Switch
+                accessibilityLabel={copy.enable}
                 testID="local-api-server-switch"
                 value={store.enabled}
                 onValueChange={onSwitchChange}
@@ -208,6 +209,7 @@ export const LocalApiServerCard: React.FC = observer(() => {
                 )}
               </View>
               <Switch
+                accessibilityLabel={copy.lan}
                 testID="local-api-server-lan-switch"
                 value={store.lanEnabled}
                 disabled={!editable}

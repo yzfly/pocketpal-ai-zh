@@ -10,12 +10,8 @@ export const createStyles = (theme: Theme, align: 'left' | 'center') =>
       textAlign: align,
     },
     pillRun: {
-      // The Figma highlight is a peach rectangle laid under a darker
-      // text span via mix-blend-multiply. RN can't reproduce the
-      // blend directly; the closest faithful approximation is a
-      // background-coloured run with the darker foreground text
-      // colour. `accent.peach` is the canonical token (#FCE7CF).
-      backgroundColor: theme.colors.accent.peach,
+      // 口袋AI 黑白风格：重点词用深色加粗，不再铺底色（铺色像被选中的文字）
       color: theme.colors.text,
+      fontWeight: '600',
     },
   });

@@ -21,7 +21,8 @@ import type {
 //    MTP 投机解码默认关闭：K30 Pro（骁龙 865，纯 CPU）实测开启后反而变慢
 //    （2B 14.2→8.2 tok/s，4B 6.6→4.7 tok/s），因为 Qwen3.5 的线性注意力层
 //    每次验证都要做状态检查点/回滚。有 GPU/NPU 加速的机型可在设置里自行开启。
-// 5. 各档默认（排第一）都是口袋助手标准版（Qwen3.5 2B），保证各型号流畅不卡顿；
+// 5. 各档默认（排第一）都是口袋助手 mini（Qwen3.5 0.8B，用户 2026-11-08 指定）：
+//    下载最小、所有手机都不卡，也能看图；标准版 2B 排第二，作为“更聪明”的选择；
 //    其余按能力与速度排序。K30 Pro（4 线程）实测生成速度：Ling 3.0 Tiny 20.0、
 //    LFM3 1.7B 22.5、Qwen3.5 2B 16.6、MiniCPM5 2B 15.5、Spark-X2.6 4B 9.1、
 //    Qwen3.5 4B 6.9、Nanbeige4.2 3B 5.5、Qwen3.5 9B 3.7 tok/s。
@@ -256,6 +257,7 @@ const MINICPM_V47_1B: RuleCandidate = {
 export const chineseExtraCandidates: Record<Tier, RuleCandidate[]> = {
   low: [QWEN35_0_8B, MINICPM5_1B],
   mid: [
+    QWEN35_0_8B,
     QWEN35_2B,
     MINICPM5_2B,
     LFM3_1_7B,
@@ -264,9 +266,10 @@ export const chineseExtraCandidates: Record<Tier, RuleCandidate[]> = {
     MINICPM_V47_1B,
     QWEN35_2B_UNCENSORED,
   ],
-  // 高端与旗舰机也默认推荐 2B：K30 Pro 实测 16 tok/s 左右，各型号都不卡顿；
+  // 高端与旗舰机也默认 0.8B，其次 2B（K30 Pro 实测 16 tok/s 左右）；
   // 4B 及以上作为“更聪明但更慢”的可选项排在后面。
   high: [
+    QWEN35_0_8B,
     QWEN35_2B,
     QWEN35_4B,
     SPARK_X26_4B,
@@ -279,6 +282,7 @@ export const chineseExtraCandidates: Record<Tier, RuleCandidate[]> = {
     QWEN35_4B_UNCENSORED,
   ],
   flagship: [
+    QWEN35_0_8B,
     QWEN35_2B,
     LING30_TINY,
     QWEN35_4B,
@@ -346,15 +350,15 @@ export const chineseOnboardingModels: Record<
   {quick: RuleCandidate; balanced: RuleCandidate; best: RuleCandidate}
 > = {
   // 智能聊天
-  pip: {quick: MINICPM5_1B, balanced: QWEN35_2B, best: QWEN35_4B},
+  pip: {quick: QWEN35_0_8B, balanced: QWEN35_2B, best: QWEN35_4B},
   // 编程：最佳档用基于 Qwen3.5-4B 的编程智能体微调
   codie: {quick: QWEN35_0_8B, balanced: QWEN35_2B, best: FROGNANO_4B},
   // 教育：面壁 MiniCPM5 + Spark-X2.6（教育场景训练）
-  sage: {quick: MINICPM5_1B, balanced: MINICPM5_2B, best: SPARK_X26_4B},
+  sage: {quick: QWEN35_0_8B, balanced: MINICPM5_2B, best: SPARK_X26_4B},
   // 角色扮演
-  echo: {quick: MINICPM5_1B, balanced: QWEN35_2B, best: QWEN35_4B},
+  echo: {quick: QWEN35_0_8B, balanced: QWEN35_2B, best: QWEN35_4B},
   // 创意写作：最佳档用 Nanbeige4.2 3B（中文写作与对话见长，速度偏慢）
-  muse: {quick: MINICPM5_1B, balanced: MINICPM5_2B, best: NANBEIGE42_3B},
+  muse: {quick: QWEN35_0_8B, balanced: MINICPM5_2B, best: NANBEIGE42_3B},
 };
 
 // ─── 新手友好的一句话说明 ─────────────────────────────────────────────
@@ -364,17 +368,17 @@ export const chineseModelTaglines: Record<string, string> = {
   'qwen3.5-0.8b': '最小最快，入门手机也能流畅聊天',
   'qwen3.5-2b': '日常聊天又快又好，大多数手机首选',
   'qwen3.5-4b': '更聪明、回答更全面，还能看图',
-  'qwen3.5-9b': '最强的口袋助手，需要 12GB 内存',
+  'qwen3.5-9b': '最强的口袋助手，需要 12 GB 内存',
   'qwen3.5-2b-abliterated': '去除内容限制，回答更直接；内容请自行判断',
   'qwen3.5-4b-abliterated': '去除内容限制的专业版；内容请自行判断',
   'minicpm5-1b': '面壁出品，小巧省电',
   'minicpm5-2b': '面壁出品，知识问答扎实',
   'nanbeige4.2-3b': '文笔好，适合写作和长对话，速度偏慢',
   'spark-x2.6-4b': '擅长讲题和学习辅导',
-  'ling-3.0-tiny': '大模型的知识量，小模型的速度；需要 8GB 内存',
+  'ling-3.0-tiny': '大模型的知识量，小模型的速度；需要 8 GB 内存',
   'lfm3-1.7b': '生成速度最快，适合快问快答',
   'hy-mt2-1.8b': '腾讯混元出品，专业的多语言翻译',
-  'mimo-v2.6-distill-9b': '小米出品，写代码和推理能力强；需要 12GB 内存',
+  'mimo-v2.6-distill-9b': '小米出品，写代码和推理能力强；需要 12 GB 内存',
   'frognano-4b': '擅长写代码、找 bug',
   'minicpm-v-4.7-1b': '拍照识字、看图问答',
 };

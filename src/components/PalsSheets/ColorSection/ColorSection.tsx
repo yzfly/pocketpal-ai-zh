@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {View, TouchableOpacity, ScrollView} from 'react-native';
 import {observer} from 'mobx-react-lite';
 import {useFormContext, Controller} from 'react-hook-form';
 
 import {useTheme} from '../../../hooks';
+import {t} from '../../../locales';
+import {L10nContext} from '../../../utils';
 import {createStyles} from './styles';
 import {SectionDivider} from '../SectionDivider';
 import type {PalFormData} from '../types';
@@ -65,10 +67,11 @@ export const ColorSection = observer(() => {
   const {control} = useFormContext<PalFormData>();
   const theme = useTheme();
   const styles = createStyles(theme);
+  const l10n = useContext(L10nContext);
 
   return (
     <View>
-      <SectionDivider label="Color" />
+      <SectionDivider label={l10n.components.colorSection.title} />
       <Controller
         control={control}
         name="color"
@@ -77,21 +80,27 @@ export const ColorSection = observer(() => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.pickerContainer}>
-            {colorPairs.map(pair => (
-              <TouchableOpacity
-                key={pair.id}
-                onPress={() => onChange(pair.colors)}
-                hitSlop={5}
-                activeOpacity={0.7}>
-                <DualColorCircle
-                  colors={pair.colors}
-                  isSelected={
-                    value?.[0] === pair.colors[0] &&
-                    value?.[1] === pair.colors[1]
-                  }
-                />
-              </TouchableOpacity>
-            ))}
+            {colorPairs.map((pair, index) => {
+              const isSelected =
+                value?.[0] === pair.colors[0] && value?.[1] === pair.colors[1];
+              return (
+                <TouchableOpacity
+                  key={pair.id}
+                  accessibilityRole="radio"
+                  accessibilityLabel={t(l10n.components.colorSection.option, {
+                    index: String(index + 1),
+                  })}
+                  accessibilityState={{selected: isSelected}}
+                  onPress={() => onChange(pair.colors)}
+                  hitSlop={5}
+                  activeOpacity={0.7}>
+                  <DualColorCircle
+                    colors={pair.colors}
+                    isSelected={isSelected}
+                  />
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         )}
       />

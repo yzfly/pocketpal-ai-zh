@@ -1,12 +1,16 @@
-import React, {useContext, useEffect, useState} from 'react';
-import {Image, Pressable, View} from 'react-native';
-import {Button, HelperText, Text} from 'react-native-paper';
+import React, {useContext, useState} from 'react';
+import {View} from 'react-native';
+import {
+  Button,
+  HelperText,
+  Text,
+  TextInput as PaperTextInput,
+} from 'react-native-paper';
 import {observer} from 'mobx-react';
 
 import {Sheet} from '../Sheet';
 import {TextInput} from '../TextInput';
 import {useTheme} from '../../hooks';
-import {t} from '../../locales';
 import {L10nContext} from '../../utils';
 import {accountService, describeAccountError} from '../../services';
 
@@ -20,11 +24,11 @@ interface AccountSheetProps {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESEND_SECONDS = 60;
 
 export const isStrongPassword = (pw: string) =>
   pw.length >= 8 && /[A-Za-z]/.test(pw) && /[0-9]/.test(pw);
 
+/** 登录 / 注册：邮箱 + 密码（注册多一个确认密码），不需要验证码 */
 export const AccountSheet: React.FC<AccountSheetProps> = observer(
   ({isVisible, onClose}) => {
     const theme = useTheme();
@@ -35,46 +39,17 @@ export const AccountSheet: React.FC<AccountSheetProps> = observer(
     const [mode, setMode] = useState<Mode>('signIn');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [code, setCode] = useState('');
-    const [verificationId, setVerificationId] = useState<string | null>(null);
-    const [countdown, setCountdown] = useState(0);
-    const [captchaAnswer, setCaptchaAnswer] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-      if (countdown <= 0) {
-        return;
-      }
-      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }, [countdown]);
-
     const busy = accountService.busy;
-    const captcha = accountService.captcha;
     const emailOk = EMAIL_RE.test(email.trim());
-
-    const fail = (e: unknown) => setError(describeAccountError(e));
 
     const switchMode = (next: Mode) => {
       setMode(next);
       setError(null);
-      setCode('');
-      setVerificationId(null);
-    };
-
-    const handleSendCode = async () => {
-      setError(null);
-      if (!emailOk) {
-        setError(copy.invalidEmail);
-        return;
-      }
-      try {
-        const id = await accountService.startSignUp(email);
-        setVerificationId(id);
-        setCountdown(RESEND_SECONDS);
-      } catch (e) {
-        fail(e);
-      }
+      setConfirm('');
     };
 
     const handleSubmit = async () => {
@@ -91,43 +66,24 @@ export const AccountSheet: React.FC<AccountSheetProps> = observer(
             setError(copy.weakPassword);
             return;
           }
-          if (!verificationId) {
+          if (password !== confirm) {
+            setError(copy.passwordMismatch);
             return;
           }
-          await accountService.completeSignUp(
-            email,
-            password,
-            verificationId,
-            code,
-          );
+          await accountService.signUp(email, password);
         }
         setPassword('');
-        setCode('');
+        setConfirm('');
         onClose();
       } catch (e) {
-        fail(e);
-      }
-    };
-
-    const handleCaptcha = async () => {
-      try {
-        await accountService.solveCaptcha(captchaAnswer.trim());
-        setCaptchaAnswer('');
-        setError(null);
-      } catch (e) {
-        setCaptchaAnswer('');
-        accountService.refreshCaptcha().catch(() => undefined);
-        fail(e);
+        setError(describeAccountError(e));
       }
     };
 
     const canSubmit =
-      mode === 'signIn'
-        ? emailOk && password.length > 0
-        : emailOk &&
-          !!verificationId &&
-          code.trim().length > 0 &&
-          password.length > 0;
+      emailOk &&
+      password.length > 0 &&
+      (mode === 'signIn' || confirm.length > 0);
 
     return (
       <Sheet
@@ -152,86 +108,40 @@ export const AccountSheet: React.FC<AccountSheetProps> = observer(
                 textContentType="emailAddress"
                 autoComplete="email"
               />
-              {mode === 'signUp' && (
-                <View style={styles.codeRow}>
-                  <View style={styles.codeInput}>
-                    <TextInput
-                      testID="account-code-input"
-                      label={copy.code}
-                      value={code}
-                      onChangeText={setCode}
-                      keyboardType="number-pad"
-                      textContentType="oneTimeCode"
-                      autoComplete="one-time-code"
-                      maxLength={8}
-                    />
-                  </View>
-                  <Button
-                    testID="account-send-code"
-                    mode="outlined"
-                    onPress={handleSendCode}
-                    disabled={busy || countdown > 0 || !emailOk}
-                    style={styles.codeButton}>
-                    {countdown > 0
-                      ? t(copy.resendCode, {seconds: String(countdown)})
-                      : copy.sendCode}
-                  </Button>
-                </View>
-              )}
-              {mode === 'signUp' && verificationId && (
-                <Text style={styles.hint}>
-                  {t(copy.codeSent, {email: email.trim()})}
-                </Text>
-              )}
               <TextInput
                 testID="account-password-input"
                 label={copy.password}
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
+                secureTextEntry={!showPassword}
+                right={
+                  <PaperTextInput.Icon
+                    testID="account-password-toggle"
+                    icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    accessibilityLabel={
+                      showPassword ? copy.hidePassword : copy.showPassword
+                    }
+                    onPress={() => setShowPassword(v => !v)}
+                  />
+                }
                 autoCapitalize="none"
                 autoCorrect={false}
                 textContentType={mode === 'signIn' ? 'password' : 'newPassword'}
               />
               {mode === 'signUp' && (
-                <Text style={styles.hint}>{copy.passwordHint}</Text>
-              )}
-
-              {captcha && (
-                <View style={styles.captchaBox} testID="account-captcha">
-                  <Text style={styles.hint}>{copy.captchaHint}</Text>
-                  <Pressable
-                    onPress={() =>
-                      accountService.refreshCaptcha().catch(() => undefined)
-                    }
-                    accessibilityRole="button"
-                    accessibilityLabel={copy.captchaRefresh}>
-                    <Image
-                      source={{uri: captcha.image}}
-                      style={styles.captchaImage}
-                      resizeMode="contain"
-                    />
-                  </Pressable>
-                  <View style={styles.codeRow}>
-                    <View style={styles.codeInput}>
-                      <TextInput
-                        testID="account-captcha-input"
-                        label={copy.captcha}
-                        value={captchaAnswer}
-                        onChangeText={setCaptchaAnswer}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    </View>
-                    <Button
-                      mode="outlined"
-                      onPress={handleCaptcha}
-                      disabled={!captchaAnswer.trim()}
-                      style={styles.codeButton}>
-                      {copy.captchaConfirm}
-                    </Button>
-                  </View>
-                </View>
+                <>
+                  <TextInput
+                    testID="account-confirm-input"
+                    label={copy.confirmPassword}
+                    value={confirm}
+                    onChangeText={setConfirm}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    textContentType="newPassword"
+                  />
+                  <Text style={styles.hint}>{copy.passwordHint}</Text>
+                </>
               )}
 
               {error && (
@@ -245,7 +155,7 @@ export const AccountSheet: React.FC<AccountSheetProps> = observer(
                 mode="contained"
                 onPress={handleSubmit}
                 loading={busy}
-                disabled={busy || !canSubmit || !!captcha}
+                disabled={busy || !canSubmit}
                 style={styles.submit}
                 contentStyle={styles.submitContent}>
                 {mode === 'signIn' ? copy.signIn : copy.signUp}
@@ -253,6 +163,7 @@ export const AccountSheet: React.FC<AccountSheetProps> = observer(
               <Button
                 testID="account-switch-mode"
                 mode="text"
+                labelStyle={styles.switchLabel}
                 onPress={() =>
                   switchMode(mode === 'signIn' ? 'signUp' : 'signIn')
                 }>

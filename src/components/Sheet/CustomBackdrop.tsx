@@ -2,8 +2,10 @@ import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import React, {useMemo} from 'react';
+import React, {useContext, useMemo} from 'react';
 import {useTheme} from 'react-native-paper';
+
+import {L10nContext} from '../../utils';
 // import {Extrapolation, interpolate} from 'react-native-reanimated';
 // import {useAnimatedStyle} from 'react-native-reanimated';
 
@@ -13,6 +15,7 @@ export const CustomBackdrop = ({
   style,
 }: BottomSheetBackdropProps) => {
   const theme = useTheme();
+  const l10n = useContext(L10nContext);
 
   // const containerAnimatedStyle = useAnimatedStyle(() => ({
   //   opacity: interpolate(
@@ -39,6 +42,7 @@ export const CustomBackdrop = ({
       animatedIndex={animatedIndex}
       animatedPosition={animatedPosition}
       disappearsOnIndex={-1}
+      accessibilityLabel={l10n.common.a11y.closeSheet}
       style={containerStyle}
     />
   );

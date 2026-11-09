@@ -1,7 +1,7 @@
 import React, {useState, useContext} from 'react';
 import {View, Linking} from 'react-native';
 
-import {Card, Text, Button, Tooltip} from 'react-native-paper';
+import {Card, Text, Button} from 'react-native-paper';
 
 import {useTheme} from '../../../hooks';
 import {L10nContext} from '../../../utils';
@@ -11,6 +11,7 @@ import {createStyles} from './styles';
 
 import {BenchmarkResult} from '../../../utils/types';
 import {formatBytes, formatNumber} from '../../../utils';
+import {formatParamsYi} from '../../../utils/modelTechInfo';
 import {NetworkError, AppCheckError, ServerError} from '../../../utils/errors';
 
 type Props = {
@@ -124,12 +125,18 @@ export const BenchResultCard = ({result, onDelete, onShare}: Props) => {
             </Text>
             <Text style={styles.modelMeta}>
               {formatBytes(result.modelSize)} •{' '}
-              {formatNumber(result.modelNParams, 2, true, false)}{' '}
-              {l10n.benchmark.benchmarkResultCard.modelMeta.params}
+              {l10n.models.modelCard.tech.paramsScale === 'yi'
+                ? `${formatParamsYi(result.modelNParams)}${l10n.benchmark.benchmarkResultCard.modelMeta.params}`
+                : `${formatNumber(result.modelNParams, 2, true, false)} ${
+                    l10n.benchmark.benchmarkResultCard.modelMeta.params
+                  }`}
             </Text>
           </View>
           <Button
             testID="delete-result-button"
+            accessibilityLabel={
+              l10n.benchmark.benchmarkResultCard.actions.deleteA11y
+            }
             mode="text"
             onPress={() => onDelete(result.timestamp)}
             icon="delete"
@@ -305,50 +312,42 @@ export const BenchResultCard = ({result, onDelete, onShare}: Props) => {
           </Text>
         </View>
 
-        <View style={styles.footer}>
-          {result.submitted ? (
-            <View style={styles.shareContainer}>
-              <Text variant="bodySmall" style={styles.submittedText}>
-                {l10n.benchmark.benchmarkResultCard.actions.submittedText}{' '}
-                <Text onPress={openLeaderboard} style={styles.leaderboardLink}>
-                  {l10n.benchmark.benchmarkResultCard.actions.leaderboardLink}
+        {(result.submitted || result.oid) && (
+          <View style={styles.footer}>
+            {result.submitted ? (
+              <View style={styles.shareContainer}>
+                <Text variant="bodySmall" style={styles.submittedText}>
+                  {l10n.benchmark.benchmarkResultCard.actions.submittedText}{' '}
+                  <Text
+                    onPress={openLeaderboard}
+                    style={styles.leaderboardLink}>
+                    {l10n.benchmark.benchmarkResultCard.actions.leaderboardLink}
+                  </Text>
                 </Text>
-              </Text>
-            </View>
-          ) : !result.oid ? (
-            <Tooltip
-              title={
-                l10n.benchmark.benchmarkResultCard.actions.cannotShareTooltip
-              }>
-              <View style={styles.tooltipContainer}>
-                <Text variant="bodySmall" style={styles.disabledText}>
-                  {l10n.benchmark.benchmarkResultCard.actions.cannotShare}
-                </Text>
-                <Text style={styles.infoIcon}>ⓘ</Text>
               </View>
-            </Tooltip>
-          ) : (
-            <View style={styles.actionContainer}>
-              <Button
-                testID="submit-benchmark-button"
-                mode="outlined"
-                onPress={handleSubmit}
-                loading={isSubmitting}
-                disabled={isSubmitting}
-                icon="share"
-                compact
-                style={styles.submitButton}>
-                {l10n.benchmark.benchmarkResultCard.actions.submitButton}
-              </Button>
-              <Text
-                variant="bodySmall"
-                onPress={openLeaderboard}
-                style={styles.leaderboardLink}>
-                {l10n.benchmark.benchmarkResultCard.actions.viewLeaderboard}
-              </Text>
-            </View>
-          )}
-        </View>
+            ) : !result.oid ? null : ( // 口袋AI：本地模型结果本就不能上传排行榜，不再显示一行“无法共享”
+              <View style={styles.actionContainer}>
+                <Button
+                  testID="submit-benchmark-button"
+                  mode="outlined"
+                  onPress={handleSubmit}
+                  loading={isSubmitting}
+                  disabled={isSubmitting}
+                  icon="share"
+                  compact
+                  style={styles.submitButton}>
+                  {l10n.benchmark.benchmarkResultCard.actions.submitButton}
+                </Button>
+                <Text
+                  variant="bodySmall"
+                  onPress={openLeaderboard}
+                  style={styles.leaderboardLink}>
+                  {l10n.benchmark.benchmarkResultCard.actions.viewLeaderboard}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {submitError && (
           <View style={[styles.errorContainer, getErrorStyle()]}>

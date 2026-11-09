@@ -15,7 +15,7 @@ import {ttsStore} from '../../store';
 import {L10nContext} from '../../utils';
 
 import {createStyles} from './styles';
-import {VoiceAvatar, getEngineAccent, getEngineTint} from './VoiceAvatar';
+import {VoiceAvatar} from './VoiceAvatar';
 
 const engineChipKey = {
   kitten: 'engineChipKitten',
@@ -67,9 +67,10 @@ export const HeroRow: React.FC = observer(() => {
     return null;
   }
 
-  const accent = getEngineAccent(current.engine);
-  const tint = getEngineTint(current.engine, 0.1);
-  const border = getEngineTint(current.engine, 0.18);
+  // 口袋AI：黑白主题
+  const accent = theme.colors.primary;
+  const tint = 'transparent';
+  const border = theme.colors.outlineVariant;
 
   const isPreviewing = ttsStore.isPreviewingVoice(current);
 

@@ -28,8 +28,8 @@ const languageRegistry = {
   pt_BR: {displayName: 'Português (PT_BR)'},
   ru: {displayName: 'Русский (RU)'},
   uk: {displayName: 'Українська (UK)'},
-  zh: {displayName: '中文 (ZH)'},
-  zh_Hant: {displayName: '繁體中文 (ZH_HANT)'},
+  zh: {displayName: '简体中文'},
+  zh_Hant: {displayName: '繁體中文'},
 } as const;
 
 export type AvailableLanguage = keyof typeof languageRegistry;

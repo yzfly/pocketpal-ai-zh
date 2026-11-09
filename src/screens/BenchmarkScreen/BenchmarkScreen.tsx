@@ -540,7 +540,7 @@ export const BenchmarkScreen: React.FC = observer(() => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView style={styles.scrollView}>
         <Card elevation={0} style={styles.card}>
-          <Card.Content>
+          <Card.Content style={styles.cardContent}>
             <DeviceInfoCard onDeviceInfo={handleDeviceInfo} />
             {renderModelSelector()}
 

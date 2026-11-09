@@ -13,32 +13,29 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       padding: theme.spacing.default,
       paddingBottom: theme.spacing.default + insets.bottom,
     },
+    // 口袋AI：去掉卡片套卡片和灰色头图，正文与其他页面一样距屏幕边 16
     card: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borders.default,
-      overflow: 'hidden',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 4,
+      backgroundColor: theme.colors.background,
     },
     header: {
-      padding: theme.spacing.default * 2,
-      backgroundColor: theme.colors.surfaceContainerHighest,
+      paddingVertical: theme.spacing.default * 1.5,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.surfaceVariant,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    stackedButton: {
+      marginTop: theme.spacing.default * 0.75,
     },
     headerContent: {
       gap: theme.spacing.default,
     },
     title: {
-      ...theme.fonts.headlineLarge,
+      ...theme.fonts.headlineMedium,
       color: theme.colors.onSurface,
-      marginBottom: theme.spacing.default / 2,
       letterSpacing: -0.5,
     },
     description: {
@@ -73,7 +70,7 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       opacity: 0.7,
     },
     section: {
-      padding: theme.spacing.default * 2,
+      paddingVertical: theme.spacing.default * 1.5,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.surfaceVariant,
     },

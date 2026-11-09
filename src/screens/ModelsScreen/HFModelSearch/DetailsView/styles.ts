@@ -37,6 +37,7 @@ export const createStyles = (theme: Theme) =>
     },
     modelAuthor: {
       marginBottom: 0,
+      color: theme.colors.onSurfaceVariant,
     },
     titleContainer: {
       marginBottom: 10,
@@ -52,8 +53,17 @@ export const createStyles = (theme: Theme) =>
     modelStats: {
       flexDirection: 'row',
       flexWrap: 'wrap',
+      columnGap: 16,
+      rowGap: 6,
+      marginBottom: 16,
+    },
+    statItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 4,
-      marginBottom: 12,
+    },
+    statLabel: {
+      color: theme.colors.onSurfaceVariant,
     },
     stat: {
       backgroundColor: 'transparent',

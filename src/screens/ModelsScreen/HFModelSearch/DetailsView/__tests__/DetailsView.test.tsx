@@ -60,7 +60,7 @@ describe('DetailsView', () => {
     );
 
     // mockHFModel2 has trendingScore > 20
-    expect(getByText('🔥')).toBeDefined();
+    expect(getByText('Trending')).toBeDefined();
   });
 
   it('renders model files section', () => {

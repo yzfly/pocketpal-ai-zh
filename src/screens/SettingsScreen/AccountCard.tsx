@@ -46,14 +46,14 @@ export const AccountCard: React.FC = observer(() => {
             <>
               <Text testID="account-signed-in-as">
                 {t(copy.signedInAs, {
-                  email: user.email || user.username || user.name || '',
+                  email: user.email || '',
                 })}
               </Text>
               <Button
                 testID="settings-sign-out"
                 mode="outlined"
                 onPress={handleSignOut}
-                style={styles.menuButton}>
+                style={[styles.menuButton, styles.cardActionButton]}>
                 {copy.signOut}
               </Button>
             </>
@@ -66,7 +66,7 @@ export const AccountCard: React.FC = observer(() => {
                 testID="settings-sign-in"
                 mode="contained"
                 onPress={() => setShowSheet(true)}
-                style={styles.menuButton}>
+                style={[styles.menuButton, styles.cardActionButton]}>
                 {`${copy.signIn} / ${copy.signUp}`}
               </Button>
             </>

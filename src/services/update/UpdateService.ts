@@ -1,6 +1,6 @@
 // 应用内更新（仅 Android）。
 //
-// 更新清单 update.json 放在国内可直连的地址（建议 CloudBase 静态网站托管），
+// 更新清单 update.json 放在国内可直连的地址（如国内对象存储或自有服务器），
 // 地址来自 .env 的 UPDATE_MANIFEST_URL；没配置时整个功能关闭。清单格式：
 //   {
 //     "versionCode": 160,              // 必填，大于当前 versionCode 才提示

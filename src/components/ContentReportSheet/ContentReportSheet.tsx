@@ -183,6 +183,9 @@ export const ContentReportSheet: React.FC<ContentReportSheetProps> = ({
               {l10n.components.contentReportSheet.includeModelInfo}
             </Text>
             <Switch
+              accessibilityLabel={
+                l10n.components.contentReportSheet.includeModelInfo
+              }
               value={includeModelInfo && hasActiveModel}
               onValueChange={hasActiveModel ? setIncludeModelInfo : undefined}
               disabled={!hasActiveModel}

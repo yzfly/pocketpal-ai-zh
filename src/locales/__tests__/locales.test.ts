@@ -192,7 +192,10 @@ describe('exports', () => {
   });
 
   it('every display name carries its parenthesised locale code', () => {
-    for (const lang of supportedLanguages) {
+    // 口袋AI：简体/繁体中文直接显示“简体中文”“繁體中文”，不带代码
+    for (const lang of supportedLanguages.filter(
+      l => l !== 'zh' && l !== 'zh_Hant',
+    )) {
       expect(languageDisplayNames[lang]).toContain(`(${lang.toUpperCase()})`);
     }
   });
@@ -218,10 +221,8 @@ describe('exports', () => {
     expect(languageDisplayNames.uk).toBe(
       '\u0423\u043A\u0440\u0430\u0457\u043D\u0441\u044C\u043A\u0430 (UK)',
     );
-    expect(languageDisplayNames.zh).toBe('\u4E2D\u6587 (ZH)');
-    expect(languageDisplayNames.zh_Hant).toBe(
-      '\u7E41\u9AD4\u4E2D\u6587 (ZH_HANT)',
-    );
+    expect(languageDisplayNames.zh).toBe('简体中文');
+    expect(languageDisplayNames.zh_Hant).toBe('繁體中文');
   });
 
   it('resolves pt and pt_BR to different translations', () => {

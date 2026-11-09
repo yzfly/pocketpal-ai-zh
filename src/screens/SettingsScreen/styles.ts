@@ -8,17 +8,20 @@ export const createStyles = (theme: Theme) =>
       flex: 1,
       backgroundColor: theme.colors.surface,
     },
+    // 口袋AI：分组平铺，正文统一距屏幕 16（Card.Content 自带 16），组间用分隔线
     container: {
-      padding: 16,
+      paddingVertical: 8,
     },
     scrollViewContent: {
       paddingVertical: 16,
       paddingHorizontal: 16,
     },
     card: {
-      marginVertical: 8,
-      borderRadius: 12,
-      backgroundColor: theme.colors.background,
+      marginVertical: 0,
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outlineVariant,
     },
     settingItemContainer: {
       marginVertical: 16,
@@ -78,6 +81,10 @@ export const createStyles = (theme: Theme) =>
       minWidth: 100,
       maxWidth: '100%',
     },
+    // 卡片底部的主按钮与上方说明文字留出间距
+    cardActionButton: {
+      marginTop: 12,
+    },
     tierActions: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -113,7 +120,11 @@ export const createStyles = (theme: Theme) =>
     },
     advancedAccordion: {
       height: 55,
-      //backgroundColor: theme.colors.surface,
+      paddingRight: 0,
+    },
+    // 去掉 Paper 默认的 16 左缩进，与其他设置项左对齐
+    advancedAccordionContent: {
+      paddingLeft: 0,
     },
     accordionTitle: {
       fontSize: 14,

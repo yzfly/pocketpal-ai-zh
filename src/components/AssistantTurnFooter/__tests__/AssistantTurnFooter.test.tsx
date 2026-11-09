@@ -43,7 +43,7 @@ describe('AssistantTurnFooter', () => {
       <AssistantTurnFooter message={message} />,
     );
     expect(queryByTestId('assistant-turn-footer')).toBeTruthy();
-    expect(getByText('10ms/token, 100.00 tokens/sec')).toBeTruthy();
+    expect(getByText('100.0 tokens/sec')).toBeTruthy();
     expect(queryByTestId('footer-copy')).toBeNull();
   });
 
@@ -56,7 +56,7 @@ describe('AssistantTurnFooter', () => {
     });
     const {getByTestId} = render(<AssistantTurnFooter message={message} />);
     expect(getByTestId('footer-timing').props.children).toBe(
-      '6ms/token, 170.35 tokens/sec, 126.90 prompt tokens/sec, 15 cached, 150ms TTFT',
+      '170.3 tokens/sec · 126.90 prompt tokens/sec · 15 cached · 150ms TTFT',
     );
   });
 
@@ -75,7 +75,7 @@ describe('AssistantTurnFooter', () => {
     });
     const {getByTestId} = render(<AssistantTurnFooter message={message} />);
     expect(getByTestId('footer-timing').props.children).toBe(
-      '10ms/token, 100.00 tokens/sec, 150ms TTFT',
+      '100.0 tokens/sec · 150ms TTFT',
     );
   });
 
@@ -90,7 +90,7 @@ describe('AssistantTurnFooter', () => {
       render(<AssistantTurnFooter message={cold} />).getByTestId(
         'footer-timing',
       ).props.children,
-    ).toBe('10ms/token, 0 cached');
+    ).toBe('10ms/token · 0 cached');
 
     const silent = baseTurn({
       metadata: {
@@ -155,7 +155,7 @@ describe('AssistantTurnFooter', () => {
       render(<AssistantTurnFooter message={local} />).getByTestId(
         'footer-timing',
       ).props.children,
-    ).toBe('6ms/token, 170.35 tokens/sec, 150ms TTFT');
+    ).toBe('170.3 tokens/sec · 150ms TTFT');
 
     const remote = baseTurn({
       metadata: {
@@ -168,7 +168,7 @@ describe('AssistantTurnFooter', () => {
         'footer-timing',
       ).props.children,
     ).toBe(
-      '6ms/token, 170.35 tokens/sec, 126.90 prompt tokens/sec, 15 cached, 150ms TTFT',
+      '170.3 tokens/sec · 126.90 prompt tokens/sec · 15 cached · 150ms TTFT',
     );
   });
 
@@ -192,7 +192,7 @@ describe('AssistantTurnFooter', () => {
     const {getByText, queryByTestId} = render(
       <AssistantTurnFooter message={message} />,
     );
-    expect(getByText('32ms/token, 30.00 tokens/sec')).toBeTruthy();
+    expect(getByText('30.0 tokens/sec')).toBeTruthy();
     expect(queryByTestId('footer-copy')).toBeTruthy();
   });
 

@@ -198,7 +198,7 @@ describe('buildTextOutputs', () => {
     ).toBe(adaptive);
     expect(
       outputs['android/app/src/main/res/values/ic_launcher_background.xml'],
-    ).toContain('<color name="ic_launcher_background">#FFFFFF</color>');
+    ).toContain('<color name="ic_launcher_background">#000000</color>');
   });
 
   it('writes Contents.json in Xcode single-size form', () => {
@@ -631,11 +631,8 @@ describe('committed sources', () => {
   );
 
   it('names the pal path that leaves the safe circle', () => {
-    const moved = readSource('foregroundLight').replace(
-      'M85.7529 46.8772',
-      'M115.7529 46.8772',
-    );
-    expect(outsideIds(moved)).toEqual(['band']);
+    const moved = readSource('foregroundLight').replace('M80 19C', 'M80 -45C');
+    expect(outsideIds(moved)).toEqual(['spark']);
   });
 
   it('applies group transforms before measuring', () => {
@@ -662,11 +659,11 @@ describe('committed outputs', () => {
     );
   });
 
-  it('cuts the face out of the monochrome layer and clips it at the pocket', () => {
+  it('cuts the hollow and the sparkle outline out of the monochrome frame', () => {
     const monochrome =
       textOutputs[`${ANDROID_RES}/drawable/ic_launcher_monochrome.xml`];
     expect(monochrome).toContain('android:fillType="evenOdd"');
-    expect(monochrome).toContain('<clip-path');
+    expect(monochrome).not.toContain('<clip-path');
   });
 
   it('ships exactly three opaque 1024 iOS icons', () => {
@@ -885,37 +882,19 @@ describe('committed source structure', () => {
       path.join(__dirname, '..', '..', SOURCE_DIR, SOURCE_FILES[key]),
       'utf-8',
     );
-  const FOREGROUND_PAL = [
-    'body',
-    'band',
-    'mouth',
-    'eye-left',
-    'eye-right',
-    'highlight-1',
-    'highlight-2',
-  ];
+  // 口袋AI 标识（方案 A 口字星光）：镂空“口”字框，右上角星光压在框角，
+  // 星光外圈的黑边用框上的镂空表示，三个图层同一几何、纯白。
+  const MARK = ['frame', 'spark'];
 
-  it.each([
-    ['foregroundLight', FOREGROUND_PAL, ['rim', 'pocket', 'road']],
-    ['foregroundDark', FOREGROUND_PAL, ['rim', 'pocket', 'road']],
-    ['monochrome', ['silhouette'], ['pocket-edge']],
-  ])(
-    'puts the whole pal of %s in the pal group and only bleed shapes outside',
-    (key, pal, rest) => {
+  it.each(Object.keys(SOURCE_FILES))(
+    'puts the whole mark of %s in the pal group with nothing outside',
+    key => {
       expect(drawnPathIds(parseSvg(readSource(key)).children)).toEqual({
-        pal,
-        rest,
+        pal: MARK,
+        rest: [],
       });
     },
   );
-
-  it('clips the monochrome pal on a wrapper group, never inside it', () => {
-    const {children} = parseSvg(readSource('monochrome'));
-    const wrapper = children.find(node => node.clipId);
-    expect(wrapper.clipId).toBe('pal-clip');
-    expect(wrapper.children.map(node => node.id)).toEqual(['pal']);
-    expect(wrapper.children[0].clipD).toBeUndefined();
-  });
 
   it('draws the monochrome layer in opaque white only', () => {
     const text = readSource('monochrome');
@@ -923,15 +902,15 @@ describe('committed source structure', () => {
     const paints = [...text.matchAll(/(?:fill|stroke)="([^"]+)"/g)].map(
       ([, value]) => value,
     );
-    expect(new Set(paints)).toEqual(new Set(['#FFFFFF', 'none']));
+    expect(new Set(paints)).toEqual(new Set(['#FFFFFF']));
     expect(text).toContain('fill-rule="evenodd"');
   });
 
-  it('gives the dark foreground the light geometry with only the pal recoloured', () => {
+  it('draws every layer from the same geometry', () => {
     const light = readSource('foregroundLight');
-    const dark = readSource('foregroundDark');
-    expect(light).toContain('id="body" d="');
-    expect(dark.replace('fill="#A86C34"', 'fill="#F5DBBC"')).toBe(light);
+    expect(light).toContain('id="frame" d="');
+    expect(readSource('foregroundDark')).toBe(light);
+    expect(readSource('monochrome')).toBe(light);
   });
 });
 
@@ -1155,22 +1134,25 @@ describe('committed PNG content', () => {
   const png = relative =>
     decodePng(fs.readFileSync(path.join(repoRoot, relative)));
   const BACKDROP = [1, 1];
-  const PAL_BODY = [49, 33];
-  const RIGHT_EYE = [66, 46.5];
-  const POCKET = [88, 92];
+  const FRAME = [34, 58];
+  const HOLLOW = [54, 58];
+  const SPARK = [80, 32];
+  const OUTLINE = [72, 34];
 
   it.each([
-    ['AppIcon.png', '#FFFFFF', '#F5DBBC', '#000000'],
-    ['AppIcon-dark.png', '#181715', '#A86C34', '#000000'],
-    ['AppIcon-tinted.png', '#000000', '#FFFFFF', '#000000'],
+    ['AppIcon.png', '#000000', '#FFFFFF'],
+    ['AppIcon-dark.png', '#0A0A0A', '#FFFFFF'],
+    ['AppIcon-tinted.png', '#000000', '#FFFFFF'],
   ])(
-    '%s paints backdrop %s, pal %s and eye %s with no transparency chunk',
-    (name, backdrop, pal, eye) => {
+    '%s paints backdrop %s and mark %s with the hollow and sparkle outline cut out and no transparency chunk',
+    (name, backdrop, mark) => {
       const icon = png(`${APPICONSET}/${name}`);
       expect(icon.chunks).toEqual(['IHDR', 'IDAT', 'IEND']);
       expect(icon.at(...BACKDROP)).toEqual({color: backdrop, alpha: 255});
-      expect(icon.at(...PAL_BODY)).toEqual({color: pal, alpha: 255});
-      expect(icon.at(...RIGHT_EYE)).toEqual({color: eye, alpha: 255});
+      expect(icon.at(...FRAME)).toEqual({color: mark, alpha: 255});
+      expect(icon.at(...SPARK)).toEqual({color: mark, alpha: 255});
+      expect(icon.at(...HOLLOW)).toEqual({color: backdrop, alpha: 255});
+      expect(icon.at(...OUTLINE)).toEqual({color: backdrop, alpha: 255});
     },
   );
 
@@ -1185,11 +1167,11 @@ describe('committed PNG content', () => {
       for (const icon of [square, round]) {
         expect(icon.colorType).toBe(6);
         expect(icon.at(0, 0).alpha).toBe(0);
-        for (const point of [PAL_BODY, POCKET]) {
+        for (const point of [FRAME, HOLLOW, SPARK]) {
           expect(icon.at(...point)).toEqual(ios.at(...point));
         }
       }
-      expect(square.at(14, 14)).toEqual({color: '#FFFFFF', alpha: 255});
+      expect(square.at(14, 14)).toEqual({color: '#000000', alpha: 255});
       expect(round.at(14, 14).alpha).toBe(0);
     },
   );

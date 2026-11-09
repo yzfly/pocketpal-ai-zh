@@ -32,9 +32,53 @@
     "clear": "全部清除",
     "gallery": "图库",
     "stop": "停止",
-    "noResults": "没有结果"
+    "noResults": "没有结果",
+    "a11y": {
+      "openDrawer": "打开菜单",
+      "closeDrawer": "关闭菜单",
+      "messageInput": "输入消息",
+      "addImage": "添加图片",
+      "selectPal": "选择助手",
+      "startVideo": "开始摄像头分析",
+      "filterByAuthor": "按作者筛选",
+      "bottomSheet": "弹出面板",
+      "downloadModel": "下载模型",
+      "newChat": "新对话",
+      "moreOptions": "更多",
+      "closeMenu": "关闭菜单",
+      "closeSheet": "关闭面板",
+      "deleteProjector": "删除看图组件"
+    }
   },
   "settings": {
+    "localApiServer": {
+      "title": "本机 API 服务",
+      "enable": "对外提供已加载的模型",
+      "enableDescription": "让其他 App 通过 OpenAI 兼容接口使用当前加载的模型。请求会和你的聊天排队进行。",
+      "starting": "正在启动…",
+      "url": "服务地址",
+      "copyUrl": "复制地址",
+      "servedModel": "正在提供 {{model}}",
+      "noModel": "还没有加载模型，加载之前请求都会失败。",
+      "port": "端口",
+      "portInvalid": "请使用 1024 到 65535 之间的端口",
+      "lan": "允许同一网络的其他设备访问",
+      "lanWarning": "开启后，这台手机所在的所有网络（Wi-Fi、移动数据、热点和 VPN）都能访问此服务。建议设置 API 密钥限制访问。",
+      "notOnWifi": "未连接 Wi-Fi，因此不显示局域网地址。",
+      "apiKey": "API 密钥",
+      "apiKeySet": "请求必须携带此密钥",
+      "apiKeyNotSet": "未设置密钥：除浏览器网页外，能连上此服务的任何 App 都能使用。",
+      "setApiKey": "设置密钥",
+      "clearApiKey": "清除密钥",
+      "apiKeyPlaceholder": "输入 API 密钥",
+      "stopToEdit": "先关闭服务才能修改这些设置。",
+      "errors": {
+        "portInUse": "端口 {{port}} 已被占用。请关闭服务后换一个端口。",
+        "listenFailed": "服务无法启动。请关闭再打开，或换一个端口。",
+        "stoppedListening": "服务意外停止。请关闭再打开。",
+        "keyUnavailable": "无法读取 API 密钥。请先解锁手机，再关闭并重新打开服务。"
+      }
+    },
     "modelInitializationSettings": "模型初始化设置",
     "metal": "Metal",
     "metalDescription": "Apple 的硬件加速 API。",
@@ -45,12 +89,13 @@
     "openCLMissingCPUFeatures": "OpenCL 需要 i8mm 和 dotprod CPU 功能，但此设备不支持。",
     "openCLQuantizationNote": "注意：纯 Q4_0 量化模型在 OpenCL 上性能最佳。",
     "openCLDocsLink": "详情请参阅 llama.cpp OpenCL 文档。",
-    "layersOnGPU": "GPU层数：{{gpuLayers}}",
+    "layersOnGPU": "GPU 层数：{{gpuLayers}}",
     "deviceSelection": "设备选择",
     "deviceSelectionIOS": "设备（Metal）",
     "deviceSelectionIOSDescription": "选择 Metal GPU 或仅 CPU 模式",
     "deviceSelectionAndroidDescription": "选择计算设备（CPU、GPU 或 Hexagon NPU）",
-    "cpuOnlyNoAccelerators": "仅CPU - 未检测到硬件加速器",
+    "npuFallbackNotice": "本机 NPU 加载失败，已自动改用 CPU。如需重试，可重新选择 NPU。",
+    "cpuOnlyNoAccelerators": "仅 CPU - 未检测到硬件加速器",
     "contextSize": "上下文长度",
     "contextSizePlaceholder": "输入上下文长度（最小{{minContextSize}}）",
     "invalidContextSizeError": "请输入有效数字（最小{{minContextSize}}）",
@@ -61,13 +106,13 @@
     "effectiveLabel": "有效",
     "physicalBatchSize": "物理批处理大小",
     "physicalBatchSizeDescription": "物理批处理大小: {{physicalBatchSize}}{{effectivePhysicalBatch}}",
-    "cpuThreads": "CPU线程",
+    "cpuThreads": "CPU 线程",
     "cpuThreadsDescription": "使用{{threads}}个线程（可用{{maxThreads}}个线程）",
     "imageMaxTokens": "图像最大令牌数",
     "imageMaxTokensDescription": "图像处理的最大令牌数: {{tokens}}{{effectiveTokens}} (较低 = 更快，细节较少)",
     "flashAttention": "Flash Attention",
     "flashAttentionDescription": "启用 Flash Attention 以加快处理速度",
-    "flashAttentionIOSDescription": "内存高效注意力（Metal上自动启用）",
+    "flashAttentionIOSDescription": "内存高效注意力（Metal 上自动启用）",
     "flashAttentionAndroidDescription": "OpenCL 状态保存/加载必须禁用",
     "flashAttentionAuto": "自动",
     "flashAttentionOn": "开启",
@@ -80,7 +125,7 @@
     "valueCacheTypeDisabledDescription": "启用 Flash Attention 以更改缓存类型",
     "memorySettings": "内存设置",
     "useMlock": "使用内存锁定",
-    "useMlockDescription": "强制系统将模型保留在RAM中，而不是交换或压缩",
+    "useMlockDescription": "强制系统将模型保留在 RAM 中，而不是交换或压缩",
     "useMmap": "内存映射",
     "useMmapDescription": "使用内存映射文件加快模型加载速度",
     "useMmapTrue": "启用",
@@ -88,11 +133,11 @@
     "useMmapTrueDescription": "始终使用内存映射以实现更快的加载",
     "useMmapFalseDescription": "当启用权重重新打包时，建议禁用该功能以避免内存使用量翻倍",
     "modelLoadingSettings": "模型加载设置",
-    "autoOffloadLoad": "自动卸载/加载",
-    "autoOffloadLoadDescription": "当 App 在后台时自动卸载模型",
+    "autoOffloadLoad": "后台时释放模型",
+    "autoOffloadLoadDescription": "App 进入后台时释放模型占用的内存，切回时自动重新加载",
     "autoNavigateToChat": "自动导航到聊天",
     "autoNavigateToChatDescription": "开始加载时自动跳转至聊天页面。",
-    "appSettings": "App设置",
+    "appSettings": "App 设置",
     "language": "语言",
     "darkMode": "深色模式",
     "displayMemoryUsage": "显示内存使用情况",
@@ -102,16 +147,16 @@
     "exportLegacyChatsDescription": "如果迁移失败或需要恢复旧的聊天会话，请使用此选项。",
     "exportButton": "导出",
     "importChats": "导入聊天会话",
-    "importChatsDescription": "从（导出的）JSON文件中导入聊天会话。",
+    "importChatsDescription": "从（导出的）JSON 文件中导入聊天会话。",
     "importButton": "导入",
     "importSuccess": "成功导入{{count}}个聊天会话。",
     "importError": "导入聊天会话失败，请检查文件格式。",
-    "apiSettingsTitle": "API设置",
-    "huggingFaceTokenLabel": "Hugging Face令牌",
+    "apiSettingsTitle": "API 设置",
+    "huggingFaceTokenLabel": "Hugging Face 令牌",
     "tokenIsSetDescription": "令牌已设置，访问受限模型时需要。",
     "setTokenDescription": "设置令牌以从 Hugging Face 访问受限模型。",
     "setTokenButton": "设置令牌",
-    "useHfTokenLabel": "使用HF令牌",
+    "useHfTokenLabel": "使用 HF 令牌",
     "useHfTokenDescription": "启用后使用令牌进行 API 请求。若令牌导致身份验证问题，请将其禁用。",
     "cacheStorageTitle": "缓存与存储",
     "clearPalCaches": "清除快捷指令缓存",
@@ -125,7 +170,7 @@
     "weightRepacking": "启用权重重新打包",
     "weightRepackingDescription": "禁用内存映射时，提示词处理更快，且额外内存开销极小；Token 生成速度不受影响。",
     "serverName": "服务器名称",
-    "serverUrl": "服务器URL",
+    "serverUrl": "服务器 URL",
     "serverUrlPlaceholder": "例如：http://192.168.1.100:1234",
     "apiKey": "API 密钥",
     "apiKeyPlaceholder": "可选（使用 OpenAI/Groq 时必填）",
@@ -133,8 +178,8 @@
     "remoteModel": "远程",
     "remotePrivacyNotice": "发送至远程服务器的消息将离开本设备，请仅连接您信任的服务器。",
     "remoteIndicator": "远程",
-    "serverUrlRequired": "需要服务器URL",
-    "serverUrlInvalid": "URL格式错误",
+    "serverUrlRequired": "需要服务器 URL",
+    "serverUrlInvalid": "URL 格式错误",
     "serverUrlHttpWarning": "iOS 对非本地服务器强制要求 HTTPS，请改用 https:// 或本地网络地址。",
     "addRemoteModel": "添加远端模型",
     "yourServers": "您的服务器",
@@ -155,7 +200,7 @@
     "removeServerMessage": "删除 {{serverName}} 及其 {{count}} 个模型？",
     "removeRemoteModel": "删除 {{modelName}} ({{serverName}})？",
     "retryConnection": "重试",
-    "enterUrlManually": "手动输入URL",
+    "enterUrlManually": "手动输入 URL",
     "manageServers": "管理服务器",
     "ttsAvailability": "文本转语音",
     "ttsAvailabilityDescription": "朗读助手回复。",
@@ -205,7 +250,7 @@
     "speculativeDraftKeyCacheType": "草稿模型键缓存类型",
     "speculativeDraftValueCacheType": "草稿模型值缓存类型",
     "speculativeDraftNGpuLayers": "草稿模型 GPU 层数",
-    "speculativeDraftNGpuLayersDescription": "卸载到 GPU 的草稿模型层数。",
+    "speculativeDraftNGpuLayersDescription": "放到 GPU 上运行的草稿模型层数。",
     "speculativeDraftCacheTypeInactiveDescription": "推测解码运行后即生效。",
     "purchases": {
       "title": "购买项目",
@@ -220,11 +265,11 @@
     "scanQrNotReady": "正在准备扫码，也可以直接输入地址。",
     "routerModels": {
       "cancel": "取消",
-      "unloading": "正在卸载…",
+      "unloading": "正在停用…",
       "stateLoading": "加载中",
       "stateLoaded": "已加载",
       "loadingPercent": "加载中，{{percent}}%",
-      "unloadModel": "卸载 {{model}}",
+      "unloadModel": "停用 {{model}}",
       "cancelLoadingModel": "取消加载 {{model}}",
       "loadFailed": "此模型未能加载。",
       "unloadNotReleased": "服务器未释放此模型。",
@@ -232,11 +277,27 @@
       "waitStopped": "已停止等待此模型。",
       "failureWithServerWords": "{{label}}\n\n“{{message}}”",
       "dismiss": "关闭",
-      "unloadBoundTitle": "卸载此模型？",
+      "unloadBoundTitle": "停用此模型？",
       "unloadBoundBody": "当前聊天正在使用它，发送下一条消息时会重新加载。",
-      "unloadBoundConfirm": "卸载"
+      "unloadBoundConfirm": "停用"
+    },
+    "perfCheck": {
+      "title": "性能自检",
+      "subtitle": "已按这台手机的内存和处理器自动调好参数，避免卡顿和内存不足闪退。",
+      "device": "本机：内存 {{memory}} · {{cores}} 核（性能核 {{perfCores}}）· {{accel}}",
+      "recommended": "推荐：上下文 {{ctx}} · 批大小 {{batch}} · {{threads}} 线程",
+      "accel": {
+        "npu": "NPU 加速",
+        "gpu": "GPU 加速",
+        "cpu": "仅 CPU"
+      },
+      "apply": "应用推荐设置",
+      "applied": "已使用推荐设置",
+      "steppedDown": "上次加载模型时 App 被系统关闭，已自动调低上下文和批大小。点下方按钮可恢复推荐值。"
     },
     "account": {
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "title": "账号",
       "subtitle": "可选。不登录也能完整离线使用。",
       "signedInAs": "已登录：{{email}}",
@@ -247,24 +308,19 @@
       "email": "邮箱",
       "password": "密码",
       "passwordHint": "至少 8 位，包含字母和数字",
-      "code": "邮箱验证码",
-      "sendCode": "发送验证码",
-      "resendCode": "重新发送（{{seconds}} 秒）",
-      "codeSent": "验证码已发送到 {{email}}",
-      "captcha": "图形验证码",
-      "captchaHint": "输入图中的字符",
-      "captchaRefresh": "换一张",
-      "captchaConfirm": "确认",
       "toSignUp": "还没有账号？去注册",
       "toSignIn": "已有账号？去登录",
       "invalidEmail": "请输入正确的邮箱地址",
       "weakPassword": "密码至少 8 位，需包含字母和数字",
       "notConfigured": "当前版本暂未开通账号功能。",
       "signedIn": "登录成功",
-      "signedUp": "注册成功"
+      "signedUp": "注册成功",
+      "confirmPassword": "确认密码",
+      "passwordMismatch": "两次输入的密码不一致"
     },
     "useHfMirror": "HF 镜像加速",
-    "useHfMirrorDescription": "通过 hf-mirror.com 镜像下载模型（适用于无法直连 huggingface.co 的网络）。开启期间 HF 令牌不会发给镜像；如需用令牌下载受限模型，请先关闭镜像。"
+    "useHfMirrorDescription": "通过 hf-mirror.com 镜像下载模型（适用于无法直连 huggingface.co 的网络）。开启期间 HF 令牌不会发给镜像；如需用令牌下载受限模型，请先关闭镜像。",
+    "cacheTypeF16Default": "F16（默认）"
   },
   "memory": {
     "shortWarning": "内存警告",
@@ -309,25 +365,25 @@
       "availableToDownload": "可下载",
       "useAddButtonForMore": "点击 + 按钮添加更多模型"
     },
-    "vision": "视觉",
-    "mmproj": "投影仪",
+    "vision": "看图",
+    "mmproj": "看图组件",
     "multimodal": {
       "settings": "多模态设置",
-      "projectionModels": "投影模型",
-      "noCompatibleModels": "未找到兼容的投影模型",
-      "noProjectionModels": "没有可用的投影模型",
+      "projectionModels": "看图组件",
+      "noCompatibleModels": "未找到兼容的看图组件",
+      "noProjectionModels": "没有可用的看图组件",
       "selected": "已选择",
       "select": "选择",
       "download": "下载",
-      "projectionNeededTitle": "需要投影模型",
-      "projectionNeededMessage": "此模型需要配合投影模型才能使用多模态功能。",
-      "projectionMissingWarning": "投影模型缺失",
-      "projectionMissingShort": "缺少投影模型",
+      "projectionNeededTitle": "需要看图组件",
+      "projectionNeededMessage": "此模型需要配合看图组件才能使用多模态功能。",
+      "projectionMissingWarning": "看图组件缺失",
+      "projectionMissingShort": "缺少看图组件",
       "reloadModelTitle": "重新加载模型",
-      "reloadModelMessage": "模型需要重新加载以应用新的投影模型，您想现在重新加载吗？",
+      "reloadModelMessage": "模型需要重新加载以应用新的看图组件，您想现在重新加载吗？",
       "reload": "重新加载",
-      "deleteProjectionTitle": "删除投影模型",
-      "deleteProjectionMessage": "您确定要删除此投影模型吗？",
+      "deleteProjectionTitle": "删除看图组件",
+      "deleteProjectionMessage": "您确定要删除此看图组件吗？",
       "cannotDeleteTitle": "无法删除",
       "visionControls": {
         "enableVision": "启用视觉能力",
@@ -339,24 +395,26 @@
         "downloadWithVision": "下载包含视觉能力的模型",
         "downloadTextOnly": "仅下载包含文本能力的模型",
         "visionToggleDescription": "启用图像处理功能",
-        "projectionModelSize": "+{{size}} 投影模型",
+        "projectionModelSize": "+{{size}} 看图组件",
         "visionModeDescription": "处理图像和文本",
         "textOnlyModeDescription": "仅处理文本",
         "includesVisionCapability": "包含视觉能力",
-        "requiresProjectionModel": "请先下载兼容的投影模型"
+        "requiresProjectionModel": "请先下载兼容的看图组件"
       },
-      "cannotDeleteActive": "此投影模型当前处于活动状态。",
-      "cannotDeleteInUse": "此投影模型被已下载的LLM模型使用：",
+      "cannotDeleteActive": "此看图组件当前处于活动状态。",
+      "cannotDeleteInUse": "此看图组件被已下载的 LLM 模型使用：",
       "dependentModels": "依赖模型：",
       "visionWillBeDisabled": "这些模型的视觉能力将被禁用。"
     },
     "buttons": {
       "addFromHuggingFace": "从 Hugging Face 添加",
       "addLocalModel": "添加本地模型",
-      "reset": "重置"
+      "reset": "重置",
+      "fabOpen": "添加模型",
+      "fabClose": "关闭菜单"
     },
     "modelsHeaderRight": {
-      "menuTitleHf": "Hugging Face模型",
+      "menuTitleHf": "Hugging Face 模型",
       "menuTitleDownloaded": "已下载模型",
       "menuTitleGrouped": "按模型类型分组",
       "menuTitleReset": "重置模型列表"
@@ -369,6 +427,7 @@
       "label": "基础聊天模板:"
     },
     "details": {
+      "trending": "热门",
       "title": "可用 GGUF 文件"
     },
     "modelFile": {
@@ -408,9 +467,10 @@
     "search": {
       "noResults": "找不到模型",
       "loadingMore": "加载中...",
+      "sheetTitle": "搜索模型",
       "searchPlaceholder": "搜索 Hugging Face 模型",
-      "modelUpdatedLong": "{{time}} 前更新",
-      "modelUpdatedShort": "{{time}} 前",
+      "modelUpdatedLong": "{{time}}前更新",
+      "modelUpdatedShort": "{{time}}前",
       "modelUpdatedJustNowLong": "刚刚更新",
       "modelUpdatedJustNowShort": "刚刚",
       "errorOccurred": "无法加载模型，请重试。",
@@ -425,9 +485,16 @@
         "sortDownloads": "下载量",
         "sortRecent": "最近更新",
         "sortLikes": "点赞数"
-      }
+      },
+      "detailsTitle": "模型详情"
     },
     "modelCard": {
+      "projectorOffer": {
+        "rowTitle": "看图还需要下载看图组件",
+        "download": "下载",
+        "downloading": "正在下载看图组件 · {{progress}}%",
+        "a11yWithSize": "下载看图组件，{{size}}"
+      },
       "alerts": {
         "deleteTitle": "删除模型",
         "deleteMessage": "您确定要删除此已下载的模型吗？",
@@ -435,23 +502,28 @@
         "removeMessage": "您确定要从列表中删除此模型吗？"
       },
       "buttons": {
+        "settingsMenu": "参数设置",
+        "more": "更多操作",
+        "loadA11y": "加载模型",
+        "offloadA11y": "停用模型（释放内存，文件保留）",
         "settings": "设置",
         "download": "下载",
         "remove": "删除",
         "load": "加载",
-        "offload": "卸载"
+        "offload": "停用"
       },
       "labels": {
+        "inUse": "使用中",
         "skills": "技能: ",
-        "vision": "视觉",
+        "vision": "看图",
         "capabilities": "功能。",
         "modelName": "模型名称",
         "contextLength": "上下文长度",
         "architecture": "架构",
         "author": "作者",
-        "requiresProjectionModel": "需要投影模型",
-        "downloadProjectionModel": "下载投影模型",
-        "viewModelCardOnHuggingFace": "在 Hugging Face 上查看模型卡片",
+        "requiresProjectionModel": "需要看图组件",
+        "downloadProjectionModel": "下载看图组件",
+        "viewModelCardOnHuggingFace": "查看模型介绍（Hugging Face）",
         "visionSupported": "支持",
         "visionNotSupported": "不支持",
         "visionUnknown": "未知",
@@ -465,7 +537,7 @@
         "downloadProgress": "下载进度",
         "loadingIndicator": "加载中",
         "loadButton": "加载模型",
-        "offloadButton": "卸载模型",
+        "offloadButton": "停用模型（释放内存，文件保留）",
         "downloadButton": "下载模型",
         "settingsButton": "模型设置",
         "deleteButton": "删除模型",
@@ -474,29 +546,60 @@
         "memoryWarningButton": "显示内存警告详情",
         "integrityWarningButton": "显示完整性警告详情",
         "memoryWarningSnackbar": "内存警告通知"
+      },
+      "tech": {
+        "details": "详情",
+        "hideDetails": "收起",
+        "techSpecs": "技术参数",
+        "sourceRepo": "原始模型",
+        "file": "文件名",
+        "quantization": "量化",
+        "fileSize": "文件大小",
+        "parameters": "参数量",
+        "publisher": "发布方",
+        "abilities": "能力",
+        "projector": "看图组件",
+        "origin": "来源",
+        "originPreset": "内置推荐",
+        "originHf": "Hugging Face",
+        "originLocal": "从手机导入",
+        "originRemote": "远程服务器",
+        "paramsShort": "{{value}}参数",
+        "paramsScale": "yi",
+        "copied": "已复制",
+        "supportsVision": "支持看图",
+        "modelFile": "模型文件",
+        "projectorSize": "看图组件",
+        "total": "合计 {{size}}",
+        "removeFromList": "从列表移除"
       }
     },
     "modelSettings": {
       "template": {
-        "label": "模板:",
+        "defaultPreview": "模型自带",
+        "label": "聊天模板",
         "editButton": "编辑",
         "dialogTitle": "编辑聊天模板",
-        "note1": "注意: 更改模板可能会更改 BOS、EOS 和系统提示词。",
-        "note2": "使用 Nunjucks，留空则使用模型默认模板。",
+        "note1": "注意：更改模板可能会同时更改 BOS、EOS 和系统提示词。",
+        "note2": "使用 Nunjucks 语法；留空则使用模型自带模板。",
         "placeholder": "在此输入聊天模板...",
         "closeButton": "关闭"
       },
       "stopWords": {
         "label": "停止词",
-        "placeholder": "添加新停止词"
+        "placeholder": "输入后回车添加"
       },
       "tokenSettings": {
-        "bos": "BOS",
-        "eos": "EOS",
-        "addGenerationPrompt": "添加生成提示词",
-        "bosTokenPlaceholder": "BOS Token",
-        "eosTokenPlaceholder": "EOS Token",
+        "bos": "开头添加 BOS 标记",
+        "eos": "结尾添加 EOS 标记",
+        "addGenerationPrompt": "添加回复引导",
+        "bosTokenPlaceholder": "BOS 标记",
+        "eosTokenPlaceholder": "EOS 标记",
         "systemPrompt": "系统提示词"
+      },
+      "advanced": {
+        "title": "高级设置",
+        "hint": "聊天模板、标记和停止词，通常无需修改"
       }
     },
     "modelDescription": {
@@ -516,7 +619,7 @@
       "multilingual": "多语言支持",
       "rewriting": "重写文章",
       "creativity": "创造性写作",
-      "vision": "视觉",
+      "vision": "看图",
       "mtp": "推测解码 (MTP)",
       "mtpDraft": "推测草稿"
     },
@@ -538,7 +641,7 @@
     "n_predict": "要生成的最大 token 数量，设为\"Unlimited（无限制）\"则不设上限，或选\"Custom（自定义）\"指定一个值。",
     "n_probs": "显示替代词的概率分数。",
     "top_k": "通过限制单词选择到 K 个最可能的选项来控制创造性，较低的值会使响应更集中",
-    "top_p": "平衡创造性和连贯性，较高的值（接近1.0）允许更富有创造性但可能不那么集中的响应",
+    "top_p": "平衡创造性和连贯性，较高的值（接近 1.0）允许更富有创造性但可能不那么集中的响应",
     "min_p": "考虑 token 的最小概率，过滤掉不太可能的单词以减少不合逻辑或上下文外的响应",
     "temperature": "控制创造性和可预测性，较高的值会使响应更富有创造性但焦点较少",
     "penalty_last_n": "检查重复的范围，较大的值有助于防止长期重复",
@@ -556,9 +659,9 @@
     "ignore_eos": "即使模型想要停止也要继续生成，有助于强制更长的响应",
     "logit_bias": "调整特定单词出现在响应中的可能性",
     "seed": "设置随机数生成器的种子，有助于重现结果",
-    "xtc_probability": "设置 token 通过 XTC 采样器删除的可能性，0是禁用",
-    "xtc_threshold": "设置 token 通过 XTC 采样器删除的最小概率阈值，（> 0.5禁用XTC）",
-    "typical_p": "使用参数 p 启用本地典型采样，1.0是禁用"
+    "xtc_probability": "设置 token 通过 XTC 采样器删除的可能性，0 是禁用",
+    "xtc_threshold": "设置 token 通过 XTC 采样器删除的最小概率阈值，（> 0.5 禁用 XTC）",
+    "typical_p": "使用参数 p 启用本地典型采样，1.0 是禁用"
   },
   "about": {
     "screenTitle": "关于",
@@ -581,7 +684,9 @@
     "chineseEditionGithubButton": "中文版 GitHub 仓库",
     "chineseEditionWechatButton": "微信公众号「云中江树」",
     "chineseEditionWechatCopiedTitle": "已复制",
-    "chineseEditionWechatCopiedDescription": "「云中江树」已复制到剪贴板，可在微信中搜索关注。"
+    "chineseEditionWechatCopiedDescription": "「云中江树」已复制到剪贴板，可在微信中搜索关注。",
+    "checkUpdate": "检查更新",
+    "upToDate": "已经是最新版本"
   },
   "feedback": {
     "title": "发送反馈",
@@ -649,11 +754,13 @@
       "reasoning": "思考"
     },
     "chatEmptyPlaceholder": {
+      "readyDescription": "离线运行，对话只留在这台手机里。",
+      "readyTitle": "{{name}} 已就绪",
       "noModelsTitle": "没有可用的模型",
       "noModelsDescription": "需要下载一个模型，才能与口袋AI开始聊天",
       "noModelsButton": "下载模型",
-      "activateModelTitle": "在你和口袋AI开始聊天前，请先激活模型~",
-      "activateModelDescription": "选择模型并下载。下载完成后，点击模型旁边的“加载”按钮，即可开始聊天。",
+      "activateModelTitle": "加载一个模型就能开始聊天",
+      "activateModelDescription": "选一个已下载的模型，点“加载”即可开始。",
       "activateModelButton": "选择模型",
       "loading": "加载中...",
       "gettingReadyTitle": "{{name}} 正在准备中",
@@ -805,7 +912,7 @@
       "enableAndRetry": "启用并重试",
       "goToSettings": "前往设置",
       "tryAgain": "重试",
-      "viewOnHuggingFace": "在HF上查看模型 ↗"
+      "viewOnHuggingFace": "在 HF 上查看模型 ↗"
     },
     "headerRight": {
       "deleteChatTitle": "删除聊天",
@@ -867,10 +974,12 @@
       }
     },
     "modelsHeaderRight": {
-      "menuTitleHf": "Hugging Face模型",
+      "menuTitleHf": "Hugging Face 模型",
       "menuTitleDownloaded": "已下载模型",
       "menuTitleGrouped": "按模型类型分组",
-      "menuTitleReset": "重置模型列表"
+      "menuTitleReset": "重置模型列表",
+      "groupFilters": "筛选",
+      "groupView": "显示方式"
     },
     "modelsResetDialog": {
       "proceedWithReset": "继续重置",
@@ -922,8 +1031,8 @@
         "create": "创建助手",
         "edit": "编辑助手"
       },
-      "palName": "助手名",
-      "palNamePlaceholder": "名称",
+      "palName": "名称",
+      "palNamePlaceholder": "例如：英语陪练",
       "defaultModel": "默认模型",
       "defaultModelPlaceholder": "选择模型",
       "validation": {
@@ -946,8 +1055,8 @@
         "create": "创建角色扮演助手",
         "edit": "编辑角色扮演助手"
       },
-      "palName": "助手名",
-      "palNamePlaceholder": "名称",
+      "palName": "名称",
+      "palNamePlaceholder": "例如：森林精灵",
       "defaultModel": "默认模型",
       "defaultModelPlaceholder": "选择模型",
       "descriptionSection": "描述",
@@ -956,13 +1065,13 @@
       "location": "位置",
       "locationPlaceholder": "魔法森林",
       "locationSublabel": "故事发生在哪里？",
-      "aiRole": "AI的角色",
+      "aiRole": "AI 的角色",
       "aiRolePlaceholder": "埃尔达拉，一个顽皮的森林精灵",
       "aiRoleSublabel": "设置角色",
       "userRole": "用户角色",
       "userRolePlaceholder": "埃拉德爵士，勇敢的骑士",
       "userRoleSublabel": "你是谁？",
-      "situation": "情况",
+      "situation": "情节",
       "situationPlaceholder": "救援任务，解开谜团",
       "toneStyle": "语气/风格",
       "toneStylePlaceholder": "严肃",
@@ -976,8 +1085,8 @@
         "create": "创建看图助手",
         "edit": "编辑看图助手"
       },
-      "palName": "助手名",
-      "palNamePlaceholder": "输入您的 看图助手名称",
+      "palName": "名称",
+      "palNamePlaceholder": "例如：识物小助手",
       "visionModel": "视觉模型",
       "visionModelPlaceholder": "选择视觉模型",
       "requiredModelsSection": "必需模型",
@@ -989,11 +1098,18 @@
       "accessibilityLabel": "发送"
     },
     "systemPromptSection": {
+      "template": {
+        "modeTitle": "模板模式",
+        "label": "模板（高级）",
+        "sublabel": "直接编辑原始模板，{{parameter}} 这类占位会换成上面填写的内容",
+        "placeholder": "你是 {{role}}，身处 {{setting}}……",
+        "emptyPreview": "填写上面的内容后，这里会显示最终提示词……"
+      },
       "sectionTitle": "系统提示词",
       "useAIPrompt": "使用 AI 生成系统提示词",
       "modelSelector": {
         "label": "选择生成用模型*",
-        "sublabel": "推荐: Llama 3.2 3B 或 Qwen3 4B Instruct 2507。",
+        "sublabel": "建议用 2B 以上的模型，例如“口袋助手 标准版”。",
         "placeholder": "选择模型"
       },
       "generatingPrompt": {
@@ -1008,8 +1124,8 @@
         "resetTemplate": "重置模板"
       },
       "systemPrompt": {
-        "label": "系统提示词",
-        "sublabel": "请自由编辑和尝试，以找到最适合您场景的提示词",
+        "label": "提示词内容",
+        "sublabel": "告诉助手它是谁、该怎么回答，随时可以改。",
         "placeholder": "你是一个乐于助人的助手"
       },
       "warnings": {
@@ -1045,9 +1161,9 @@
         "yesterday": "昨天",
         "thisWeek": "这周",
         "lastWeek": "上周",
-        "twoWeeksAgo": "2周前",
-        "threeWeeksAgo": "3周前",
-        "fourWeeksAgo": "4周前",
+        "twoWeeksAgo": "2 周前",
+        "threeWeeksAgo": "3 周前",
+        "fourWeeksAgo": "4 周前",
         "lastMonth": "上个月",
         "older": "以前",
         "pinned": "已置顶"
@@ -1087,7 +1203,7 @@
     "bubble": {
       "msPerToken": "{{value}}毫秒/token",
       "tokensPerSec": "{{value}} tokens/秒",
-      "ttft": "{{value}}毫秒 TTFT",
+      "ttft": "首字 {{value}} 毫秒",
       "interrupted": "被中断",
       "truncated": "已截断 — 可能是上下文已满",
       "draftAccepted": "草稿：{{accepted}}/{{total}}（{{pct}}%）",
@@ -1111,9 +1227,17 @@
       "usingServerDefaultUnreported": "使用服务器默认值（未提供具体值）",
       "resetToServerDefault": "服务器默认值：{{value}} · 重置",
       "resetToServerDefaultAccessibilityLabel": "将 {{name}} 重置为服务器默认值 {{value}}"
+    },
+    "colorSection": {
+      "title": "颜色",
+      "option": "颜色 {{index}}"
     }
   },
   "palsScreen": {
+    "moreActions": "更多操作",
+    "sharePal": "分享",
+    "startChatError": "无法开始聊天，请重试。",
+    "shareError": "分享失败，请重试。",
     "systemPrompt": "系统提示词",
     "videoAnalysis": "视频分析",
     "videoAnalysisDescription": "这是一个基于视频的 AI 助手，可以对来自设备摄像头的视频流提供实时评论。",
@@ -1121,12 +1245,12 @@
     "captureIntervalUnit": "毫秒",
     "world": "世界",
     "toneStyle": "音调/风格",
-    "aiRole": "AI的角色",
+    "aiRole": "AI 的角色",
     "userRole": "用户角色",
     "prompt": "提示词",
-    "assistant": "助手",
+    "assistant": "普通助手",
     "roleplay": "角色扮演",
-    "video": "视频",
+    "video": "摄像头助手",
     "deletePal": "删除助手",
     "deletePalMessage": "您确定要删除此助手吗？",
     "missingModel": "缺少模型",
@@ -1144,7 +1268,7 @@
       "all": "全部",
       "myPals": "我的助手",
       "local": "本地",
-      "video": "视频",
+      "video": "摄像头",
       "free": "免费",
       "premium": "高级"
     },
@@ -1216,7 +1340,7 @@
   "screenTitles": {
     "chat": "聊天",
     "models": "模型",
-    "pals": "助手（实验性）",
+    "pals": "助手",
     "benchmark": "基准测试",
     "settings": "设置",
     "appInfo": "关于",
@@ -1349,23 +1473,23 @@
       },
       "config": {
         "title": "基准测试设置",
-        "format": "PP: {{pp}} • TG: {{tg}} • PL: {{pl}} • Rep: {{nr}}"
+        "format": "提示 {{pp}} · 生成 {{tg}} · 并行 {{pl}} · 重复 {{nr}} 次"
       },
       "modelSettings": {
         "title": "模型设置",
         "context": "上下文长度: {{context}}",
         "batch": "批处理: {{batch}}",
-        "ubatch": "U批处理: {{ubatch}}",
-        "cpuThreads": "CPU线程: {{threads}}",
-        "gpuLayers": "GPU层数: {{layers}}",
+        "ubatch": "U 批处理: {{ubatch}}",
+        "cpuThreads": "CPU 线程: {{threads}}",
+        "gpuLayers": "GPU 层数: {{layers}}",
         "device": "设备: {{device}}",
-        "flashAttentionEnabled": "启用Flash Attention",
-        "flashAttentionDisabled": "禁用Flash Attention",
+        "flashAttentionEnabled": "启用 Flash Attention",
+        "flashAttentionDisabled": "禁用 Flash Attention",
         "cacheTypes": "缓存类型: {{cacheK}}/{{cacheV}}"
       },
       "results": {
         "promptProcessing": "提示词处理",
-        "tokenGeneration": "Token生成",
+        "tokenGeneration": "Token 生成",
         "totalTime": "总时间",
         "peakMemory": "峰值内存",
         "tokensPerSecond": "t/s"
@@ -1377,7 +1501,8 @@
         "cannotShare": "无法共享",
         "cannotShareTooltip": "本地模型结果无法共享",
         "submitButton": "提交到排行榜",
-        "viewLeaderboard": "查看排行榜 ↗"
+        "viewLeaderboard": "查看排行榜 ↗",
+        "deleteA11y": "删除这条测试结果"
       },
       "errors": {
         "networkRetry": "检查连接并重试",
@@ -1390,28 +1515,28 @@
     "deviceInfoCard": {
       "title": "设备信息",
       "deviceSummary": "{{brand}} {{model}} • {{systemName}} {{systemVersion}}",
-      "coreSummary": "{{cores}}核心 • {{memory}}",
+      "coreSummary": "{{cores}} 核 • {{memory}}",
       "sections": {
         "basicInfo": "基本信息",
-        "cpuDetails": "CPU详细信息",
-        "gpuDetails": "GPU详细信息",
+        "cpuDetails": "CPU 详细信息",
+        "gpuDetails": "GPU 详细信息",
         "hexagonDetails": "Hexagon DSP",
-        "appInfo": "App信息"
+        "appInfo": "App 信息"
       },
       "fields": {
         "architecture": "架构",
         "totalMemory": "总内存",
-        "deviceId": "设备ID",
-        "cpuCores": "CPU核心",
-        "cpuModel": "CPU型号",
+        "deviceId": "设备 ID",
+        "cpuCores": "CPU 核心",
+        "cpuModel": "CPU 型号",
         "chipset": "芯片组",
         "instructions": "指令集",
         "version": "版本",
-        "gpuType": "GPU类型",
+        "gpuType": "GPU 类型",
         "gpuRenderer": "渲染器",
         "gpuVendor": "供应商",
-        "metalSupport": "Metal支持",
-        "openclSupport": "OpenCL支持",
+        "metalSupport": "Metal 支持",
+        "openclSupport": "OpenCL 支持",
         "openclRequirement": "需要 i8mm 和 dotprod"
       },
       "instructions": {
@@ -1425,7 +1550,7 @@
   "errors": {
     "unexpectedError": "发生意外错误",
     "hfAuthenticationError": "Hugging Face 认证错误：令牌缺失或无效",
-    "hfAuthenticationErrorSearch": "Hugging Face认证错误：令牌缺失或无效",
+    "hfAuthenticationErrorSearch": "Hugging Face 认证错误：令牌缺失或无效",
     "authenticationError": "认证错误：令牌缺失或无效",
     "hfAuthorizationError": "Hugging Face 授权错误：没有访问此资源的权限",
     "authorizationError": "授权错误：没有访问此资源的权限",
@@ -1452,10 +1577,10 @@
     "previewButton": "预览",
     "stopPreviewButton": "停止预览",
     "voicesTitle": "语音",
-    "voicesEmptyHint": "点击任意语音即可安装并使用，或选择系统语音 — 系统语音始终可用。",
+    "voicesEmptyHint": "点一个引擎即可下载并选择声音。目前这些声音还不能朗读中文。",
     "supertonicStepsLabel": "质量（扩散步数）",
     "toggleAutoSpeakLabel": "切换自动朗读",
-    "openSettingsLabel": "TTS设置",
+    "openSettingsLabel": "TTS 设置",
     "playMessageLabel": "播放消息",
     "stopMessageLabel": "停止播放",
     "autoSpeakLabel": "自动朗读回复",
@@ -1469,12 +1594,12 @@
     "engineKokoroTagline": "最高质量、启动较慢、部分语音可能无法在所有设备上运行。",
     "engineSupertonicTagline": "启动最快、内存占用更高、偶尔可能漏字。",
     "engineSystemTagline": "系统内置语音，始终可用，无需安装。",
-    "engineSystemTitleIos": "iOS语音",
+    "engineSystemTitleIos": "iOS 语音",
     "engineSystemTitleAndroid": "安卓语音",
     "engineSystemTier": "始终可用",
-    "engineTierLightest": "最轻量",
-    "engineTierBestQuality": "最佳质量",
-    "engineTierFastestStart": "启动最快",
+    "engineTierLightest": "英语 · 最轻量",
+    "engineTierBestQuality": "英语 · 音质最佳",
+    "engineTierFastestStart": "多语种（不含中文）· 启动最快",
     "engineSpecsLine": "{{voices}} 个语音  ·  {{sizeMb}} MB  ·  约{{ramMb}} MB 内存",
     "engineSystemSpecsLine": "{{voices}} 个语音",
     "engineRemoveTitle": "删除 {{engineTitle}}？",
@@ -1527,7 +1652,7 @@
     "engineChipPhonon": "Phonon",
     "enginePhononTagline": "启动快、内存占用小、仅支持英语。",
     "enginePhononCredit": "模型与语音由 Gradium 提供（Apache-2.0），基于 Kyutai 的 Mimi 构建。",
-    "engineTierNatural": "英语自然"
+    "engineTierNatural": "英语 · 自然"
   },
   "htmlPreview": {
     "defaultTitle": "预览",
@@ -1538,6 +1663,7 @@
     "openFullscreen": "全屏打开：{{title}}"
   },
   "onboarding": {
+    "stepLabel": "第 {{current}} 步，共 {{total}} 步",
     "back": "返回",
     "skip": "跳过",
     "skipForNow": "暂时跳过",
@@ -1562,14 +1688,23 @@
     "screen3": {
       "title": "更小巧，\n但完全属于您。",
       "titleAccent": "更小巧，",
-      "body": "手机上的助手快速又私密——但比云端AI更轻量。把它当成口袋里的小伙伴，而不是无所不知的神谕。",
+      "body": "手机上的助手快速又私密——但比云端 AI 更轻量。把它当成口袋里的小伙伴，而不是无所不知的神谕。",
       "highlight": "快速又私密",
       "cta": "知道了",
-      "eyebrow": "温馨提示"
+      "eyebrow": "温馨提示",
+      "cards": {
+        "localTitle": "口袋AI",
+        "localSub": "在你的手机上运行",
+        "localTags": "快 · 离线 · 私密",
+        "vs": "对比",
+        "cloudTitle": "云端 AI",
+        "cloudSub": "在别人的服务器上运行",
+        "cloudTags": "更大 · 联网 · 有记录"
+      }
     },
     "screen4": {
-      "title": "任何内容都不会离开您的手机。",
-      "titleAccent": "离开",
+      "title": "您的内容，\n只留在手机里。",
+      "titleAccent": "只留在",
       "body": "登录可选。对话不上云。不做追踪。您的对话始终属于您自己。",
       "highlight": "登录可选。对话不上云。不做追踪。",
       "cta": "开始使用",
@@ -1577,7 +1712,7 @@
     },
     "screen5": {
       "title": "您想让助手帮您做什么？",
-      "body": "选一个您想聊的话题 — 我们会为您匹配适合您手机的助手。",
+      "body": "选一个话题，我们为您匹配适合这台手机的助手。",
       "topic": {
         "smartchat": "智能聊天",
         "coding": "编程",
@@ -1668,12 +1803,12 @@
     "insufficientStorage": "存储空间不足 — 请释放 {{requiredMb}} MB 以安装此模型（当前可用 {{freeMb}} MB）。",
     "setupSheetTitle": "设置语音输入",
     "setupSheetBody": "快速下载一次，之后就能离线语音输入。",
-    "tierNameBase": "Base",
-    "tierNameSmall": "Small",
-    "tierNameLargeTurbo": "Large Turbo",
+    "tierNameBase": "标准",
+    "tierNameSmall": "精准",
+    "tierNameLargeTurbo": "高精度",
     "tierHintBase": "默认，速度快",
-    "tierHintSmall": "更准确，速度较慢。更适合其他语言",
-    "tierHintLargeTurbo": "在大多数手机上非常慢",
+    "tierHintSmall": "更准确但较慢，适合方言和外语",
+    "tierHintLargeTurbo": "最准确，但多数手机上很慢",
     "useCta": "使用",
     "inUseLabel": "使用中",
     "modelSectionHelper": "语音输入和免提语音都会使用它。",

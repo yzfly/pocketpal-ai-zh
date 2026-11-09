@@ -34,7 +34,30 @@ import {
   unpairedDraftCandidate,
 } from './draftResolution';
 import {checkGpuSupport} from '../utils/deviceCapabilities';
-import {resolveDeviceSelection} from '../utils/deviceSelection';
+import {
+  getAvailableDevices,
+  resolveDeviceSelection,
+} from '../utils/deviceSelection';
+import {
+  consumeInterruptedNpuLoad,
+  isDefaultCpuSelection,
+  isHtpSelection,
+  markNpuLoadEnd,
+  markNpuLoadStart,
+  readNpuAutoState,
+  writeNpuAutoState,
+} from '../utils/npuAutoSelect';
+import {
+  consumeInterruptedLoad,
+  isFactoryPerfParams,
+  markLoadEnd,
+  markLoadStart,
+  readPerfState,
+  recommendPerfParams,
+  stepDown,
+  writePerfState,
+  type PerfParams,
+} from '../utils/perfProfile';
 import {
   deepMerge,
   getSHA256Hash,
@@ -202,6 +225,10 @@ class ModelStore {
 
   // Flag to track if multimodal is currently active
   isMultimodalActive: boolean = false;
+  /** 本机 NPU 加载失败或崩溃过，已改用 CPU（设置页提示用，不持久化，启动时从 npuAutoSelect 读） */
+  npuBlocked: boolean = false;
+  /** 上次加载模型时 App 被杀，已自动调低上下文/批大小（设置页提示用，不持久化） */
+  perfSteppedDown: boolean = false;
   activeProjectionModelId: string | undefined = undefined;
 
   // Track initialization settings for the active context
@@ -2418,26 +2445,63 @@ class ModelStore {
 
     // Get all effective initialization settings BEFORE try block
     // so they're available for error reporting if initialization fails
-    const effectiveSettings = await this.getEffectiveContextInitParams(
+    let effectiveSettings = await this.getEffectiveContextInitParams(
       filePath,
       draftConfig,
     );
 
     try {
-      // Create properly versioned ContextInitParams
-      const contextInitParams = createContextInitParams(effectiveSettings);
+      const loadWith = async (settings: Omit<ContextParams, 'model'>) => {
+        const onNpu = isHtpSelection(settings.devices);
+        await markLoadStart();
+        if (onNpu) {
+          await markNpuLoadStart();
+        }
+        try {
+          return await initLlama(
+            {
+              model: filePath,
+              ...settings, // Use effectiveSettings without version for llama.rn
+              use_progress_callback: true,
+            },
+            (_progress: number) => {
+              //console.log('progress: ', _progress);
+            },
+          );
+        } finally {
+          await markLoadEnd();
+          if (onNpu) {
+            await markNpuLoadEnd();
+          }
+        }
+      };
 
       const t0 = Date.now();
-      const ctx = await initLlama(
-        {
-          model: filePath,
-          ...effectiveSettings, // Use effectiveSettings without version for llama.rn
-          use_progress_callback: true,
-        },
-        (_progress: number) => {
-          //console.log('progress: ', _progress);
-        },
-      );
+      let ctx: LlamaContext;
+      try {
+        ctx = await loadWith(effectiveSettings);
+      } catch (npuError) {
+        if (
+          Platform.OS !== 'android' ||
+          !isHtpSelection(effectiveSettings.devices)
+        ) {
+          throw npuError;
+        }
+        // NPU 加载失败：记为不可用，改用 CPU 再试一次
+        console.warn(
+          '[ModelStore] NPU load failed, retrying on CPU:',
+          npuError,
+        );
+        await writeNpuAutoState({blocked: true});
+        this.fallBackToCpu();
+        effectiveSettings = await this.getEffectiveContextInitParams(
+          filePath,
+          draftConfig,
+        );
+        ctx = await loadWith(effectiveSettings);
+      }
+      // Create properly versioned ContextInitParams (after a possible CPU fallback)
+      const contextInitParams = createContextInitParams(effectiveSettings);
       const t1 = Date.now();
       console.log('init time: ', t1 - t0);
 
@@ -3270,6 +3334,8 @@ class ModelStore {
   };
 
   private async initializeGpuSettings() {
+    const npuInterrupted = await this.initializeNpuSelection();
+    await this.initializePerfProfile(npuInterrupted);
     const gpuCapabilities = await checkGpuSupport();
 
     // If GPU is not supported but currently enabled, disable it
@@ -3287,6 +3353,155 @@ class ModelStore {
     }
     // If GPU is supported, the persisted value will be used
   }
+
+  /** 切回 CPU（NPU 不可用时） */
+  private fallBackToCpu() {
+    runInAction(() => {
+      this.npuBlocked = true;
+      this.contextInitParams = {
+        ...this.contextInitParams,
+        devices: ['CPU'],
+        n_gpu_layers: 0,
+      };
+    });
+  }
+
+  /**
+   * Android：有可用 NPU（HTP）时默认用 NPU；上次 NPU 加载把进程搞崩了则改回 CPU。
+   */
+  private async initializeNpuSelection(): Promise<boolean> {
+    if (Platform.OS !== 'android') {
+      return false;
+    }
+    try {
+      if (await consumeInterruptedNpuLoad()) {
+        console.warn(
+          '[ModelStore] previous NPU load did not finish; using CPU from now on',
+        );
+        if (isHtpSelection(this.contextInitParams.devices)) {
+          this.fallBackToCpu();
+        } else {
+          runInAction(() => {
+            this.npuBlocked = true;
+          });
+        }
+        return true;
+      }
+      const state = await readNpuAutoState();
+      runInAction(() => {
+        this.npuBlocked = state.blocked;
+      });
+      if (state.blocked || state.autoApplied) {
+        return false;
+      }
+      if (!isDefaultCpuSelection(this.contextInitParams.devices)) {
+        // 用户已经自己选过 GPU/NPU，不动
+        await writeNpuAutoState({autoApplied: true});
+        return false;
+      }
+      const htp = (await getAvailableDevices()).find(
+        d => d.deviceName?.startsWith('HTP') && !/[*?]/.test(d.deviceName),
+      );
+      if (!htp) {
+        return false; // 无 NPU：保持 CPU，下次启动再看
+      }
+      runInAction(() => {
+        this.contextInitParams = {
+          ...this.contextInitParams,
+          devices: [htp.deviceName],
+          n_gpu_layers: 99,
+          // Hexagon 只保证 flash attention 关闭可用；关闭时 KV 缓存须为 F16
+          flash_attn_type: 'off',
+          cache_type_k: CacheType.F16,
+          cache_type_v: CacheType.F16,
+        };
+      });
+      await writeNpuAutoState({autoApplied: true});
+      console.log('[ModelStore] NPU detected, defaulting to', htp.deviceName);
+    } catch (error) {
+      console.warn('[ModelStore] NPU auto-selection failed:', error);
+    }
+    return false;
+  }
+
+  /** 按本机内存/CPU 算出的推荐参数（设置页“性能自检”也用） */
+  getRecommendedPerfParams = async (): Promise<PerfParams> => {
+    const [totalMemoryBytes, recommendedThreads] = await Promise.all([
+      DeviceInfo.getTotalMemory(),
+      getRecommendedThreadCount(),
+    ]);
+    return recommendPerfParams({totalMemoryBytes, recommendedThreads});
+  };
+
+  /** 应用推荐参数（设置页按钮） */
+  applyRecommendedPerfParams = async (): Promise<PerfParams> => {
+    const rec = await this.getRecommendedPerfParams();
+    runInAction(() => {
+      this.contextInitParams = {...this.contextInitParams, ...rec};
+      this.perfSteppedDown = false;
+    });
+    await writePerfState({autoApplied: true, steppedDownAt: undefined});
+    return rec;
+  };
+
+  /**
+   * 性能自检：首次自动应用推荐参数；上次加载中 App 被杀则降一档。
+   * @param npuInterrupted 上次被杀的是 NPU 加载（已由 NPU 逻辑改回 CPU，不再降档）
+   */
+  private async initializePerfProfile(npuInterrupted: boolean) {
+    try {
+      const interrupted = await consumeInterruptedLoad();
+      if (interrupted && !npuInterrupted) {
+        const lower = stepDown(this.contextInitParams);
+        if (lower) {
+          console.warn(
+            '[ModelStore] previous model load was killed; lowering',
+            lower,
+          );
+          runInAction(() => {
+            this.contextInitParams = {...this.contextInitParams, ...lower};
+            this.perfSteppedDown = true;
+          });
+          await writePerfState({autoApplied: true, steppedDownAt: Date.now()});
+          return;
+        }
+      }
+      const state = await readPerfState();
+      if (state.steppedDownAt !== undefined) {
+        runInAction(() => {
+          this.perfSteppedDown = true;
+        });
+      }
+      if (state.autoApplied) {
+        return;
+      }
+      if (isFactoryPerfParams(this.contextInitParams)) {
+        const rec = await this.getRecommendedPerfParams();
+        runInAction(() => {
+          // 线程数在首次启动时已按性能核设好，这里不重复覆盖用户值
+          this.contextInitParams = {
+            ...this.contextInitParams,
+            n_ctx: rec.n_ctx,
+            n_batch: rec.n_batch,
+            n_ubatch: rec.n_ubatch,
+            image_max_tokens: rec.image_max_tokens,
+          };
+        });
+        console.log('[ModelStore] applied recommended perf params', rec);
+      }
+      await writePerfState({autoApplied: true});
+    } catch (error) {
+      console.warn('[ModelStore] perf profile init failed:', error);
+    }
+  }
+
+  /** 用户在设置里重新选择 NPU 时调用，解除“不可用”标记 */
+  clearNpuBlocked = async () => {
+    await writeNpuAutoState({blocked: false});
+    runInAction(() => {
+      this.npuBlocked = false;
+    });
+  };
 
   setNoGpuDevices = (no_gpu_devices: boolean) => {
     runInAction(() => {

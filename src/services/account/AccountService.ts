@@ -2,35 +2,28 @@ import {makeAutoObservable, runInAction} from 'mobx';
 import * as Keychain from 'react-native-keychain';
 
 import {
-  CaptchaChallenge,
-  CloudBaseError,
-  CloudBaseTokens,
-  CloudBaseUser,
-  cloudBaseAuth,
-  isCloudBaseConfigured,
-} from './CloudBaseAuthClient';
+  AccountError,
+  AccountTokens,
+  AccountUser,
+  accountAuth,
+  isAccountConfigured,
+} from './SupabaseAuthClient';
 
-const TOKEN_SERVICE = 'pocketwisdom.cloudbase';
+const TOKEN_SERVICE = 'pocketwisdom.account';
 
 export class AccountService {
-  user: CloudBaseUser | null = null;
+  user: AccountUser | null = null;
   ready = false;
   busy = false;
-  /** 服务端要求图形验证码时设置；界面显示后调用 solveCaptcha */
-  captcha: CaptchaChallenge | null = null;
 
-  private tokens: CloudBaseTokens | null = null;
-  private captchaToken: string | undefined;
+  private tokens: AccountTokens | null = null;
 
   constructor() {
-    makeAutoObservable<AccountService, 'tokens' | 'captchaToken'>(this, {
-      tokens: false,
-      captchaToken: false,
-    });
+    makeAutoObservable<AccountService, 'tokens'>(this, {tokens: false});
   }
 
   get isConfigured(): boolean {
-    return isCloudBaseConfigured();
+    return isAccountConfigured();
   }
 
   get isSignedIn(): boolean {
@@ -57,10 +50,10 @@ export class AccountService {
     }
   }
 
-  private async saveTokens(tokens: CloudBaseTokens | null) {
+  private async saveTokens(tokens: AccountTokens | null) {
     this.tokens = tokens;
     if (tokens) {
-      await Keychain.setGenericPassword('cloudbase', JSON.stringify(tokens), {
+      await Keychain.setGenericPassword('account', JSON.stringify(tokens), {
         service: TOKEN_SERVICE,
       });
     } else {
@@ -73,16 +66,16 @@ export class AccountService {
       return;
     }
     try {
-      const user = await cloudBaseAuth.me(this.tokens.access_token);
+      const user = await accountAuth.me(this.tokens.access_token);
       runInAction(() => {
         this.user = user;
       });
     } catch (e) {
-      if (e instanceof CloudBaseError && e.status === 401) {
+      if (e instanceof AccountError && (e.status === 401 || e.status === 403)) {
         try {
-          const fresh = await cloudBaseAuth.refresh(this.tokens.refresh_token);
+          const fresh = await accountAuth.refresh(this.tokens.refresh_token);
           await this.saveTokens(fresh);
-          const user = await cloudBaseAuth.me(fresh.access_token);
+          const user = await accountAuth.me(fresh.access_token);
           runInAction(() => {
             this.user = user;
           });
@@ -99,23 +92,12 @@ export class AccountService {
     }
   }
 
-  /** 统一处理 busy 状态与图形验证码重试 */
-  private async run<T>(fn: (captchaToken?: string) => Promise<T>): Promise<T> {
+  private async run<T>(fn: () => Promise<T>): Promise<T> {
     runInAction(() => {
       this.busy = true;
     });
     try {
-      const token = this.captchaToken;
-      this.captchaToken = undefined;
-      return await fn(token);
-    } catch (e) {
-      if (e instanceof CloudBaseError && e.code === 'captcha_required') {
-        const challenge = await cloudBaseAuth.getCaptcha().catch(() => null);
-        runInAction(() => {
-          this.captcha = challenge;
-        });
-      }
-      throw e;
+      return await fn();
     } finally {
       runInAction(() => {
         this.busy = false;
@@ -123,61 +105,17 @@ export class AccountService {
     }
   }
 
-  async refreshCaptcha(): Promise<void> {
-    const challenge = await cloudBaseAuth.getCaptcha();
-    runInAction(() => {
-      this.captcha = challenge;
-    });
-  }
-
-  /** 校验图形验证码；成功后下一次请求会自动带上 */
-  async solveCaptcha(answer: string): Promise<void> {
-    if (!this.captcha) {
-      return;
-    }
-    const token = await cloudBaseAuth.verifyCaptcha(this.captcha.token, answer);
-    this.captchaToken = token;
-    runInAction(() => {
-      this.captcha = null;
-    });
-  }
-
   async signIn(email: string, password: string): Promise<void> {
-    await this.run(async captchaToken => {
-      const tokens = await cloudBaseAuth.signIn(
-        email.trim(),
-        password,
-        captchaToken,
-      );
+    await this.run(async () => {
+      const tokens = await accountAuth.signIn(email.trim(), password);
       await this.saveTokens(tokens);
       await this.loadUser();
     });
   }
 
-  /** 发送注册验证码，返回 verificationId；邮箱已注册时抛 user_already_exists */
-  async startSignUp(email: string): Promise<string> {
-    return this.run(async captchaToken => {
-      const r = await cloudBaseAuth.sendEmailCode(email.trim(), captchaToken);
-      if (r.is_user) {
-        throw new CloudBaseError('user_already_exists', 'user exists', 400);
-      }
-      return r.verification_id;
-    });
-  }
-
-  async completeSignUp(
-    email: string,
-    password: string,
-    verificationId: string,
-    code: string,
-  ): Promise<void> {
+  async signUp(email: string, password: string): Promise<void> {
     await this.run(async () => {
-      const v = await cloudBaseAuth.verifyCode(verificationId, code.trim());
-      const tokens = await cloudBaseAuth.signUp(
-        email.trim(),
-        password,
-        v.verification_token,
-      );
+      const tokens = await accountAuth.signUp(email.trim(), password);
       await this.saveTokens(tokens);
       await this.loadUser();
     });
@@ -186,7 +124,7 @@ export class AccountService {
   async signOut(): Promise<void> {
     const token = this.tokens?.access_token;
     if (token) {
-      await cloudBaseAuth.signOut(token).catch(() => undefined);
+      await accountAuth.signOut(token).catch(() => undefined);
     }
     await this.saveTokens(null);
     runInAction(() => {

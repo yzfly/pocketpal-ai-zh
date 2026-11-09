@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 
 import {
   Divider,
@@ -7,6 +7,8 @@ import {
 } from 'react-native-paper';
 
 import {useMenuStatusBarHeight, useTheme} from '../../hooks';
+
+import {L10nContext} from '../../utils';
 
 import {createStyles} from './styles';
 import {MenuItem, MenuItemProps} from './MenuItem';
@@ -43,6 +45,7 @@ export const Menu: React.FC<MenuProps> & {
   Separator: typeof Separator;
 } = ({children, selectable = false, ...menuProps}) => {
   const theme = useTheme();
+  const l10n = useContext(L10nContext);
   const styles = createStyles(theme);
   const [hasActiveSubmenu, setHasActiveSubmenu] = useState(false);
   const statusBarHeight = useMenuStatusBarHeight();
@@ -64,6 +67,7 @@ export const Menu: React.FC<MenuProps> & {
         menuProps.style,
       ]}
       statusBarHeight={statusBarHeight}
+      overlayAccessibilityLabel={l10n.common.a11y.closeMenu}
       contentStyle={[
         styles.content,
         hasActiveSubmenu && styles.contentWithSubmenu,

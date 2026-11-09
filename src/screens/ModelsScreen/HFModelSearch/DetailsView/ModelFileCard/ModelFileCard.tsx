@@ -396,7 +396,7 @@ export const ModelFileCard: FC<ModelFileCardProps> = observer(
                   <View>
                     <IconButton
                       testID="download-button"
-                      accessibilityLabel="Download model"
+                      accessibilityLabel={l10n.common.a11y.downloadModel}
                       icon={downloadIcon}
                       onPress={
                         isDownloaded

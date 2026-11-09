@@ -39,8 +39,8 @@ exports[`HighlightText ignores empty phrase entries (defensive) 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#F2F2F2",
               "color": "#000000",
+              "fontWeight": "600",
             }
           }
         >
@@ -142,8 +142,8 @@ exports[`HighlightText wraps a single matching phrase in a pill segment 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#F2F2F2",
               "color": "#000000",
+              "fontWeight": "600",
             }
           }
         >
@@ -197,8 +197,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#F2F2F2",
               "color": "#000000",
+              "fontWeight": "600",
             }
           }
         >
@@ -210,8 +210,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#F2F2F2",
               "color": "#000000",
+              "fontWeight": "600",
             }
           }
         >
@@ -223,8 +223,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#F2F2F2",
               "color": "#000000",
+              "fontWeight": "600",
             }
           }
         >

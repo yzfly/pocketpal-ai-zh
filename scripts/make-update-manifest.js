@@ -5,7 +5,7 @@
  *   node scripts/make-update-manifest.js <apk> <apkUrl> [notes.txt] [--min <versionCode>]
  *
  * versionCode / versionName 读自 android/app/build.gradle；notes.txt 每行一条更新说明。
- * 输出到 stdout，把它和 APK 一起上传到国内可直连的地址（如 CloudBase 静态网站托管），
+ * 输出到 stdout，把它和 APK 一起上传到国内可直连的地址（如国内对象存储或自有服务器），
  * 再把 update.json 的地址写进 .env 的 UPDATE_MANIFEST_URL。
  */
 const fs = require('fs');

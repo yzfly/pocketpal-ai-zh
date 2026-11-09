@@ -26,7 +26,11 @@ import {
   HelperText,
 } from 'react-native-paper';
 
-import {ProjectionModelSelector, MemoryRequirement} from '../../../components';
+import {
+  Menu,
+  ProjectionModelSelector,
+  MemoryRequirement,
+} from '../../../components';
 
 import {useTheme, useMemoryCheck, useStorageCheck} from '../../../hooks';
 
@@ -51,21 +55,25 @@ import {
   isDraftOnlyModel,
   formatBytes,
 } from '../../../utils';
+import {getVisionModelSizeBreakdown} from '../../../utils/multimodalHelpers';
 
 import {
   LinkExternalIcon,
-  TrashIcon,
-  SettingsIcon,
-  CpuChipIcon,
+  DotsVerticalIcon,
   EyeIcon,
   ChatIcon,
-  XIcon,
-  ChevronSelectorVerticalIcon,
-  ChevronSelectorExpandedVerticalIcon,
+  ChevronDownIcon,
   DownloadIcon,
   EyeOffIcon,
 } from '../../../assets/icons';
 import {getChineseModelTagline} from '../../../store/chineseModelPresets';
+import {
+  formatParamsShort,
+  formatParamsYi,
+  getOriginKey,
+  getQuantization,
+  getSourceRepo,
+} from '../../../utils/modelTechInfo';
 
 type ChatScreenNavigationProp = DrawerNavigationProp<RootDrawerParamList>;
 
@@ -96,6 +104,7 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
     const [snackbarVisible, setSnackbarVisible] = useState(false); // Snackbar visibility
     const [integrityError, setIntegrityError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     // Mirrors ModelStore.checkMemoryAndConfirm's projection-model resolution.
     const projectionModelForCheck = useMemo(
@@ -301,8 +310,8 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       if (modelCaps.vision === 'yes') {
         return (
           <EyeIcon
-            width={16}
-            height={16}
+            width={14}
+            height={14}
             stroke={theme.colors.iconModelTypeVision}
           />
         );
@@ -310,8 +319,8 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       // Default to chat icon for text models
       return (
         <ChatIcon
-          width={16}
-          height={16}
+          width={14}
+          height={14}
           stroke={theme.colors.iconModelTypeText}
         />
       );
@@ -319,20 +328,22 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
     // Helper function to get status dot
     const getStatusDot = () => {
-      if (!isDownloaded) {
+      // 只给正在使用的模型加“使用中”标签；未加载的不再显示无含义的圆点
+      if (!isDownloaded || !isActiveModel) {
         return null;
       }
       return (
-        <View
-          style={[
-            styles.statusDot,
-            {
-              backgroundColor: isActiveModel
-                ? theme.colors.bgStatusActive
-                : theme.colors.bgStatusIdle,
-            },
-          ]}
-        />
+        <View testID="active-model-badge" style={styles.activeBadge}>
+          <View
+            style={[
+              styles.statusDot,
+              {backgroundColor: theme.colors.bgStatusActive},
+            ]}
+          />
+          <Text style={styles.activeBadgeText}>
+            {l10n.models.modelCard.labels.inUse}
+          </Text>
+        </View>
       );
     };
 
@@ -383,56 +394,93 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       );
     }, [model, l10n, isActiveModel]);
 
+    const renderDetailsToggle = () => (
+      <TouchableOpacity
+        testID="expand-details-button"
+        onPress={toggleExpanded}
+        style={styles.detailsToggle}
+        accessibilityRole="button"
+        accessibilityState={{expanded: isExpanded}}
+        accessibilityLabel={
+          isExpanded
+            ? l10n.models.modelCard.accessibility.collapseDetails
+            : l10n.models.modelCard.accessibility.expandDetails
+        }>
+        <Text style={styles.detailsToggleText}>
+          {isExpanded
+            ? l10n.models.modelCard.tech.hideDetails
+            : l10n.models.modelCard.tech.details}
+        </Text>
+        <ChevronDownIcon
+          width={14}
+          height={14}
+          stroke={theme.colors.onSurfaceVariant}
+          style={isExpanded ? styles.chevronUp : undefined}
+        />
+      </TouchableOpacity>
+    );
+
+    // “更多”菜单：参数设置 + 删除/移除，替代原来并排的齿轮和 X/垃圾桶
+    type MoreEntry = {
+      testID: string;
+      label: string;
+      onPress: () => void;
+      danger?: boolean;
+    };
+    const settingsEntry: MoreEntry = {
+      testID: 'settings-button',
+      label: l10n.models.modelCard.buttons.settingsMenu,
+      onPress: () => onOpenSettings?.(),
+    };
+    const renderMoreMenu = (entries: MoreEntry[]) => (
+      <Menu
+        visible={isMoreOpen}
+        onDismiss={() => setIsMoreOpen(false)}
+        anchor={
+          <TouchableOpacity
+            testID="more-button"
+            onPress={() => setIsMoreOpen(true)}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel={l10n.models.modelCard.buttons.more}>
+            <DotsVerticalIcon
+              width={20}
+              height={20}
+              stroke={theme.colors.onSurfaceVariant}
+            />
+          </TouchableOpacity>
+        }>
+        {entries.map(entry => (
+          <Menu.Item
+            key={entry.testID}
+            testID={entry.testID}
+            label={entry.label}
+            danger={entry.danger}
+            onPress={() => {
+              setIsMoreOpen(false);
+              entry.onPress();
+            }}
+          />
+        ))}
+      </Menu>
+    );
+
     const renderActionButtons = () => {
       // Remote models: load/offload + settings (reasoning override) + delete
       if (isRemoteModel) {
         return (
           <View style={styles.actionButtonsRow}>
             {renderModelLoadButton()}
-            <TouchableOpacity
-              testID="settings-button"
-              onPress={onOpenSettings}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={l10n.models.modelCard.buttons.settings}>
-              <SettingsIcon
-                width={16}
-                height={16}
-                stroke={theme.colors.onSurfaceVariant}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="delete-button"
-              onPress={handleRemoteDelete}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={l10n.common.delete}>
-              <TrashIcon width={16} height={16} stroke={theme.colors.error} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="expand-details-button"
-              onPress={toggleExpanded}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isExpanded
-                  ? l10n.models.modelCard.accessibility.collapseDetails
-                  : l10n.models.modelCard.accessibility.expandDetails
-              }>
-              {isExpanded ? (
-                <ChevronSelectorExpandedVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              ) : (
-                <ChevronSelectorVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              )}
-            </TouchableOpacity>
+            {renderMoreMenu([
+              settingsEntry,
+              {
+                testID: 'delete-button',
+                label: l10n.common.delete,
+                onPress: handleRemoteDelete,
+                danger: true,
+              },
+            ])}
+            {renderDetailsToggle()}
           </View>
         );
       }
@@ -467,73 +515,32 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
             <Button
               testID="download-button"
               icon="download"
-              mode="outlined"
+              mode="contained"
               onPress={() => modelStore.checkSpaceAndDownload(model.id)}
               disabled={!storageOk}
-              style={[
-                styles.primaryActionButton,
-                storageOk
-                  ? {
-                      backgroundColor: theme.colors.btnDownloadBg,
-                      borderColor: theme.colors.btnDownloadBorder,
-                    }
-                  : {
-                      backgroundColor: theme.colors.surfaceDim,
-                      borderColor: theme.colors.outline,
-                    },
-              ]}
-              textColor={theme.colors.btnDownloadText}>
+              buttonColor={theme.colors.primary}
+              textColor={theme.colors.onPrimary}
+              style={styles.primaryActionButton}
+              contentStyle={styles.primaryActionContent}
+              labelStyle={styles.primaryActionLabel}>
               {l10n.models.modelCard.buttons.download}
             </Button>
 
-            <TouchableOpacity
-              testID="settings-button"
-              onPress={onOpenSettings}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={l10n.models.modelCard.buttons.settings}>
-              <SettingsIcon
-                width={16}
-                height={16}
-                stroke={theme.colors.onSurfaceVariant}
-              />
-            </TouchableOpacity>
+            {renderMoreMenu([
+              settingsEntry,
+              ...(isHfModel
+                ? [
+                    {
+                      testID: 'remove-model-button',
+                      label: tech.removeFromList,
+                      onPress: handleRemove,
+                      danger: true,
+                    },
+                  ]
+                : []),
+            ])}
 
-            {isHfModel && (
-              <TouchableOpacity
-                testID="remove-model-button"
-                onPress={handleRemove}
-                style={styles.iconButton}
-                accessibilityRole="button"
-                accessibilityLabel={l10n.models.modelCard.buttons.remove}>
-                <XIcon width={20} height={20} stroke={theme.colors.error} />
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              testID="expand-details-button"
-              onPress={toggleExpanded}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isExpanded
-                  ? l10n.models.modelCard.accessibility.collapseDetails
-                  : l10n.models.modelCard.accessibility.expandDetails
-              }>
-              {isExpanded ? (
-                <ChevronSelectorExpandedVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              ) : (
-                <ChevronSelectorVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              )}
-            </TouchableOpacity>
+            {renderDetailsToggle()}
           </View>
         );
       }
@@ -544,52 +551,17 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
           <View style={styles.actionButtonsRow}>
             {renderModelLoadButton()}
 
-            <TouchableOpacity
-              testID="settings-button"
-              onPress={onOpenSettings}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={l10n.models.modelCard.buttons.settings}>
-              <SettingsIcon
-                width={16}
-                height={16}
-                stroke={theme.colors.onSurfaceVariant}
-              />
-            </TouchableOpacity>
+            {renderMoreMenu([
+              settingsEntry,
+              {
+                testID: 'delete-button',
+                label: l10n.common.delete,
+                onPress: () => handleDelete(),
+                danger: true,
+              },
+            ])}
 
-            <TouchableOpacity
-              testID="delete-button"
-              onPress={() => handleDelete()}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={l10n.common.delete}>
-              <TrashIcon width={16} height={16} stroke={theme.colors.error} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              testID="expand-details-button"
-              onPress={toggleExpanded}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isExpanded
-                  ? l10n.models.modelCard.accessibility.collapseDetails
-                  : l10n.models.modelCard.accessibility.expandDetails
-              }>
-              {isExpanded ? (
-                <ChevronSelectorExpandedVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              ) : (
-                <ChevronSelectorVerticalIcon
-                  width={16}
-                  height={16}
-                  stroke={theme.colors.onSurfaceVariant}
-                />
-              )}
-            </TouchableOpacity>
+            {renderDetailsToggle()}
           </View>
           {isDraftOnly && (
             <Text style={styles.draftOnlyHint}>
@@ -658,13 +630,6 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
         };
       };
 
-      const getTextColor = () => {
-        if (isActiveModel) {
-          return theme.colors.btnReadyText;
-        }
-        return theme.colors.btnPrimaryText;
-      };
-
       // llama.rn cannot open a draft as a context; loading one only ever fails.
       if (isDraftOnly) {
         return (
@@ -682,11 +647,21 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       return (
         <Button
           testID={isActiveModel ? 'offload-button' : 'load-button'}
-          accessibilityLabel={isActiveModel ? 'Offload model' : 'Load model'}
+          accessibilityLabel={
+            isActiveModel
+              ? l10n.models.modelCard.buttons.offloadA11y
+              : l10n.models.modelCard.buttons.loadA11y
+          }
           icon={isActiveModel ? 'eject' : 'play-circle-outline'}
+          mode={isActiveModel ? 'outlined' : 'contained'}
           onPress={handlePress}
-          style={[styles.primaryActionButton, getButtonStyle()]}
-          textColor={getTextColor()}>
+          buttonColor={isActiveModel ? undefined : theme.colors.primary}
+          textColor={
+            isActiveModel ? theme.colors.onSurface : theme.colors.onPrimary
+          }
+          style={styles.primaryActionButton}
+          contentStyle={styles.primaryActionContent}
+          labelStyle={styles.primaryActionLabel}>
           {getButtonText()}
         </Button>
       );
@@ -757,75 +732,190 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
     };
 
     const tagline = getChineseModelTagline(model.id);
+    const tech = l10n.models.modelCard.tech;
+    const paramsShort =
+      tech.paramsScale === 'yi'
+        ? formatParamsYi(model.params)
+        : formatParamsShort(model.params);
+    const quant = getQuantization(model.filename);
+    // 收起状态只放普通用户看得懂的信息；量化等编码放进“技术参数”
+    const metaParts = [
+      paramsShort ? t(tech.paramsShort, {value: paramsShort}) : undefined,
+      modelCaps.vision === 'yes' ? tech.supportsVision : undefined,
+    ].filter(Boolean) as string[];
+    const sizeBreakdown =
+      model.supportsMultimodal && model.hfModelFile && model.hfModel
+        ? getVisionModelSizeBreakdown(model.hfModelFile, model.hfModel)
+        : undefined;
+    const hasProjectorSize =
+      !!sizeBreakdown?.hasProjection && sizeBreakdown.projectionSize > 0;
+
+    const architecture =
+      model.hfModel?.specs?.gguf?.architecture ||
+      model.ggufMetadata?.architecture;
+    const abilities = [
+      ...getModelSkills(model).map(
+        skill =>
+          l10n.models.modelCapabilities[
+            skill.labelKey as keyof typeof l10n.models.modelCapabilities
+          ] || skill.labelKey,
+      ),
+      ...(isMTPCapable(model)
+        ? [
+            isDraftOnly
+              ? l10n.models.modelCapabilities.mtpDraft
+              : l10n.models.modelCapabilities.mtp,
+          ]
+        : []),
+    ];
+    const originLabel = {
+      preset: tech.originPreset,
+      hf: tech.originHf,
+      local: tech.originLocal,
+      remote: tech.originRemote,
+    }[getOriginKey(model)];
+    const projectorFile = model.defaultProjectionModel
+      ? model.defaultProjectionModel.split('/').pop()
+      : undefined;
+    const specRows: Array<{key: string; label: string; value?: string}> = [
+      {
+        key: 'repo',
+        label: tech.sourceRepo,
+        value: isRemoteModel ? undefined : getSourceRepo(model),
+      },
+      {
+        key: 'file',
+        label: tech.file,
+        value: isRemoteModel ? undefined : model.filename,
+      },
+      {key: 'quant', label: tech.quantization, value: quant},
+      {
+        key: 'size',
+        label: hasProjectorSize ? tech.modelFile : tech.fileSize,
+        value: model.size > 0 ? formatBytes(model.size) : undefined,
+      },
+      {
+        key: 'params',
+        label: tech.parameters,
+        value:
+          model.params > 0
+            ? formatNumber(model.params, 2, true, false)
+            : undefined,
+      },
+      {
+        key: 'arch',
+        label: l10n.models.modelCard.labels.architecture,
+        value: architecture,
+      },
+      {
+        key: 'ctx',
+        label: l10n.models.modelCard.labels.contextLength,
+        value: modelCaps.contextLength
+          ? modelCaps.contextLength.toLocaleString()
+          : undefined,
+      },
+      {
+        key: 'author',
+        label: tech.publisher,
+        value: !isRemoteModel ? model.author : undefined,
+      },
+      {
+        key: 'abilities',
+        label: tech.abilities,
+        value: abilities.length ? abilities.join('、') : undefined,
+      },
+      {
+        key: 'vision',
+        label: l10n.models.modelCard.labels.vision,
+        value: isRemoteModel ? visionLabel : undefined,
+      },
+      {
+        key: 'projector',
+        label: tech.projector,
+        value: model.supportsMultimodal
+          ? [
+              projectorFile,
+              hasProjectorSize
+                ? formatBytes(sizeBreakdown!.projectionSize)
+                : undefined,
+            ]
+              .filter(Boolean)
+              .join(' · ') || undefined
+          : undefined,
+      },
+      {key: 'origin', label: tech.origin, value: originLabel},
+    ].filter(r => !!r.value);
 
     return (
       <>
         <Card elevation={0} style={styles.card} testID={`model-card-${cardId}`}>
-          {/* Compact Header */}
-          <View style={styles.compactHeader}>
-            <View style={styles.headerContent}>
-              <View style={styles.headerLeft}>
-                <View
-                  style={styles.modelTypeIcon}
-                  {...(isRemoteModel && {
-                    accessible: true,
-                    accessibilityLabel: `${l10n.models.modelCard.labels.vision}: ${visionLabel}`,
-                    testID: `model-card-vision-${cardId}`,
-                  })}>
-                  {getModelTypeIcon()}
-                </View>
-                <Text
-                  variant="titleSmall"
-                  style={styles.compactModelName}
-                  numberOfLines={1}
-                  ellipsizeMode="middle">
-                  {model.name}
+          {/* Header：名称与大小同一行，说明和摘要与名称左对齐 */}
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <Text
+                variant="titleSmall"
+                style={styles.modelName}
+                numberOfLines={1}
+                ellipsizeMode="middle">
+                {model.name}
+              </Text>
+              {getStatusDot()}
+              {isRemoteModel ? (
+                <TouchableOpacity
+                  testID="server-link"
+                  onPress={() => {
+                    if (model.serverId && onOpenServerDetails) {
+                      onOpenServerDetails(model.serverId);
+                    }
+                  }}
+                  style={styles.serverLink}>
+                  <Icon
+                    source="cloud-outline"
+                    size={12}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                  <Text style={styles.serverLinkText}>
+                    {model.serverName || 'Remote'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.sizeText}>
+                  {hasProjectorSize
+                    ? t(tech.total, {
+                        size: getModelSizeString(model, isActiveModel, l10n),
+                      })
+                    : getModelSizeString(model, isActiveModel, l10n)}
                 </Text>
-              </View>
-              <View style={styles.headerRight}>
-                {isRemoteModel ? (
-                  <TouchableOpacity
-                    testID="server-link"
-                    onPress={() => {
-                      if (model.serverId && onOpenServerDetails) {
-                        onOpenServerDetails(model.serverId);
-                      }
-                    }}
-                    style={styles.serverLink}>
-                    <Icon
-                      source="cloud-outline"
-                      size={12}
-                      color={theme.colors.primary}
-                    />
-                    <Text style={styles.serverLinkText}>
-                      {model.serverName || 'Remote'}
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.sizeInfo}>
-                    <CpuChipIcon
-                      width={10}
-                      height={10}
-                      stroke={theme.colors.onSurfaceVariant}
-                    />
-                    <Text style={styles.sizeInfoText}>
-                      {getModelSizeString(model, isActiveModel, l10n)}
-                    </Text>
-                  </View>
-                )}
-                {getStatusDot()}
-              </View>
+              )}
             </View>
-          </View>
-
-          {/* Content */}
-          <View style={styles.cardContent}>
-            {/* 中文版：推荐模型的一句话用途说明 */}
             {tagline ? (
               <Text style={styles.tagline} testID="model-card-tagline">
                 {tagline}
               </Text>
             ) : null}
+            <View style={styles.metaRow}>
+              {isRemoteModel && (
+                <View
+                  style={styles.modelTypeIcon}
+                  accessible={true}
+                  accessibilityLabel={`${l10n.models.modelCard.labels.vision}: ${visionLabel}`}
+                  testID={`model-card-vision-${cardId}`}>
+                  {getModelTypeIcon()}
+                </View>
+              )}
+              {metaParts.length > 0 && (
+                <Text
+                  style={styles.metaText}
+                  numberOfLines={1}
+                  testID="model-card-meta">
+                  {metaParts.join(' · ')}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Content */}
+          <View style={styles.cardContent}>
             {/* Storage Error Display */}
             {!isRemoteModel && !storageOk && !isDownloaded && (
               <HelperText
@@ -901,46 +991,12 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
             {isExpanded && (
               <View style={styles.detailsContent}>
-                {/* Full Model Name */}
-                <View style={styles.fullModelNameContainer}>
-                  <Text style={styles.fullModelNameLabel}>
-                    {l10n.models.modelCard.labels.modelName}
-                  </Text>
-                  <Text style={styles.fullModelNameText} selectable={true}>
-                    {model.name}
-                  </Text>
-                </View>
-
                 {/* Memory Requirement */}
                 {model.isDownloaded && !isRemoteModel && (
                   <MemoryRequirement
                     model={model}
                     projectionModel={projectionModelForCheck}
                   />
-                )}
-
-                {((model.capabilities && model.capabilities.length > 0) ||
-                  isMTPCapable(model)) && (
-                  <View style={styles.descriptionContainer}>
-                    <Text style={styles.descriptionText}>
-                      {[
-                        ...getModelSkills(model).map(
-                          skill =>
-                            l10n.models.modelCapabilities[
-                              skill.labelKey as keyof typeof l10n.models.modelCapabilities
-                            ] || skill.labelKey,
-                        ),
-                        ...(isMTPCapable(model)
-                          ? [
-                              isDraftOnly
-                                ? l10n.models.modelCapabilities.mtpDraft
-                                : l10n.models.modelCapabilities.mtp,
-                            ]
-                          : []),
-                      ].join(', ')}{' '}
-                      {l10n.models.modelCard.labels.capabilities}
-                    </Text>
-                  </View>
                 )}
 
                 {/* Vision Toggle for multimodal models */}
@@ -998,75 +1054,31 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
                     </View>
                   )}
 
-                {/* Technical Details Grid - 2x2 layout */}
-                <View style={styles.technicalDetailsGrid}>
-                  {/* Parameters */}
-                  {model.params > 0 && (
-                    <View style={styles.technicalDetailCard}>
-                      <Text style={styles.technicalDetailLabel}>
-                        {l10n.models.modelDescription.parameters}
-                      </Text>
-                      <Text style={styles.technicalDetailValue}>
-                        {formatNumber(model.params, 2, true, false)}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Context Length */}
-                  {modelCaps.contextLength && (
+                {/* 技术参数：标签左对齐、数值右侧一栏左对齐 */}
+                <View style={styles.specList} testID="model-card-specs">
+                  <Text style={styles.specTitle}>{tech.techSpecs}</Text>
+                  {specRows.map((row, index) => (
                     <View
-                      style={styles.technicalDetailCard}
-                      testID={`model-card-context-length-${cardId}`}>
-                      <Text style={styles.technicalDetailLabel}>
-                        {l10n.models.modelCard.labels.contextLength}
-                      </Text>
-                      <Text style={styles.technicalDetailValue}>
-                        {modelCaps.contextLength.toLocaleString()}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Architecture */}
-                  {(model.hfModel?.specs?.gguf?.architecture ||
-                    model.ggufMetadata?.architecture) && (
-                    <View style={styles.technicalDetailCard}>
-                      <Text style={styles.technicalDetailLabel}>
-                        {l10n.models.modelCard.labels.architecture}
-                      </Text>
-                      <Text style={styles.technicalDetailValue}>
-                        {model.hfModel?.specs?.gguf?.architecture ||
-                          model.ggufMetadata?.architecture}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Author */}
-                  {model.author && !isRemoteModel && (
-                    <View style={styles.technicalDetailCard}>
-                      <Text style={styles.technicalDetailLabel}>
-                        {l10n.models.modelCard.labels.author}
-                      </Text>
-                      <Text style={styles.technicalDetailValue}>
-                        {model.author}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Vision */}
-                  {isRemoteModel && (
-                    <View
-                      style={styles.technicalDetailCard}
-                      testID={`model-card-vision-capability-${cardId}`}
+                      key={row.key}
+                      style={[
+                        styles.specRow,
+                        index === specRows.length - 1 && styles.specRowLast,
+                      ]}
+                      testID={
+                        row.key === 'ctx'
+                          ? `model-card-context-length-${cardId}`
+                          : row.key === 'vision'
+                            ? `model-card-vision-capability-${cardId}`
+                            : `model-card-spec-${row.key}`
+                      }
                       accessible={true}
-                      accessibilityLabel={`${l10n.models.modelCard.labels.vision}: ${visionLabel}`}>
-                      <Text style={styles.technicalDetailLabel}>
-                        {l10n.models.modelCard.labels.vision}
-                      </Text>
-                      <Text style={styles.technicalDetailValue}>
-                        {visionLabel}
+                      accessibilityLabel={`${row.label}: ${row.value}`}>
+                      <Text style={styles.specLabel}>{row.label}</Text>
+                      <Text style={styles.specValue} selectable={true}>
+                        {row.value}
                       </Text>
                     </View>
-                  )}
+                  ))}
                 </View>
 
                 {/* HuggingFace Link */}

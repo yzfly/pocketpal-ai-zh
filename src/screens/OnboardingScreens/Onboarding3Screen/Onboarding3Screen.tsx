@@ -1,5 +1,4 @@
 import React from 'react';
-import {Image} from 'react-native';
 import {observer} from 'mobx-react';
 
 import {OnboardingScaffold} from '../components/OnboardingScaffold';
@@ -8,13 +7,7 @@ import {OnboardingContent} from '../components/OnboardingContent';
 import {ItalicAccentTitle} from '../components/ItalicAccentTitle';
 import {HighlightText} from '../components/HighlightText';
 import {useOnboardingHandlers} from '../useOnboardingHandlers';
-import {styles} from './styles';
-
-// Screen 3 "Cards" composition is a flat illustration in Figma
-// (`3699:23649`). The asset was re-exported at 1572×925 (~4× density
-// of the natural 369×217 layout slot).
-
-const cardsImage = require('../../../assets/onboarding/screen-3-cards.png');
+import {ComparisonCards} from './ComparisonCards';
 
 export const Onboarding3Screen: React.FC = observer(() => {
   const {l10n, next, goBack} = useOnboardingHandlers(3);
@@ -22,15 +15,7 @@ export const Onboarding3Screen: React.FC = observer(() => {
   return (
     <OnboardingScaffold
       step={3}
-      illustration={
-        <Image
-          source={cardsImage}
-          style={styles.cards}
-          resizeMode="contain"
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        />
-      }
+      illustration={<ComparisonCards copy={t.screen3.cards} />}
       content={
         <OnboardingContent
           eyebrow={t.screen3.eyebrow}

@@ -170,6 +170,7 @@ export const CompletionSettings: React.FC<Props> = ({
             onValueChange={disabled ? () => {} : value => onChange(name, value)}
             disabled={disabled}
             testID={`${name}-switch`}
+            accessibilityLabel={displayName}
           />
         </View>
         <Text style={styles.description}>{l10n.completionParams[name]}</Text>

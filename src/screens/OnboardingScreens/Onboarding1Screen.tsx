@@ -1,7 +1,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 
-import {Screen1Hero} from '../../assets/onboarding/illustrations';
+import {BrandMark} from '../../components/BrandMark';
 import {OnboardingScaffold} from './components/OnboardingScaffold';
 import {OnboardingBottomBar} from './components/OnboardingBottomBar';
 import {OnboardingContent} from './components/OnboardingContent';
@@ -15,7 +15,7 @@ export const Onboarding1Screen: React.FC = observer(() => {
   return (
     <OnboardingScaffold
       step={1}
-      illustration={<Screen1Hero width={112} height={112} />}
+      illustration={<BrandMark size={96} />}
       content={
         <OnboardingContent
           eyebrow={t.screen1.eyebrow}

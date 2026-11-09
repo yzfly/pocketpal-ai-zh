@@ -112,7 +112,8 @@ describe('navigation bar appearance writer', () => {
     ).not.toContain('useNavigationBarAppearance');
   });
 
-  it('the native module writes only the activity nav-bar appearance', () => {
+  // 口袋AI：同时写状态栏外观（MIUI 等系统在深色主题下状态栏仍是黑字，见 NavigationBarModule.kt）
+  it('the native module writes only the activity system-bar appearance', () => {
     const kotlin = readCode(
       path.join(
         ROOT,
@@ -122,10 +123,11 @@ describe('navigation bar appearance writer', () => {
 
     expect(kotlin.match(/\.isAppearanceLight\w+\s*=/g)).toEqual([
       '.isAppearanceLightNavigationBars =',
+      '.isAppearanceLightStatusBars =',
     ]);
     expect(kotlin).toContain('currentActivity?.window');
     expect(kotlin).not.toMatch(
-      /navigationBarColor|statusBarColor|ContrastEnforced|setDecorFitsSystemWindows|systemUiVisibility/,
+      /navigationBarColor|statusBarColor|ContrastEnforced|setDecorFitsSystemWindows/,
     );
   });
 });

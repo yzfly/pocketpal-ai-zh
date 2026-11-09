@@ -222,6 +222,7 @@ describe('ModelCard', () => {
     it('shows delete confirmation for regular models', async () => {
       const {getByTestId} = customRender(<ModelCard model={downloadedModel} />);
 
+      fireEvent.press(getByTestId('more-button'));
       const deleteButton = getByTestId('delete-button');
       fireEvent.press(deleteButton);
 
@@ -245,6 +246,7 @@ describe('ModelCard', () => {
 
       const {getByTestId} = customRender(<ModelCard model={downloadedModel} />);
 
+      fireEvent.press(getByTestId('more-button'));
       const deleteButton = getByTestId('delete-button');
       fireEvent.press(deleteButton);
 
@@ -259,6 +261,7 @@ describe('ModelCard', () => {
 
       const {getByTestId} = customRender(<ModelCard model={projectionModel} />);
 
+      fireEvent.press(getByTestId('more-button'));
       const deleteButton = getByTestId('delete-button');
       fireEvent.press(deleteButton);
 
@@ -330,6 +333,7 @@ describe('ModelCard', () => {
         />,
       );
 
+      fireEvent.press(getByTestId('more-button'));
       const settingsButton = getByTestId('settings-button');
       fireEvent.press(settingsButton);
 
@@ -422,7 +426,7 @@ describe('ModelCard', () => {
     });
 
     it('shows vision controls for vision models', async () => {
-      const {getByTestId, getByText} = customRender(
+      const {getByTestId, getAllByText} = customRender(
         <ModelCard model={visionModel} />,
       );
 
@@ -431,7 +435,8 @@ describe('ModelCard', () => {
       fireEvent.press(expandButton);
 
       await waitFor(() => {
-        expect(getByText('Vision')).toBeTruthy();
+        // 摘要行和展开的详情里都会出现“Vision”
+        expect(getAllByText('Vision').length).toBeGreaterThan(0);
       });
 
       // Vision controls should be visible in the expanded details
@@ -718,6 +723,7 @@ describe('ModelCard', () => {
       );
 
       await waitFor(() => {
+        fireEvent.press(getByTestId('more-button'));
         expect(getByTestId('delete-button')).toBeTruthy();
       });
     });
@@ -731,6 +737,7 @@ describe('ModelCard', () => {
       );
 
       await waitFor(() => {
+        fireEvent.press(getByTestId('more-button'));
         expect(getByTestId('settings-button')).toBeTruthy();
       });
     });
@@ -745,6 +752,7 @@ describe('ModelCard', () => {
         />,
       );
 
+      fireEvent.press(getByTestId('more-button'));
       fireEvent.press(getByTestId('settings-button'));
       expect(mockOnOpenSettings).toHaveBeenCalled();
     });
@@ -759,6 +767,7 @@ describe('ModelCard', () => {
         />,
       );
 
+      fireEvent.press(getByTestId('more-button'));
       const deleteButton = getByTestId('delete-button');
       fireEvent.press(deleteButton);
 
@@ -790,6 +799,7 @@ describe('ModelCard', () => {
         />,
       );
 
+      fireEvent.press(getByTestId('more-button'));
       const deleteButton = getByTestId('delete-button');
       fireEvent.press(deleteButton);
 

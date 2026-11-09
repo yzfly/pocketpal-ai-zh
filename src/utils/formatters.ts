@@ -68,6 +68,30 @@ export function formatNumber(
   }
 }
 
+/**
+ * 下载量、点赞数等计数：中文界面用“万/亿”（25.4 万、155 万），其他语言沿用 k/m。
+ */
+export function formatCount(
+  num: number,
+  l10nData = l10n.en,
+  fractionDigits = 2,
+): string {
+  if (l10nData.models.modelCard.tech.paramsScale !== 'yi') {
+    return formatNumber(num, fractionDigits);
+  }
+  const trim = (v: number) => {
+    const digits = v >= 100 ? 0 : 1;
+    return Number(v.toFixed(digits)).toString();
+  };
+  if (num < 10_000) {
+    return num.toString();
+  }
+  if (num < 100_000_000) {
+    return `${trim(num / 10_000)} 万`;
+  }
+  return `${trim(num / 100_000_000)} 亿`;
+}
+
 /** Returns formatted date used as a divider between different days in the chat history */
 export const getVerboseDateTimeRepresentation = (
   dateTime: number,
@@ -150,6 +174,11 @@ export function timeAgo(
     return format === 'short'
       ? l10nData.models.search.modelUpdatedJustNowShort
       : l10nData.models.search.modelUpdatedJustNowLong;
+  }
+
+  // 中文单位不留空格：“3 天” → “3天”
+  if (/[\u4e00-\u9fff]$/.test(timeValue)) {
+    timeValue = timeValue.replace(/^(\d+) /, '$1');
   }
 
   if (format === 'short') {

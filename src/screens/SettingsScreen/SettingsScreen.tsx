@@ -47,6 +47,7 @@ import {
   InputSlider,
 } from '../../components';
 import {AccountCard} from './AccountCard';
+import {PerformanceCheckCard} from './PerformanceCheckCard';
 import {LocalApiServerCard} from './LocalApiServerCard';
 
 import {useTheme} from '../../hooks';
@@ -215,14 +216,28 @@ export const SettingsScreen: React.FC = observer(() => {
     !modelStore.contextInitParams.flash_attn_type ||
     modelStore.contextInitParams.flash_attn_type === 'off';
 
-  const cacheTypeKOptions = getAllowedCacheTypeKOptions(
-    currentFlashAttnType as 'auto' | 'on' | 'off',
-    currentBackend,
+  // 口袋AI：F16 选项的“(Default)”跟随界面语言
+  const localizeCacheOptions = <T extends {value: CacheType; label: string}>(
+    options: T[],
+  ): T[] =>
+    options.map(option =>
+      option.value === CacheType.F16
+        ? {...option, label: l10n.settings.cacheTypeF16Default}
+        : option,
+    );
+
+  const cacheTypeKOptions = localizeCacheOptions(
+    getAllowedCacheTypeKOptions(
+      currentFlashAttnType as 'auto' | 'on' | 'off',
+      currentBackend,
+    ),
   );
 
-  const cacheTypeVOptions = getAllowedCacheTypeVOptions(
-    currentFlashAttnType as 'auto' | 'on' | 'off',
-    currentBackend,
+  const cacheTypeVOptions = localizeCacheOptions(
+    getAllowedCacheTypeVOptions(
+      currentFlashAttnType as 'auto' | 'on' | 'off',
+      currentBackend,
+    ),
   );
 
   const getCacheTypeLabel = (
@@ -270,13 +285,11 @@ export const SettingsScreen: React.FC = observer(() => {
   })();
 
   // Draft cache compatibility is the draft's own, not the target's flash-attn.
-  const draftCacheTypeKOptions = getAllowedCacheTypeKOptions(
-    'on',
-    currentBackend,
+  const draftCacheTypeKOptions = localizeCacheOptions(
+    getAllowedCacheTypeKOptions('on', currentBackend),
   );
-  const draftCacheTypeVOptions = getAllowedCacheTypeVOptions(
-    'on',
-    currentBackend,
+  const draftCacheTypeVOptions = localizeCacheOptions(
+    getAllowedCacheTypeVOptions('on', currentBackend),
   );
   const getDraftCacheTypeLabel = (
     value: CacheType | string | undefined,
@@ -327,6 +340,9 @@ export const SettingsScreen: React.FC = observer(() => {
 
   const handleDeviceSelect = (option: DeviceOption) => {
     modelStore.setDevices(option.devices);
+    if (option.id === 'hexagon' && modelStore.npuBlocked) {
+      modelStore.clearNpuBlocked();
+    }
 
     // Only update flash attention if current value is not valid for the selected device
     const currentFlashAttn =
@@ -352,6 +368,8 @@ export const SettingsScreen: React.FC = observer(() => {
         <ScrollView
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled">
+          <PerformanceCheckCard />
+
           {/* Model Initialization Settings */}
           <Card elevation={0} style={styles.card}>
             <Card.Title title={l10n.settings.modelInitializationSettings} />
@@ -393,6 +411,14 @@ export const SettingsScreen: React.FC = observer(() => {
                       }))}
                       style={styles.segmentedButtons}
                     />
+                    {Platform.OS === 'android' && modelStore.npuBlocked && (
+                      <Text
+                        testID="npu-fallback-notice"
+                        variant="labelSmall"
+                        style={styles.textDescription}>
+                        {l10n.settings.npuFallbackNotice}
+                      </Text>
+                    )}
 
                     {/* GPU Layers Slider */}
                     <InputSlider
@@ -492,6 +518,7 @@ export const SettingsScreen: React.FC = observer(() => {
                 title={l10n.settings.advancedSettings}
                 titleStyle={styles.accordionTitle}
                 style={styles.advancedAccordion}
+                contentStyle={styles.advancedAccordionContent}
                 expanded={showAdvancedSettings}
                 onPress={() => setShowAdvancedSettings(!showAdvancedSettings)}>
                 <View style={styles.advancedSettingsContent}>
@@ -926,6 +953,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.useMlock}
                     testID="use-mlock-switch"
                     value={modelStore.contextInitParams.use_mlock}
                     onValueChange={value => modelStore.setUseMlock(value)}
@@ -946,6 +974,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.useMmap}
                     testID="use-mmap-switch"
                     value={
                       modelStore.contextInitParams.use_mmap !== 'false' &&
@@ -972,6 +1001,7 @@ export const SettingsScreen: React.FC = observer(() => {
                       </Text>
                     </View>
                     <Switch
+                      accessibilityLabel={l10n.settings.weightRepacking}
                       testID="weight-repacking-switch"
                       value={
                         !(modelStore.contextInitParams.no_extra_bufts ?? false)
@@ -1007,6 +1037,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.autoOffloadLoad}
                     testID="auto-offload-load-switch"
                     value={modelStore.useAutoRelease}
                     onValueChange={value =>
@@ -1027,6 +1058,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.autoNavigateToChat}
                     testID="auto-navigate-to-chat-switch"
                     value={uiStore.autoNavigatetoChat}
                     onValueChange={value =>
@@ -1073,6 +1105,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.useHfMirror}
                     testID="hf-mirror-switch"
                     value={uiStore.useHfMirror}
                     onValueChange={value => uiStore.setUseHfMirror(value)}
@@ -1096,6 +1129,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </View>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.darkMode}
                     testID="dark-mode-switch"
                     value={uiStore.colorScheme === 'dark'}
                     onValueChange={value =>
@@ -1129,6 +1163,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     )}
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.ttsAvailability}
                     testID="tts-availability-switch"
                     value={
                       ttsStore.userTTSOverride ?? ttsStore.deviceMeetsMemory
@@ -1163,6 +1198,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     )}
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.voiceInput.settingTitle}
                     testID="asr-availability-switch"
                     value={asrStore.userASROverride ?? asrStore.deviceSupported}
                     onValueChange={value => asrStore.setUserASROverride(value)}
@@ -1223,6 +1259,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     )}
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.voiceMode.settingTitle}
                     testID="voice-mode-availability-switch"
                     value={voiceModeStore.supported}
                     onValueChange={value =>
@@ -1370,6 +1407,7 @@ export const SettingsScreen: React.FC = observer(() => {
                         </Text>
                       </View>
                       <Switch
+                        accessibilityLabel={l10n.settings.displayMemoryUsage}
                         testID="display-memory-usage-switch"
                         value={uiStore.displayMemUsage}
                         onValueChange={value =>
@@ -1593,6 +1631,7 @@ export const SettingsScreen: React.FC = observer(() => {
                     </Text>
                   </View>
                   <Switch
+                    accessibilityLabel={l10n.settings.useHfTokenLabel}
                     testID="use-hf-token-switch"
                     value={hfStore.useHfToken}
                     disabled={!hfStore.isTokenPresent}

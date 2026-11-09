@@ -14,7 +14,7 @@ export const createStyles = (theme: Theme) =>
     },
     body: {
       flex: 1,
-      paddingHorizontal: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.l,
       paddingVertical: theme.spacing.m,
       position: 'relative',
     },

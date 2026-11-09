@@ -357,7 +357,8 @@ const candidateEntry = (
 ): OnboardingPalModelEntry =>
   palEntry({
     tier,
-    recommended: tier === 'balanced',
+    // 口袋AI 默认推荐最小最快的一档（Qwen3.5 0.8B）
+    recommended: tier === 'quick',
     repo: c.hfRepo,
     filename: c.hfFilename,
     params: c.params ?? 0,

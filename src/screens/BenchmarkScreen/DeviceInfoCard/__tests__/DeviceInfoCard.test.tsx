@@ -7,6 +7,7 @@ import {DeviceInfoCard} from '../DeviceInfoCard';
 jest.mock('react-native-device-info', () => ({
   getModel: jest.fn().mockReturnValue('iPhone 13'),
   getBrand: jest.fn().mockReturnValue('Apple'),
+  getSystemVersion: jest.fn().mockReturnValue('17.0'),
   getVersion: jest.fn().mockReturnValue('1.0.0'),
   getBuildNumber: jest.fn().mockReturnValue('100'),
   supportedAbis: jest.fn().mockResolvedValue(['arm64']),

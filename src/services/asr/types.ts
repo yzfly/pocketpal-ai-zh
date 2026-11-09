@@ -45,6 +45,13 @@ export interface AsrTierManifest {
   modelFilename: string;
   /** HuggingFace download URL for the model bin. */
   modelUrl: string;
+  /**
+   * 口袋AI：国内备用下载地址（ModelScope 上与 HF 同哈希的镜像），
+   * HF/hf-mirror 失败（如 HTTP 429）时依次尝试。
+   */
+  mirrorUrls: string[];
+  /** HF LFS 记录的 SHA-256；下载后校验，第三方镜像也只接受同一份文件。 */
+  sha256: string;
   /** Exact summed byte size of the downloaded file(s); feeds disk preflight. */
   estimatedBytes: number;
   /** Peak memory while transcribing: weights plus whisper's buffers. */

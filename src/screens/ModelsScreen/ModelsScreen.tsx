@@ -1,5 +1,13 @@
-import React, {useState, useContext, useEffect} from 'react';
-import {FlatList, RefreshControl, Platform, Alert, View} from 'react-native';
+import React, {useState, useContext, useEffect, useRef} from 'react';
+import {
+  FlatList,
+  RefreshControl,
+  Platform,
+  Alert,
+  View,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native';
 
 import {reaction, computed} from 'mobx';
 import {v4 as uuidv4} from 'uuid';
@@ -34,6 +42,19 @@ import {ErrorState} from '../../utils/errors';
 export const ModelsScreen: React.FC = observer(() => {
   const l10n = useContext(L10nContext);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  // 浮动“添加模型”按钮：下滑隐藏、上滑或回到顶部时出现
+  const [fabVisible, setFabVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const handleListScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const delta = y - lastScrollY.current;
+    if (y <= 8) {
+      setFabVisible(true);
+    } else if (Math.abs(delta) > 6) {
+      setFabVisible(delta < 0);
+    }
+    lastScrollY.current = y;
+  };
   const [hfSearchVisible, setHFSearchVisible] = useState(false);
   const [isCopyingModel, setIsCopyingModel] = useState(false);
   const [selectedModel, setSelectedModel] = useState<Model | undefined>();
@@ -396,6 +417,8 @@ export const ModelsScreen: React.FC = observer(() => {
 
       <FlatList
         testID="flat-list"
+        onScroll={handleListScroll}
+        scrollEventThrottle={64}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.listContainer}
@@ -448,6 +471,7 @@ export const ModelsScreen: React.FC = observer(() => {
         onAddRemoteModel={handleAddRemoteModel}
         onManageServers={handleManageServers}
         hasServers={serverStore.servers.length > 0}
+        visible={fabVisible}
       />
       <ModelSettingsSheet
         isVisible={settingsVisible}

@@ -337,14 +337,28 @@ describe('ModelStore', () => {
       });
     });
 
-    it('reports native initialization failure without retrying', async () => {
+    it('falls back to CPU once and blocks the NPU when the NPU load fails', async () => {
       nativeInit.mockRejectedValueOnce(new Error('Native init failed'));
+      await modelStore.initContext(basicModel);
+      expect(nativeInit).toHaveBeenCalledTimes(2);
+      expect(nativeInit.mock.calls[0][0].devices[0]).toMatch(/^HTP\d$/);
+      expect(nativeInit.mock.calls[1][0]).toMatchObject({
+        devices: ['CPU'],
+        n_gpu_layers: 0,
+      });
+      expect(modelStore.npuBlocked).toBe(true);
+      expect(modelStore.contextInitParams.devices).toEqual(['CPU']);
+    });
+
+    it('reports the failure when the CPU retry fails too', async () => {
+      nativeInit
+        .mockRejectedValueOnce(new Error('Native init failed'))
+        .mockRejectedValueOnce(new Error('CPU init failed'));
       await expect(modelStore.initContext(basicModel)).rejects.toThrow(
-        'Native init failed',
+        'CPU init failed',
       );
-      expect(nativeInit).toHaveBeenCalledTimes(1);
+      expect(nativeInit).toHaveBeenCalledTimes(2);
       expect(modelStore.modelLoadError).not.toBeNull();
-      expect(modelStore.contextInitParams.devices).toEqual(['HTP*']);
     });
   });
 

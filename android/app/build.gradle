@@ -117,10 +117,14 @@ android {
             def releaseStorePassword = project.env.get("APP_RELEASE_STORE_PASSWORD") ?: System.getenv("APP_RELEASE_STORE_PASSWORD")
             def releaseKeyPassword = project.env.get("APP_RELEASE_KEY_PASSWORD") ?: System.getenv("APP_RELEASE_KEY_PASSWORD")
 
+            // 口袋AI：密钥放在仓库外（APP_RELEASE_STORE_FILE 绝对路径），不入库。
+            def releaseStoreFile = project.env.get("APP_RELEASE_STORE_FILE") ?: System.getenv("APP_RELEASE_STORE_FILE")
+            def releaseKeyAlias = project.env.get("APP_RELEASE_KEY_ALIAS") ?: System.getenv("APP_RELEASE_KEY_ALIAS")
+
             if (releaseStorePassword && releaseKeyPassword) {
-                storeFile file("pocketpal-release-key.keystore")
+                storeFile file(releaseStoreFile ?: "pocketpal-release-key.keystore")
                 storePassword releaseStorePassword
-                keyAlias "pocketpal_key_alias"
+                keyAlias releaseKeyAlias ?: "pocketpal_key_alias"
                 keyPassword releaseKeyPassword
             }
         }

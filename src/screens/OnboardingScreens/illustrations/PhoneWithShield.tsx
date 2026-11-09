@@ -56,6 +56,7 @@ export const PhoneWithShield: React.FC<PhoneWithShieldProps> = ({
       <ShieldGlyph
         width={shieldSize}
         height={shieldSize}
+        fill={theme.colors.onBackground}
         style={{
           position: 'absolute',
           top: (49.8 / viewBoxH) * height,

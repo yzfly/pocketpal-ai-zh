@@ -1,7 +1,7 @@
 export {accountService, AccountService} from './AccountService';
 export {
-  CloudBaseError,
+  AccountError,
   describeAccountError,
-  isCloudBaseConfigured,
-} from './CloudBaseAuthClient';
-export type {CloudBaseUser, CaptchaChallenge} from './CloudBaseAuthClient';
+  isAccountConfigured,
+} from './SupabaseAuthClient';
+export type {AccountUser} from './SupabaseAuthClient';

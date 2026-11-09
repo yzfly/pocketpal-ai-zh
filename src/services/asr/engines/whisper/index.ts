@@ -123,27 +123,7 @@ export class WhisperAsrEngine implements AsrEngine {
     await RNFS.mkdir(tierDir, {NSURLIsExcludedFromBackupKey: true});
 
     try {
-      const result = await RNFS.downloadFile({
-        fromUrl: applyHfMirror(manifest.modelUrl),
-        toFile: this.getModelPath(tier),
-        background: false,
-        discretionary: false,
-        cacheable: false,
-        progressInterval: 500,
-        progress: res => {
-          if (!onProgress) {
-            return;
-          }
-          const contentLength = res.contentLength || manifest.estimatedBytes;
-          onProgress(Math.min(1, res.bytesWritten / contentLength));
-        },
-      }).promise;
-
-      if (result.statusCode !== 200) {
-        throw new Error(
-          `Failed to download ${manifest.modelFilename}: HTTP ${result.statusCode}`,
-        );
-      }
+      await this.downloadVerified(manifest, tier, onProgress);
 
       // Version sentinel is the FINAL disk write: if the process is killed
       // before this, isInstalled() reports false and the download is cleanly
@@ -167,6 +147,58 @@ export class WhisperAsrEngine implements AsrEngine {
       }
       throw err;
     }
+  }
+
+  /**
+   * 口袋AI：依次尝试 hf-mirror/HF 和 ModelScope 备用源，每个源下载后校验
+   * SHA-256，校验不过就删掉换下一个。全部失败时抛出最后一个错误。
+   */
+  private async downloadVerified(
+    manifest: (typeof ASR_TIERS)[AsrTier],
+    tier: AsrTier,
+    onProgress?: AsrProgressCallback,
+  ): Promise<void> {
+    const modelPath = this.getModelPath(tier);
+    const sources = [applyHfMirror(manifest.modelUrl), ...manifest.mirrorUrls];
+    let lastError: Error = new Error(
+      `Failed to download ${manifest.modelFilename}`,
+    );
+    for (const fromUrl of sources) {
+      try {
+        const result = await RNFS.downloadFile({
+          fromUrl,
+          toFile: modelPath,
+          background: false,
+          discretionary: false,
+          cacheable: false,
+          progressInterval: 500,
+          progress: res => {
+            if (!onProgress) {
+              return;
+            }
+            const contentLength = res.contentLength || manifest.estimatedBytes;
+            onProgress(Math.min(1, res.bytesWritten / contentLength));
+          },
+        }).promise;
+        if (result.statusCode !== 200) {
+          throw new Error(
+            `Failed to download ${manifest.modelFilename}: HTTP ${result.statusCode}`,
+          );
+        }
+        const digest = await RNFS.hash(modelPath, 'sha256');
+        if (digest?.toLowerCase() !== manifest.sha256) {
+          throw new Error(
+            `Checksum mismatch for ${manifest.modelFilename} from ${fromUrl}`,
+          );
+        }
+        return;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn('[WhisperAsrEngine] source failed:', lastError.message);
+        await RNFS.unlink(modelPath).catch(() => {});
+      }
+    }
+    throw lastError;
   }
 
   async deleteModel(tier: AsrTier): Promise<void> {

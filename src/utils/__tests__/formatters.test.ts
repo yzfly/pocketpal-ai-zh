@@ -1,4 +1,6 @@
 import {
+  formatCount,
+  timeAgo,
   formatBytes,
   formatNumber,
   getDisplayNameFromFilename,
@@ -79,5 +81,25 @@ describe('getOriginalModelName', () => {
     };
 
     expect(getOriginalModelName(hfModel)).toBe('hf model');
+  });
+});
+
+describe('formatCount', () => {
+  it('uses 万/亿 for Chinese and k/m elsewhere', () => {
+    const {l10n} = require('../../locales');
+    expect(formatCount(254_050, l10n.zh)).toBe('25.4 万');
+    expect(formatCount(1_550_000, l10n.zh)).toBe('155 万');
+    expect(formatCount(928, l10n.zh)).toBe('928');
+    expect(formatCount(320_000_000, l10n.zh_Hant)).toBe('3.2 亿');
+    expect(formatCount(254_050, l10n.en)).toBe('254.05k');
+  });
+});
+
+describe('timeAgo in Chinese', () => {
+  it('drops the space before 天/小时', () => {
+    const {l10n} = require('../../locales');
+    const threeDaysAgo = Date.now() - 3 * 24 * 3600 * 1000 - 1000;
+    expect(timeAgo(threeDaysAgo, l10n.zh, 'short')).toBe('3天前');
+    expect(timeAgo(threeDaysAgo, l10n.en, 'short')).toContain('3 days');
   });
 });

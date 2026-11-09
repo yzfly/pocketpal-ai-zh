@@ -51,12 +51,9 @@ export const createStyles = (theme: Theme) =>
       paddingHorizontal: 12,
       backgroundColor: theme.colors.surfaceVariant + '20', // Very subtle background
       borderRadius: 8,
-      borderLeftWidth: 3,
-      borderLeftColor: 'transparent',
     },
     selectedModelItem: {
-      borderLeftColor: theme.colors.tertiary,
-      backgroundColor: theme.colors.tertiaryContainer + '20',
+      backgroundColor: theme.colors.surfaceContainerHigh,
     },
     modelInfo: {
       flex: 1,
@@ -70,10 +67,10 @@ export const createStyles = (theme: Theme) =>
     },
     selectedModelName: {
       fontWeight: '600',
-      color: theme.colors.tertiary,
+      color: theme.colors.onSurface,
     },
     modelSize: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     modelActions: {
@@ -91,12 +88,10 @@ export const createStyles = (theme: Theme) =>
       borderRadius: 6,
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 32, // Reduced from 70 to 32 for icon-only
-      minHeight: 32,
+      minWidth: 44,
+      minHeight: 44,
     },
-    selectedArea: {
-      backgroundColor: theme.colors.tertiaryContainer + '30',
-    },
+    selectedArea: {},
     selectText: {
       fontSize: 12,
       fontWeight: '500',
@@ -109,8 +104,8 @@ export const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.errorContainer + '20',
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 32,
-      minHeight: 32,
+      minWidth: 44,
+      minHeight: 44,
     },
     downloadArea: {
       padding: 6, // More compact, icon-only
@@ -118,8 +113,8 @@ export const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.primaryContainer + '20',
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 32,
-      minHeight: 32,
+      minWidth: 44,
+      minHeight: 44,
     },
     downloadText: {
       fontSize: 12,

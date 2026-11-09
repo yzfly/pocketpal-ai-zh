@@ -235,8 +235,8 @@ describe('defaultCompletionParams', () => {
     );
   });
 
-  it('should have enable_thinking set to true by default', () => {
-    expect(defaultCompletionParams.enable_thinking).toBe(true);
+  it('should have enable_thinking off by default (small phone models answer directly)', () => {
+    expect(defaultCompletionParams.enable_thinking).toBe(false);
   });
 
   it('should have include_thinking_in_context set to true by default', () => {

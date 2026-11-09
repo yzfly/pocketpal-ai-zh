@@ -32,7 +32,23 @@
     "close": "Close",
     "clear": "Clear All",
     "gallery": "Gallery",
-    "noResults": "No results"
+    "noResults": "No results",
+    "a11y": {
+      "openDrawer": "Open drawer",
+      "closeDrawer": "Close drawer",
+      "messageInput": "Message input",
+      "addImage": "Add image",
+      "selectPal": "Select Pal",
+      "startVideo": "Start video analysis",
+      "filterByAuthor": "Filter by author",
+      "bottomSheet": "Bottom Sheet",
+      "downloadModel": "Download model",
+      "newChat": "New chat",
+      "moreOptions": "More options",
+      "closeMenu": "Close menu",
+      "closeSheet": "Close panel",
+      "deleteProjector": "Delete vision component"
+    }
   },
   "settings": {
     "modelInitializationSettings": "Model Initialization Settings",
@@ -50,6 +66,7 @@
     "deviceSelectionIOS": "Device (Metal)",
     "deviceSelectionIOSDescription": "Choose Metal GPU or CPU-only mode",
     "deviceSelectionAndroidDescription": "Select compute device (CPU, GPU, or Hexagon NPU)",
+    "npuFallbackNotice": "The NPU failed to load on this phone, so models now run on the CPU. Pick NPU again to retry.",
     "cpuOnlyNoAccelerators": "CPU only - No hardware accelerators detected",
     "contextSize": "Context Size",
     "contextSizePlaceholder": "Enter context size (min {{minContextSize}})",
@@ -236,7 +253,23 @@
       "statusUnlocking": "Unlocking",
       "link": "Sign in to use on other devices"
     },
+    "perfCheck": {
+      "title": "Performance check",
+      "subtitle": "Settings are tuned to this phone automatically so the app stays smooth and doesn't run out of memory.",
+      "device": "This phone: {{memory}} RAM · {{cores}} cores ({{perfCores}} performance) · {{accel}}",
+      "recommended": "Recommended: context {{ctx}} · batch {{batch}} · {{threads}} threads",
+      "accel": {
+        "npu": "NPU",
+        "gpu": "GPU",
+        "cpu": "CPU only"
+      },
+      "apply": "Apply recommended settings",
+      "applied": "Using recommended settings",
+      "steppedDown": "The app was closed while loading a model last time, so context and batch size were lowered automatically. Tap the button to restore the recommended values."
+    },
     "account": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "title": "Account",
       "subtitle": "Optional. The app works fully offline without signing in.",
       "signedInAs": "Signed in as {{email}}",
@@ -247,21 +280,15 @@
       "email": "Email",
       "password": "Password",
       "passwordHint": "At least 8 characters, with letters and numbers",
-      "code": "Email code",
-      "sendCode": "Send code",
-      "resendCode": "Resend ({{seconds}}s)",
-      "codeSent": "A code was sent to {{email}}",
-      "captcha": "Picture code",
-      "captchaHint": "Enter the characters in the picture",
-      "captchaRefresh": "Refresh",
-      "captchaConfirm": "Confirm",
       "toSignUp": "No account yet? Create one",
       "toSignIn": "Already have an account? Sign in",
       "invalidEmail": "Enter a valid email address",
       "weakPassword": "Password needs at least 8 characters, with letters and numbers",
       "notConfigured": "Sign-in is not available in this build yet.",
       "signedIn": "Signed in",
-      "signedUp": "Account created"
+      "signedUp": "Account created",
+      "confirmPassword": "Confirm password",
+      "passwordMismatch": "The two passwords don't match"
     },
     "localApiServer": {
       "title": "Local API server",
@@ -292,7 +319,8 @@
       }
     },
     "useHfMirror": "HF Mirror Acceleration",
-    "useHfMirrorDescription": "Download models via hf-mirror.com (for networks where huggingface.co is unreachable). While enabled, your HF token is never sent to the mirror — disable the mirror to download gated models with your token."
+    "useHfMirrorDescription": "Download models via hf-mirror.com (for networks where huggingface.co is unreachable). While enabled, your HF token is never sent to the mirror — disable the mirror to download gated models with your token.",
+    "cacheTypeF16Default": "F16 (Default)"
   },
   "memory": {
     "shortWarning": "Memory Warning",
@@ -381,7 +409,9 @@
     "buttons": {
       "addFromHuggingFace": "Add from Hugging Face",
       "addLocalModel": "Add Local Model",
-      "reset": "Reset"
+      "reset": "Reset",
+      "fabOpen": "Add model",
+      "fabClose": "Close menu"
     },
     "modelsHeaderRight": {
       "menuTitleHf": "Hugging Face Models",
@@ -397,6 +427,7 @@
       "label": "Base Chat Template:"
     },
     "details": {
+      "trending": "Trending",
       "title": "Available GGUF Files"
     },
     "modelFile": {
@@ -436,6 +467,7 @@
     "search": {
       "noResults": "No models found",
       "loadingMore": "Loading more...",
+      "sheetTitle": "Find models",
       "searchPlaceholder": "Search Hugging Face models",
       "modelUpdatedLong": "Updated {{time}} ago",
       "modelUpdatedShort": "{{time}} ago",
@@ -453,7 +485,8 @@
         "sortDownloads": "Downloads",
         "sortRecent": "Recently Updated",
         "sortLikes": "Most Liked"
-      }
+      },
+      "detailsTitle": "Model details"
     },
     "hubRun": {
       "title": "Download model",
@@ -472,6 +505,10 @@
         "removeMessage": "Are you sure you want to remove this model from the list?"
       },
       "buttons": {
+        "settingsMenu": "Model settings",
+        "more": "More actions",
+        "loadA11y": "Load model",
+        "offloadA11y": "Offload model",
         "settings": "Settings",
         "download": "Download",
         "remove": "Remove",
@@ -479,6 +516,7 @@
         "offload": "Offload"
       },
       "labels": {
+        "inUse": "In use",
         "skills": "Skills: ",
         "vision": "Vision",
         "visionSupported": "Supported",
@@ -491,7 +529,7 @@
         "author": "Author",
         "requiresProjectionModel": "Requires projection model",
         "downloadProjectionModel": "Download projection model",
-        "viewModelCardOnHuggingFace": "View Model Card on Hugging Face",
+        "viewModelCardOnHuggingFace": "View model page (Hugging Face)",
         "draftOnlyReason": "Draft-only model. Pick it under Settings → Speculative decoding."
       },
       "projectorOffer": {
@@ -517,10 +555,37 @@
         "memoryWarningButton": "Show memory warning details",
         "integrityWarningButton": "Show integrity warning details",
         "memoryWarningSnackbar": "Memory warning notification"
+      },
+      "tech": {
+        "details": "Details",
+        "hideDetails": "Hide details",
+        "techSpecs": "Technical details",
+        "sourceRepo": "Original model",
+        "file": "File",
+        "quantization": "Quantization",
+        "fileSize": "File size",
+        "parameters": "Parameters",
+        "publisher": "Publisher",
+        "abilities": "Abilities",
+        "projector": "Vision component",
+        "origin": "Source",
+        "originPreset": "Built-in recommendation",
+        "originHf": "Hugging Face",
+        "originLocal": "Imported from phone",
+        "originRemote": "Remote server",
+        "paramsShort": "{{value}} params",
+        "paramsScale": "western",
+        "copied": "Copied",
+        "supportsVision": "Can see images",
+        "modelFile": "Model file",
+        "projectorSize": "Vision add-on",
+        "total": "Total {{size}}",
+        "removeFromList": "Remove from list"
       }
     },
     "modelSettings": {
       "template": {
+        "defaultPreview": "Model default",
         "label": "Template:",
         "editButton": "Edit",
         "dialogTitle": "Edit Chat Template",
@@ -540,6 +605,10 @@
         "bosTokenPlaceholder": "BOS Token",
         "eosTokenPlaceholder": "EOS Token",
         "systemPrompt": "System Prompt"
+      },
+      "advanced": {
+        "title": "Advanced",
+        "hint": "Chat template, tokens and stop words. Usually no need to change."
       }
     },
     "modelDescription": {
@@ -615,7 +684,9 @@
     "chineseEditionGithubButton": "Chinese Edition on GitHub",
     "chineseEditionWechatButton": "WeChat Official Account: Yunzhong Jiangshu",
     "chineseEditionWechatCopiedTitle": "Copied",
-    "chineseEditionWechatCopiedDescription": "The account name has been copied. Search for it in WeChat to follow."
+    "chineseEditionWechatCopiedDescription": "The account name has been copied. Search for it in WeChat to follow.",
+    "checkUpdate": "Check for updates",
+    "upToDate": "You are on the latest version"
   },
   "feedback": {
     "title": "Send Feedback",
@@ -704,6 +775,8 @@
       "elapsed": "{{seconds}}s"
     },
     "chatEmptyPlaceholder": {
+      "readyDescription": "Runs offline. Your chats stay on this phone.",
+      "readyTitle": "{{name}} is ready",
       "noModelsTitle": "No Models Available",
       "noModelsDescription": "Download a model to start chatting with PocketWisdom",
       "noModelsButton": "Download Model",
@@ -932,7 +1005,9 @@
       "menuTitleHf": "Hugging Face Models",
       "menuTitleDownloaded": "Downloaded Models",
       "menuTitleGrouped": "Group by Model Type",
-      "menuTitleReset": "Reset Models List"
+      "menuTitleReset": "Reset Models List",
+      "groupFilters": "Filters",
+      "groupView": "View"
     },
     "modelsResetDialog": {
       "proceedWithReset": "Proceed with Reset",
@@ -1051,6 +1126,13 @@
       "accessibilityLabel": "Send"
     },
     "systemPromptSection": {
+      "template": {
+        "modeTitle": "Template mode",
+        "label": "Template (advanced)",
+        "sublabel": "Edit the raw template with {{parameter}} placeholders",
+        "placeholder": "You are {{role}} in {{setting}}...",
+        "emptyPreview": "Fill in the fields above to see the final prompt..."
+      },
       "sectionTitle": "System Prompt",
       "useAIPrompt": "Use AI to generate system prompt",
       "modelSelector": {
@@ -1145,9 +1227,17 @@
       "importPals": "Import pals",
       "importSuccess": "Successfully imported {{count}} pal(s).",
       "importError": "Failed to import pals. Please check the file format."
+    },
+    "colorSection": {
+      "title": "Color",
+      "option": "Color {{index}}"
     }
   },
   "palsScreen": {
+    "moreActions": "More actions",
+    "sharePal": "Share",
+    "startChatError": "Could not start the chat. Please try again.",
+    "shareError": "Could not share this pal. Please try again.",
     "systemPrompt": "System Prompt",
     "videoAnalysis": "Video Analysis",
     "videoAnalysisDescription": "This is a video-based AI assistant that provides real-time commentary on video streams from your device's camera.",
@@ -1419,7 +1509,8 @@
         "cannotShare": "Cannot share",
         "cannotShareTooltip": "Local model results cannot be shared",
         "submitButton": "Submit to Leaderboard",
-        "viewLeaderboard": "View leaderboard ↗"
+        "viewLeaderboard": "View leaderboard ↗",
+        "deleteA11y": "Delete this result"
       },
       "errors": {
         "networkRetry": "Check connection & retry",
@@ -1679,6 +1770,7 @@
     "teaserKeepTyping": "Keep typing, free"
   },
   "onboarding": {
+    "stepLabel": "Step {{current}} of {{total}}",
     "back": "Back",
     "skip": "Skip",
     "skipForNow": "Skip for now",
@@ -1706,7 +1798,16 @@
       "body": "Pals on your phone are quick and private - but lighter than Cloud AI. Think pocket companion, not all-knowing oracle.",
       "highlight": "quick and private",
       "cta": "Got it",
-      "eyebrow": "A heads-up"
+      "eyebrow": "A heads-up",
+      "cards": {
+        "localTitle": "On your phone",
+        "localSub": "Runs on this device",
+        "localTags": "Fast · Offline · Private",
+        "vs": "vs",
+        "cloudTitle": "Cloud AI",
+        "cloudSub": "Runs on someone else's servers",
+        "cloudTags": "Bigger · Online · Logged"
+      }
     },
     "screen4": {
       "title": "Nothing leaves your phone.",

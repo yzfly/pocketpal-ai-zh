@@ -1,4 +1,10 @@
-import React, {useState, useCallback, useMemo, useEffect} from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useContext,
+} from 'react';
 
 import {observer} from 'mobx-react';
 import debounce from 'lodash/debounce';
@@ -8,6 +14,7 @@ import {DetailsView} from './DetailsView';
 
 import {hfStore} from '../../../store';
 
+import {L10nContext} from '../../../utils';
 import {HuggingFaceModel} from '../../../utils/types';
 import {Sheet} from '../../../components';
 
@@ -20,6 +27,7 @@ const DEBOUNCE_DELAY = 500;
 
 export const HFModelSearch: React.FC<HFModelSearchProps> = observer(
   ({visible, onDismiss}) => {
+    const l10n = useContext(L10nContext);
     const [detailsVisible, setDetailsVisible] = useState(false);
     const [selectedModel, setSelectedModel] = useState<HuggingFaceModel | null>(
       null,
@@ -81,6 +89,7 @@ export const HFModelSearch: React.FC<HFModelSearchProps> = observer(
           enablePanDownToClose
           enableContentPanningGesture={false} // Prevent gesture conflicts with FlatList scroll (Android)
           onClose={handleSheetDismiss}
+          title={l10n.models.search.sheetTitle}
           showCloseButton={true}>
           <SearchView
             testID="hf-model-search-view"
@@ -95,7 +104,8 @@ export const HFModelSearch: React.FC<HFModelSearchProps> = observer(
           enablePanDownToClose
           enableContentPanningGesture={false} // Prevent gesture conflicts with FlatList scroll (Android)
           onClose={() => setDetailsVisible(false)}
-          showCloseButton={false}>
+          title={l10n.models.search.detailsTitle}
+          showCloseButton={true}>
           {selectedModel && <DetailsView hfModel={selectedModel} />}
         </Sheet>
       </>

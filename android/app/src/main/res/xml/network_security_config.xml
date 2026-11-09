@@ -4,4 +4,17 @@
          PocketPal connects to local LLM servers (LM Studio, Ollama, llama.cpp)
          on the user's LAN via HTTP. Users enter the server URL themselves. -->
     <base-config cleartextTrafficPermitted="true" />
+
+    <!-- 口袋AI 账号服务国内入口（北京机裸 IP，自签证书，见 jiangshu-infra reports/aliyun-bj.md）。
+         这个地址只信任随 App 打包的那张证书，并固定其公钥；禁止明文。
+         证书 2036-10-29 到期，换证书时同时更新 raw/account_entry_cert.pem 与下方 pin。 -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">39.106.251.53</domain>
+        <trust-anchors>
+            <certificates src="@raw/account_entry_cert" />
+        </trust-anchors>
+        <pin-set expiration="2036-10-29">
+            <pin digest="SHA-256">5npv1glGZPpLEOa1N8kW6g8e+sLugGtyR0hxGQH0f5E=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>

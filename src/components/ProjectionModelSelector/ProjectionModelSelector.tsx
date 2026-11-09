@@ -245,6 +245,9 @@ export const ProjectionModelSelector = observer(
                               <View style={styles.downloadedActions}>
                                 <TouchableOpacity
                                   testID="select-projection-model-button"
+                                  accessibilityRole="radio"
+                                  accessibilityState={{checked: isSelected}}
+                                  accessibilityLabel={`${projModel.name}, ${formatBytes(projModel.size)}`}
                                   onPress={() =>
                                     handleSelectModel(projModel.id)
                                   }
@@ -262,13 +265,17 @@ export const ProjectionModelSelector = observer(
                                     size={20}
                                     color={
                                       isSelected
-                                        ? theme.colors.tertiary
+                                        ? theme.colors.primary
                                         : theme.colors.onSurfaceVariant
                                     }
                                   />
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                   testID="delete-projection-model-button"
+                                  accessibilityRole="button"
+                                  accessibilityLabel={
+                                    l10n.common.a11y.deleteProjector
+                                  }
                                   onPress={() => handleDeleteModel(projModel)}
                                   style={styles.deleteArea}
                                   activeOpacity={0.7}>
@@ -307,6 +314,9 @@ export const ProjectionModelSelector = observer(
                           // Selection only for VisionDownloadSheet context
                           <TouchableOpacity
                             testID="select-projection-model-button"
+                            accessibilityRole="radio"
+                            accessibilityState={{checked: isSelected}}
+                            accessibilityLabel={`${projModel.name}, ${formatBytes(projModel.size)}`}
                             onPress={() => handleSelectModel(projModel.id)}
                             style={[
                               styles.selectArea,
@@ -320,7 +330,7 @@ export const ProjectionModelSelector = observer(
                               size={20}
                               color={
                                 isSelected
-                                  ? theme.colors.tertiary
+                                  ? theme.colors.primary
                                   : theme.colors.onSurfaceVariant
                               }
                             />
