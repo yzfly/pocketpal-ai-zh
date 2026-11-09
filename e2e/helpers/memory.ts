@@ -3,7 +3,7 @@
  *
  * Platform-specific trigger mechanisms:
  * - Android: TextInput setValue (onChangeText fires reliably)
- * - iOS: Deep link pocketpal://memory?cmd=... (onChangeText doesn't fire
+ * - iOS: Deep link pocketwisdom://memory?cmd=... (onChangeText doesn't fire
  *   from XCUITest sendKeys in Release builds)
  *
  * File reading:
@@ -56,7 +56,7 @@ async function sendCommand(command: string): Promise<void> {
     // iOS: use deep link (onChangeText doesn't fire from XCUITest sendKeys)
     const encoded = encodeURIComponent(command);
     await driver.execute('mobile: deepLink', {
-      url: `pocketpal://memory?cmd=${encoded}`,
+      url: `pocketwisdom://memory?cmd=${encoded}`,
       bundleId: IOS_BUNDLE_ID,
     });
   }

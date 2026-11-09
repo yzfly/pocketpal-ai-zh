@@ -1,12 +1,6 @@
 const babelConfig = require('../babel.config');
 
-const ENV_KEYS = [
-  'BABEL_ENV',
-  'NODE_ENV',
-  'E2E_BUILD',
-  'E2E_SKIP_ONBOARDING',
-  'PLUS_STORE_GATE',
-];
+const ENV_KEYS = ['BABEL_ENV', 'NODE_ENV', 'E2E_BUILD', 'E2E_SKIP_ONBOARDING'];
 
 let saved;
 
@@ -43,38 +37,26 @@ function evaluate(env) {
   return {cacheKey, defines: define && define[1]};
 }
 
-describe('__PLUS_STORE_GATE__', () => {
+describe('build defines', () => {
   it.each([
-    [{}, false],
-    [{PLUS_STORE_GATE: 'true'}, true],
-    [{PLUS_STORE_GATE: '1'}, false],
-    [{PLUS_STORE_GATE: 'TRUE'}, false],
-    [{PLUS_STORE_GATE: 'yes'}, false],
-    [{PLUS_STORE_GATE: 'false'}, false],
-    [{E2E_BUILD: 'true'}, true],
-    [{E2E_BUILD: 'true', PLUS_STORE_GATE: 'true'}, true],
-    [{E2E_BUILD: 'true', PLUS_STORE_GATE: 'false'}, false],
-    [{E2E_BUILD: 'true', PLUS_STORE_GATE: '0'}, true],
-    [{E2E_BUILD: '1'}, false],
-  ])('bundling env %j defines %s', (env, expected) => {
-    expect(evaluate(env).defines.__PLUS_STORE_GATE__).toBe(expected);
-  });
-
-  it('leaves the other defines unchanged', () => {
-    expect(evaluate({PLUS_STORE_GATE: 'true'}).defines).toEqual({
-      __E2E__: false,
-      __E2E_SKIP_ONBOARDING__: false,
-      __PLUS_STORE_GATE__: true,
+    [{}, false, false],
+    [{E2E_BUILD: 'true'}, true, true],
+    [{E2E_BUILD: 'true', E2E_SKIP_ONBOARDING: 'false'}, true, false],
+    [{E2E_BUILD: '1'}, false, false],
+  ])('bundling env %j defines __E2E__=%s, skip=%s', (env, e2e, skip) => {
+    expect(evaluate(env).defines).toEqual({
+      __E2E__: e2e,
+      __E2E_SKIP_ONBOARDING__: skip,
     });
   });
 
   it('is part of the babel cache key', () => {
-    const ungated = evaluate({}).cacheKey;
-    const gated = evaluate({PLUS_STORE_GATE: 'true'}).cacheKey;
-    expect(gated).not.toEqual(ungated);
+    // evaluate() only adds to process.env, so the plain build goes first.
+    const plain = evaluate({}).cacheKey;
+    expect(evaluate({E2E_BUILD: 'true'}).cacheKey).not.toEqual(plain);
   });
 
-  it('is not defined under jest, which sets the global instead', () => {
+  it('is not defined under jest, which sets the globals instead', () => {
     expect(evaluate({BABEL_ENV: 'test'}).defines).toBeUndefined();
   });
 });

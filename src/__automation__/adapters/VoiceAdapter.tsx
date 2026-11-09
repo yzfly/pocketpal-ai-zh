@@ -8,7 +8,7 @@ import {runVoiceCommand, voiceTraceDump} from '../voiceAutomation';
 /**
  * Hidden component that drives voice-mode states on Android, where the
  * automation deep-link host is not delivered. iOS sends the same commands
- * as `pocketpal://voice?cmd=...`.
+ * as `pocketwisdom://voice?cmd=...`.
  *
  * Protocol: setValue('<verb>::<arg>') runs one command; the result shows
  * `ok` or the error. `voice-trace-result` holds the last `trace::dump` on

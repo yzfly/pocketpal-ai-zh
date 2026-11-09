@@ -56,9 +56,7 @@ describe('VoiceModeButton', () => {
     const {getByTestId} = render(<VoiceModeButton onPress={onPress} />);
     const button = getByTestId('voice-mode-button');
     expect(getByTestId('voice-mode-lock')).toBeTruthy();
-    expect(button.props.accessibilityLabel).toBe(
-      'Hands-free voice, PocketPal Plus',
-    );
+    expect(button.props.accessibilityLabel).toBe('Hands-free voice');
     expect(button.props.accessibilityHint).toBe(
       'Opens a short preview. Typing and dictation stay free.',
     );
@@ -71,7 +69,7 @@ describe('VoiceModeButton', () => {
     const button = getByTestId('voice-mode-button');
     expect(button.props.accessibilityLabel).toBe('Start voice mode');
     expect(button.props.accessibilityHint).toBeUndefined();
-    expect(button).toHaveStyle({backgroundColor: '#333333'});
+    expect(button).toHaveStyle({backgroundColor: '#000000'});
   });
 
   it('is disabled while the model loads', () => {

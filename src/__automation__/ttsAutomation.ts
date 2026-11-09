@@ -182,7 +182,7 @@ async function timeEngine(engineId: NeuralEngineId): Promise<TimingDetail> {
 }
 
 /**
- * Dispatch a `pocketpal://tts?cmd=...` command. Supported:
+ * Dispatch a `pocketwisdom://tts?cmd=...` command. Supported:
  *   download::<engine>   synthesize::<engine>   time::<engine>   release
  * Writes a status file the spec polls for completion.
  */

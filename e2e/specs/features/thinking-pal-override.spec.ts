@@ -60,7 +60,7 @@ const THINKING_MODEL = {
 const PAL_NAME = 'E2E Thinking Override';
 
 const getAppBundleId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
+  (driver as any).isAndroid ? 'com.pocketwisdom.e2e' : 'ai.pocketpal';
 
 describe('Thinking Toggle Override (with pal active)', () => {
   let chatPage: ChatPage;

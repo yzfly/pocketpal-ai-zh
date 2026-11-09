@@ -120,7 +120,7 @@ describe('typography tokens', () => {
   describe('mode resolution', () => {
     it('resolveTokens("light") returns lightColors bound', () => {
       const t = resolveTokens('light');
-      expect(t.colors.background).toBe('#ffffff');
+      expect(t.colors.background).toBe('#FFFFFF');
     });
 
     it('resolveTokens("dark") returns darkColors bound', () => {

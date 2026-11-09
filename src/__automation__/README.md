@@ -13,9 +13,9 @@ The folder is gated behind the `__E2E__` global, inlined at build time by
 - Everything else (default dev + prod) → `__E2E__ = false` → Metro/Hermes
   strips the entire gate body (and, transitively, the imports it reaches).
 
-The Android `e2e` flavor (`applicationId com.pocketpalai.e2e`,
+The Android `e2e` flavor (`applicationId com.pocketwisdom.e2e`,
 buildType `releaseE2e`) is the production-like build that sets
-`E2E_BUILD=true`. The default prod flavor (`com.pocketpalai`) leaves
+`E2E_BUILD=true`. The default prod flavor (`com.pocketwisdom`) leaves
 `E2E_BUILD` unset.
 
 Two independent guardrails enforce the contract:
@@ -27,8 +27,8 @@ Two independent guardrails enforce the contract:
    job extracts `assets/index.android.bundle` from the prod APK and fails
    the build if any of the automation marker strings
    (`AUTOMATION_BRIDGE`, `memory-snapshot-label`, `memory-snapshot-result`,
-   `BENCH_RUN_MATRIX`, `bench-runner-screen-status`, `IAP_FAKE_STORE`,
-   `IAP_API_BASE_OVERRIDE`, `PLUS_SHIP_OVERRIDE`, `PLUS_GATE_PROBE`) appear. The ground
+   `BENCH_RUN_MATRIX`, `bench-runner-screen-status`)
+   appear. The ground
    truth for DCE.
 
 > **Note on the static-import question.** Some readers worry that `App.tsx`
@@ -43,8 +43,8 @@ Two independent guardrails enforce the contract:
 > That step extracts `assets/index.android.bundle` from the prod APK and
 > fails the build if any of the registered marker strings
 > (`AUTOMATION_BRIDGE`, `memory-snapshot-label`, `memory-snapshot-result`,
-> `BENCH_RUN_MATRIX`, `bench-runner-screen-status`, `IAP_FAKE_STORE`,
-> `IAP_API_BASE_OVERRIDE`, `PLUS_SHIP_OVERRIDE`, `PLUS_GATE_PROBE`) appear. Hermes'
+> `BENCH_RUN_MATRIX`, `bench-runner-screen-status`)
+> appear. Hermes'
 > constant-folding + tree-shaking on `__E2E__ === false` is what actually
 > removes the code; the grep is the empirical contract that proves it for
 > every prod build.
@@ -84,7 +84,6 @@ by deep link only. See `BenchmarkRunnerScreen.tsx` as reference.
 |---------|---------|----------|
 | `MemoryAdapter` | Memory profile snapshots for the `memory-profile` spec | `snap::<label>`, `clear::snapshots`, `read::snapshots` |
 | `VoiceAdapter` | Forces voice-mode states on Android for visual captures | `unlock::on\|off\|plus`, `gate::on\|off`, `state::listening\|muted\|thinking\|speaking\|error\|bar\|closed`, `setup::incomplete\|complete`, `memory::tight\|wont-fit`, `seed::spoken`, `trace::dump\|clear` (see Voice trace) |
-| `IapAdapter` | Scripts the in-app purchase `FakeStore` on Android for the `iap-*` specs | `api::<base>`, `products::<id>=<price>\|...`, `next::<outcome>`, `approve_pending`, `decline_pending`, `refund::<id>`, `entitle::<id>`, `unfinished::<id>`, `unavailable`, `plus_ship::<featureId>[,<featureId>]\|none` (marks Plus features shipped; `reset` clears it), `reset`, `read` |
 
 ### Voice trace
 
@@ -106,7 +105,7 @@ On iOS, after the turns:
 
 ```ts
 await driver.execute('mobile: deepLink', {
-  url: 'pocketpal://voice?cmd=trace%3A%3Adump',
+  url: 'pocketwisdom://voice?cmd=trace%3A%3Adump',
   bundleId: 'ai.pocketpal',
 });
 const trace = await $('~voice-trace-result').getAttribute('label');
@@ -120,8 +119,7 @@ Documents/voice-trace.txt --destination voice-trace.txt`.
 
 | Screen | Purpose | Activation |
 |--------|---------|------------|
-| `BenchmarkRunnerScreen` | Drives the benchmark matrix in-app for the `benchmark-matrix` spec | Deep link `pocketpal://e2e/benchmark` (registered in `android/app/src/e2e/AndroidManifest.xml`); manual button tap to start |
-| `PlusTestFeatureScreen` | A locked feature behind Plus for the `iap-plus` spec: checks `isPlusUnlocked()`, else calls `openPlus({onUnlocked})` | Deep link `pocketpal://e2e/plus-feature` |
+| `BenchmarkRunnerScreen` | Drives the benchmark matrix in-app for the `benchmark-matrix` spec | Deep link `pocketwisdom://e2e/benchmark` (registered in `android/app/src/e2e/AndroidManifest.xml`); manual button tap to start |
 
 ## Deep-link dispatcher
 
@@ -129,15 +127,10 @@ Documents/voice-trace.txt --destination voice-trace.txt`.
 used by `src/hooks/useDeepLinking.ts` inside a `__E2E__` gate. Today it
 handles these URLs:
 
-- `memory` — `pocketpal://memory?cmd=snap::<label>` etc. (memory-profile spec)
-- `voice` — `pocketpal://voice?cmd=<verb>::<arg>` forces voice-mode states on
+- `memory` — `pocketwisdom://memory?cmd=snap::<label>` etc. (memory-profile spec)
+- `voice` — `pocketwisdom://voice?cmd=<verb>::<arg>` forces voice-mode states on
   iOS (Android uses `VoiceAdapter`).
-- `tts` — `pocketpal://tts?cmd=download::<engine>` etc. (`e2e/helpers/tts-actions.ts`)
-- `iap` — `pocketpal://iap?cmd=<verb>::<arg>` scripts the `FakeStore` on iOS
-  (the Android specs use `IapAdapter`, since the Android Linking listener
-  only routes the benchmark and Plus test-feature URLs).
-- `e2e/plus-feature` — navigates to `PlusTestFeatureScreen` (iap-plus spec);
-  Android routes it from the same `useDeepLinking.ts` Linking effect.
+- `tts` — `pocketwisdom://tts?cmd=download::<engine>` etc. (`e2e/helpers/tts-actions.ts`)
 - `e2e/benchmark` — navigates to `BenchmarkRunnerScreen` (benchmark-matrix spec).
   On Android, the cold-launch path also lives in `useDeepLinking.ts`
   itself (a `__E2E__`-gated `Linking.getInitialURL()` effect) since RN's

@@ -4,7 +4,7 @@
  * Covers the SHOULD rows from the Test Requirements table for the
  * `__E2E__`-gated `useEffect` that reads
  * `Linking.getInitialURL()` and routes to `BenchmarkRunner` when the
- * launching intent matches `pocketpal://e2e/benchmark`.
+ * launching intent matches `pocketwisdom://e2e/benchmark`.
  *
  * Notes:
  * - We do NOT cover the existing iOS-only chat-deep-link path here; the
@@ -71,7 +71,7 @@ describe('useDeepLinking — cold-launch routing', () => {
   });
 
   it('navigates to BenchmarkRunner with autostart:false for the bare bench URL on cold launch', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://e2e/benchmark');
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://e2e/benchmark');
 
     renderHook(() => useDeepLinking());
 
@@ -90,7 +90,9 @@ describe('useDeepLinking — cold-launch routing', () => {
   });
 
   it('navigates with autostart:true for the autostart bench URL on cold launch', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://e2e/benchmark?autostart=1');
+    getInitialURLSpy.mockResolvedValue(
+      'pocketwisdom://e2e/benchmark?autostart=1',
+    );
 
     renderHook(() => useDeepLinking());
 
@@ -104,7 +106,7 @@ describe('useDeepLinking — cold-launch routing', () => {
 
   it('does NOT navigate when __E2E__=false (cold-launch effect short-circuits)', async () => {
     (global as any).__E2E__ = false;
-    getInitialURLSpy.mockResolvedValue('pocketpal://e2e/benchmark');
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://e2e/benchmark');
 
     renderHook(() => useDeepLinking());
 
@@ -132,7 +134,7 @@ describe('useDeepLinking — cold-launch routing', () => {
   });
 
   it('does NOT navigate when getInitialURL returns an unrelated URL', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://chat?palId=foo');
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://chat?palId=foo');
 
     renderHook(() => useDeepLinking());
 
@@ -182,7 +184,7 @@ describe('useDeepLinking — cold-launch routing', () => {
 
     // Simulate WDIO firing `mobile: deepLink` after the app started.
     expect(handlers.length).toBeGreaterThan(0);
-    handlers.forEach(h => h({url: 'pocketpal://e2e/benchmark'}));
+    handlers.forEach(h => h({url: 'pocketwisdom://e2e/benchmark'}));
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.BENCHMARK_RUNNER, {
       autostart: false,
     });
@@ -208,7 +210,7 @@ describe('useDeepLinking — cold-launch routing', () => {
     await Promise.resolve();
 
     expect(handlers.length).toBeGreaterThan(0);
-    handlers.forEach(h => h({url: 'pocketpal://e2e/benchmark?autostart=1'}));
+    handlers.forEach(h => h({url: 'pocketwisdom://e2e/benchmark?autostart=1'}));
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.BENCHMARK_RUNNER, {
       autostart: true,
     });
@@ -234,7 +236,7 @@ describe('useDeepLinking — cold-launch routing', () => {
     await Promise.resolve();
 
     expect(handlers.length).toBeGreaterThan(0);
-    handlers.forEach(h => h({url: 'pocketpal://e2e/benchmark?autostart=0'}));
+    handlers.forEach(h => h({url: 'pocketwisdom://e2e/benchmark?autostart=0'}));
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.BENCHMARK_RUNNER, {
       autostart: false,
     });
@@ -312,7 +314,7 @@ describe('useDeepLinking — deep-link routing', () => {
     (palStore as any).pals = [{id: 'p1'}];
     renderHook(() => useDeepLinking());
     await getHandler()({
-      url: 'pocketpal://chat?palId=p1',
+      url: 'pocketwisdom://chat?palId=p1',
       scheme: 'pocketpal',
       host: 'chat',
       queryParams: {palId: 'p1'},

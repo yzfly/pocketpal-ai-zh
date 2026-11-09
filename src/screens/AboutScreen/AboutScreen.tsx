@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import DeviceInfo from 'react-native-device-info';
+import {observer} from 'mobx-react';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {Text, Button, SegmentedButtons} from 'react-native-paper';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
 import {L10nContext} from '../../utils';
 import {uiStore} from '../../store';
+import {updateService} from '../../services';
 import {reflowNotice} from './reflowNotice';
 
 const GithubButtonIcon = ({color}: {color: string}) => (
@@ -35,7 +37,7 @@ const ChevronRightButtonIcon = ({color}: {color: string}) => (
   <ChevronRightIcon stroke={color} />
 );
 
-export const AboutScreen: React.FC = () => {
+export const AboutScreen: React.FC = observer(() => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets);
@@ -164,6 +166,27 @@ export const AboutScreen: React.FC = () => {
                 llama.cpp {BuildInfo.number} ({BuildInfo.commit.substring(0, 7)}
                 )
               </Text>
+              {updateService.supported && (
+                <Button
+                  mode="contained"
+                  testID="about-check-update"
+                  style={styles.actionButton}
+                  loading={updateService.status === 'checking'}
+                  disabled={updateService.status === 'checking'}
+                  onPress={async () => {
+                    const found = await updateService.check();
+                    if (found) {
+                      updateService.showDialog();
+                    } else {
+                      Alert.alert(
+                        '检查更新',
+                        updateService.error ?? '已经是最新版本',
+                      );
+                    }
+                  }}>
+                  检查更新
+                </Button>
+              )}
             </View>
           </View>
 
@@ -378,4 +401,4 @@ export const AboutScreen: React.FC = () => {
       </Sheet>
     </SafeAreaView>
   );
-};
+});

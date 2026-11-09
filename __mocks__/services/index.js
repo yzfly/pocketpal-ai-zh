@@ -1,60 +1,50 @@
-// Mock for src/services/index.ts
-// This mock re-exports all the palshub service mocks
-
-// Import the individual service mocks
-const {authService} = require('./palshub/AuthService');
-const {syncService} = require('./palshub/SyncService');
-const {palsHubService} = require('./palshub/PalsHubService');
-const {PalsHubErrorHandler, RetryHandler} = require('./palshub/ErrorHandler');
-const {
-  supabase,
-  getAuthHeaders,
-  isAuthenticated,
-  getCurrentUser,
-} = require('./palshub/supabase');
-
-// Create mock implementations for other services
-const cacheService = {
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue(undefined),
-  delete: jest.fn().mockResolvedValue(undefined),
-  clear: jest.fn().mockResolvedValue(undefined),
-  has: jest.fn().mockResolvedValue(false),
-  size: jest.fn().mockResolvedValue(0),
+// Mock for src/services/index.ts（账号服务）
+const accountService = {
+  user: null,
+  ready: true,
+  busy: false,
+  captcha: null,
+  isConfigured: true,
+  isSignedIn: false,
+  init: jest.fn().mockResolvedValue(undefined),
+  signIn: jest.fn().mockResolvedValue(undefined),
+  startSignUp: jest.fn().mockResolvedValue('verification-id'),
+  completeSignUp: jest.fn().mockResolvedValue(undefined),
+  signOut: jest.fn().mockResolvedValue(undefined),
+  refreshCaptcha: jest.fn().mockResolvedValue(undefined),
+  solveCaptcha: jest.fn().mockResolvedValue(undefined),
 };
 
-const purchaseService = {
-  isAvailable: jest.fn().mockResolvedValue(false),
-  getProducts: jest.fn().mockResolvedValue([]),
-  purchaseProduct: jest.fn().mockResolvedValue(null),
-  restorePurchases: jest.fn().mockResolvedValue([]),
-  validateReceipt: jest.fn().mockResolvedValue(false),
+class CloudBaseError extends Error {
+  constructor(code, message, status) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
+const updateService = {
+  status: 'idle',
+  manifest: null,
+  progress: 0,
+  error: null,
+  dialogVisible: false,
+  supported: false,
+  forced: false,
+  currentVersionCode: 159,
+  autoCheck: jest.fn().mockResolvedValue(undefined),
+  check: jest.fn().mockResolvedValue(false),
+  showDialog: jest.fn(),
+  dismiss: jest.fn().mockResolvedValue(undefined),
+  startDownload: jest.fn().mockResolvedValue(undefined),
+  install: jest.fn().mockResolvedValue(undefined),
 };
 
-// Export all services
 module.exports = {
-  authService,
-  syncService,
-  palsHubService,
-  cacheService,
-  purchaseService,
-  PalsHubErrorHandler,
-  RetryHandler,
-  supabase,
-  getAuthHeaders,
-  isAuthenticated,
-  getCurrentUser,
+  updateService,
+  accountService,
+  AccountService: jest.fn(),
+  CloudBaseError,
+  describeAccountError: jest.fn(() => '操作失败，请稍后重试'),
+  isCloudBaseConfigured: jest.fn(() => true),
 };
-
-// Named exports for ES6 compatibility
-module.exports.authService = authService;
-module.exports.syncService = syncService;
-module.exports.palsHubService = palsHubService;
-module.exports.cacheService = cacheService;
-module.exports.purchaseService = purchaseService;
-module.exports.PalsHubErrorHandler = PalsHubErrorHandler;
-module.exports.RetryHandler = RetryHandler;
-module.exports.supabase = supabase;
-module.exports.getAuthHeaders = getAuthHeaders;
-module.exports.isAuthenticated = isAuthenticated;
-module.exports.getCurrentUser = getCurrentUser;

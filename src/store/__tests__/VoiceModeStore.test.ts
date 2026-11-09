@@ -4,8 +4,6 @@ import {makePersistable} from 'mobx-persist-store';
 
 import {mockASRStore} from '../../../__mocks__/stores/asrStore';
 import {mockModelStore} from '../../../__mocks__/stores/modelStore';
-import {mockPurchaseStore} from '../../../__mocks__/stores/purchaseStore';
-import {plusGate} from '../../services/plus/gate';
 
 jest.mock('../ModelStore', () => ({
   modelStore: require('../../../__mocks__/stores/modelStore').mockModelStore,
@@ -83,8 +81,14 @@ describe('VoiceModeStore', () => {
     Platform.OS = platform;
   });
 
-  it('is locked by default', () => {
-    expect(voiceModeStore.isUnlocked).toBe(false);
+  it('is unlocked by default (no paywall)', () => {
+    expect(voiceModeStore.isUnlocked).toBe(true);
+  });
+
+  it('the default paywall unlocks immediately', () => {
+    const onUnlocked = jest.fn();
+    voiceEntitlement.source.openPaywall({onUnlocked});
+    expect(onUnlocked).toHaveBeenCalledTimes(1);
   });
 
   it('the dev override unlocks the default source', () => {
@@ -102,40 +106,7 @@ describe('VoiceModeStore', () => {
     expect(source.openPaywall).toHaveBeenCalledWith({onUnlocked});
   });
 
-  it('unlocks with Plus', () => {
-    runInAction(() => {
-      mockPurchaseStore.plusUnlocked = true;
-    });
-    expect(voiceModeStore.isUnlocked).toBe(true);
-    runInAction(() => {
-      mockPurchaseStore.plusUnlocked = false;
-    });
-    expect(voiceModeStore.isUnlocked).toBe(false);
-  });
-
-  it('opens the Plus screen as its paywall', () => {
-    const onUnlocked = jest.fn();
-    voiceEntitlement.source.openPaywall({onUnlocked});
-    expect(plusGate.request).toEqual({onUnlocked});
-    runInAction(() => {
-      plusGate.request = null;
-    });
-  });
-
-  describe('in an ungated build', () => {
-    beforeEach(() => {
-      (global as any).__PLUS_STORE_GATE__ = false;
-    });
-
-    afterEach(() => {
-      (global as any).__PLUS_STORE_GATE__ = true;
-    });
-
-    it('is unlocked without a purchase', () => {
-      expect(mockPurchaseStore.plusUnlocked).toBe(false);
-      expect(voiceModeStore.isUnlocked).toBe(true);
-    });
-
+  describe('unlock override and device tiers', () => {
     it('the unlock override still locks', () => {
       voiceModeStore.setUnlockOverride(false);
       expect(voiceModeStore.isUnlocked).toBe(false);

@@ -21,7 +21,8 @@ import type {
 //    MTP 投机解码默认关闭：K30 Pro（骁龙 865，纯 CPU）实测开启后反而变慢
 //    （2B 14.2→8.2 tok/s，4B 6.6→4.7 tok/s），因为 Qwen3.5 的线性注意力层
 //    每次验证都要做状态检查点/回滚。有 GPU/NPU 加速的机型可在设置里自行开启。
-// 5. 排序兼顾能力与速度。K30 Pro（4 线程）实测生成速度：Ling 3.0 Tiny 20.0、
+// 5. 各档默认（排第一）都是口袋助手标准版（Qwen3.5 2B），保证各型号流畅不卡顿；
+//    其余按能力与速度排序。K30 Pro（4 线程）实测生成速度：Ling 3.0 Tiny 20.0、
 //    LFM3 1.7B 22.5、Qwen3.5 2B 16.6、MiniCPM5 2B 15.5、Spark-X2.6 4B 9.1、
 //    Qwen3.5 4B 6.9、Nanbeige4.2 3B 5.5、Qwen3.5 9B 3.7 tok/s。
 //
@@ -31,7 +32,7 @@ import type {
 // ── 通用对话（通义千问 Qwen3.5，Apache-2.0，带视觉）──────────────────
 const QWEN35_0_8B: RuleCandidate = {
   model: 'qwen3.5-0.8b',
-  displayName: 'Qwen3.5 0.8B',
+  displayName: '口袋助手 mini',
   hfRepo: 'unsloth/Qwen3.5-0.8B-MTP-GGUF',
   hfFilename: 'Qwen3.5-0.8B-Q4_K_M.gguf',
   params: 752393024,
@@ -47,7 +48,7 @@ const QWEN35_0_8B: RuleCandidate = {
 
 const QWEN35_2B: RuleCandidate = {
   model: 'qwen3.5-2b',
-  displayName: 'Qwen3.5 2B',
+  displayName: '口袋助手 标准版',
   hfRepo: 'unsloth/Qwen3.5-2B-MTP-GGUF',
   hfFilename: 'Qwen3.5-2B-Q4_0.gguf',
   params: 1881825088,
@@ -63,7 +64,7 @@ const QWEN35_2B: RuleCandidate = {
 
 const QWEN35_4B: RuleCandidate = {
   model: 'qwen3.5-4b',
-  displayName: 'Qwen3.5 4B',
+  displayName: '口袋助手 专业版',
   hfRepo: 'unsloth/Qwen3.5-4B-MTP-GGUF',
   hfFilename: 'Qwen3.5-4B-Q4_0.gguf',
   params: 4205751296,
@@ -79,7 +80,7 @@ const QWEN35_4B: RuleCandidate = {
 
 const QWEN35_9B: RuleCandidate = {
   model: 'qwen3.5-9b',
-  displayName: 'Qwen3.5 9B',
+  displayName: '口袋助手 旗舰版',
   hfRepo: 'unsloth/Qwen3.5-9B-MTP-GGUF',
   hfFilename: 'Qwen3.5-9B-Q4_0.gguf',
   params: 8953803264,
@@ -94,11 +95,47 @@ const QWEN35_9B: RuleCandidate = {
   },
 };
 
+// ── 无拘版（huihui-ai abliterated，Apache-2.0）────────────────────────
+// 基于 Qwen3.5，用 abliteration 去除了“拒绝回答”方向、能力基本不变；
+// 采用 mradermacher 的 imatrix Q4_0 量化（ARM CPU 最快），视觉投影取同系列
+// 非 imatrix 仓库的 f16 mmproj。内容不受安全对齐约束，界面会提示用户自行判断。
+const QWEN35_2B_UNCENSORED: RuleCandidate = {
+  model: 'qwen3.5-2b-abliterated',
+  displayName: '口袋助手 无拘版',
+  hfRepo: 'mradermacher/Huihui-Qwen3.5-2B-abliterated-i1-GGUF',
+  hfFilename: 'Huihui-Qwen3.5-2B-abliterated.i1-Q4_0.gguf',
+  params: 1881825088,
+  sizeBytes: 1204847328,
+  multimodal: true,
+  mmproj: {
+    hfRepo: 'mradermacher/Huihui-Qwen3.5-2B-abliterated-GGUF',
+    hfFilename: 'Huihui-Qwen3.5-2B-abliterated.mmproj-f16.gguf',
+    sizeBytes: 668227200,
+    modalities: ['vision'],
+  },
+};
+
+const QWEN35_4B_UNCENSORED: RuleCandidate = {
+  model: 'qwen3.5-4b-abliterated',
+  displayName: '口袋助手 无拘专业版',
+  hfRepo: 'mradermacher/Huihui-Qwen3.5-4B-abliterated-i1-GGUF',
+  hfFilename: 'Huihui-Qwen3.5-4B-abliterated.i1-Q4_0.gguf',
+  params: 4205751296,
+  sizeBytes: 2549798464,
+  multimodal: true,
+  mmproj: {
+    hfRepo: 'mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF',
+    hfFilename: 'Huihui-Qwen3.5-4B-abliterated.mmproj-f16.gguf',
+    sizeBytes: 672423552,
+    modalities: ['vision'],
+  },
+};
+
 // ── 通用对话（其他国内团队）──────────────────────────────────────────
 // 面壁智能 MiniCPM5（Apache-2.0）：同尺寸综合能力最强的一档。
 const MINICPM5_1B: RuleCandidate = {
   model: 'minicpm5-1b',
-  displayName: 'MiniCPM5 1B',
+  displayName: '小钢炮 mini',
   hfRepo: 'openbmb/MiniCPM5-1B-GGUF',
   hfFilename: 'MiniCPM5-1B-Q4_K_M.gguf',
   params: 1080632832,
@@ -107,7 +144,7 @@ const MINICPM5_1B: RuleCandidate = {
 
 const MINICPM5_2B: RuleCandidate = {
   model: 'minicpm5-2b',
-  displayName: 'MiniCPM5 2B',
+  displayName: '小钢炮 标准版',
   hfRepo: 'openbmb/MiniCPM5-2B-GGUF',
   hfFilename: 'MiniCPM5-2B-Q4_K_M.gguf',
   params: 2516756480,
@@ -118,7 +155,7 @@ const MINICPM5_2B: RuleCandidate = {
 // 循环层架构计算量大，速度偏慢（K30 Pro 5.5 tok/s），适合追求质量的场景。
 const NANBEIGE42_3B: RuleCandidate = {
   model: 'nanbeige4.2-3b',
-  displayName: 'Nanbeige4.2 3B',
+  displayName: '南北阁 写作版',
   hfRepo: 'bartowski/Nanbeige_Nanbeige4.2-3B-GGUF',
   hfFilename: 'Nanbeige_Nanbeige4.2-3B-Q4_0.gguf',
   params: 4169800704,
@@ -128,7 +165,7 @@ const NANBEIGE42_3B: RuleCandidate = {
 // Spark-X2.6 4B（Apache-2.0）：端侧智能体与编程能力强化。
 const SPARK_X26_4B: RuleCandidate = {
   model: 'spark-x2.6-4b',
-  displayName: 'Spark-X2.6 4B',
+  displayName: 'Spark 学习版',
   hfRepo: 'bartowski/Spark-X2.6-4B-GGUF',
   hfFilename: 'Spark-X2.6-4B-Q4_0.gguf',
   params: 4112079360,
@@ -139,7 +176,7 @@ const SPARK_X26_4B: RuleCandidate = {
 // 速度接近 1B 模型、能力接近 8B 模型；需要 8GB 以上内存。
 const LING30_TINY: RuleCandidate = {
   model: 'ling-3.0-tiny',
-  displayName: 'Ling 3.0 Tiny（MoE 高速）',
+  displayName: '百灵 极速版',
   hfRepo: 'bartowski/Ling-3.0-tiny-GGUF',
   hfFilename: 'Ling-3.0-tiny-Q4_0.gguf',
   params: 7893392800,
@@ -150,7 +187,7 @@ const LING30_TINY: RuleCandidate = {
 // Liquid LFM3 1.7B（LFM 开放许可，支持中文）：同档最快，适合中端机日常对话。
 const LFM3_1_7B: RuleCandidate = {
   model: 'lfm3-1.7b',
-  displayName: 'LFM3 1.7B（高速）',
+  displayName: 'Liquid 极速版',
   hfRepo: 'LiquidAI/LFM3-1.7B-GGUF',
   hfFilename: 'LFM3-1.7B-QAD-Q4_0.gguf',
   params: 1728801536,
@@ -161,7 +198,7 @@ const LFM3_1_7B: RuleCandidate = {
 // 腾讯混元 Hy-MT2 1.8B（Apache-2.0）：专用翻译模型，中英及 30+ 语种互译。
 const HY_MT2_1_8B: RuleCandidate = {
   model: 'hy-mt2-1.8b',
-  displayName: '混元翻译 Hy-MT2 1.8B（翻译）',
+  displayName: '混元翻译',
   hfRepo: 'tencent/Hy-MT2-1.8B-GGUF',
   hfFilename: 'Hy-MT2-1.8B-Q4_K_M.gguf',
   params: 2038515712,
@@ -171,7 +208,7 @@ const HY_MT2_1_8B: RuleCandidate = {
 // 小米 MiMo-V2.6 蒸馏 Qwen3.5-9B（MIT）：编程与智能体，SWE-Pro 远超原版。
 const MIMO_V26_9B: RuleCandidate = {
   model: 'mimo-v2.6-distill-9b',
-  displayName: 'MiMo-V2.6 9B（编程）',
+  displayName: 'MiMo 编程旗舰版',
   hfRepo: 'bartowski/MiMo-V2.6-Distill-Qwen-9B-GGUF',
   hfFilename: 'MiMo-V2.6-Distill-Qwen-9B-Q4_0.gguf',
   params: 8953803264,
@@ -189,7 +226,7 @@ const MIMO_V26_9B: RuleCandidate = {
 // 微软 FrogNano 4B（MIT，基于 Qwen3.5-4B）：仓库级编程智能体。
 const FROGNANO_4B: RuleCandidate = {
   model: 'frognano-4b',
-  displayName: 'FrogNano 4B（编程）',
+  displayName: 'FrogNano 编程版',
   hfRepo: 'bartowski/FrogNano-4B-2609-GGUF',
   hfFilename: 'FrogNano-4B-2609-Q4_0.gguf',
   params: 4205751296,
@@ -199,7 +236,7 @@ const FROGNANO_4B: RuleCandidate = {
 // 面壁 MiniCPM-V 4.7 1B（Apache-2.0）：看图、读文档、识别文字。
 const MINICPM_V47_1B: RuleCandidate = {
   model: 'minicpm-v-4.7-1b',
-  displayName: 'MiniCPM-V 4.7 1B（看图识字）',
+  displayName: '小钢炮 看图版',
   hfRepo: 'openbmb/MiniCPM-V-4.7-1B-gguf',
   hfFilename: 'MiniCPM-V-4_7-1B-Q4_0.gguf',
   params: 1554476272,
@@ -225,18 +262,24 @@ export const chineseExtraCandidates: Record<Tier, RuleCandidate[]> = {
     MINICPM5_1B,
     HY_MT2_1_8B,
     MINICPM_V47_1B,
+    QWEN35_2B_UNCENSORED,
   ],
+  // 高端与旗舰机也默认推荐 2B：K30 Pro 实测 16 tok/s 左右，各型号都不卡顿；
+  // 4B 及以上作为“更聪明但更慢”的可选项排在后面。
   high: [
+    QWEN35_2B,
     QWEN35_4B,
     SPARK_X26_4B,
-    QWEN35_2B,
     MINICPM5_2B,
     NANBEIGE42_3B,
     FROGNANO_4B,
     HY_MT2_1_8B,
     MINICPM_V47_1B,
+    QWEN35_2B_UNCENSORED,
+    QWEN35_4B_UNCENSORED,
   ],
   flagship: [
+    QWEN35_2B,
     LING30_TINY,
     QWEN35_4B,
     SPARK_X26_4B,
@@ -247,6 +290,8 @@ export const chineseExtraCandidates: Record<Tier, RuleCandidate[]> = {
     FROGNANO_4B,
     HY_MT2_1_8B,
     MINICPM_V47_1B,
+    QWEN35_2B_UNCENSORED,
+    QWEN35_4B_UNCENSORED,
   ],
 };
 
@@ -312,6 +357,40 @@ export const chineseOnboardingModels: Record<
   muse: {quick: MINICPM5_1B, balanced: MINICPM5_2B, best: NANBEIGE42_3B},
 };
 
-// 中文版在各 Pal 的系统提示词后追加的语言约定。
-export const chineseSystemPromptSuffix =
-  ' 默认使用简体中文回答；如果用户使用其他语言，就用该语言回答。';
+// ─── 新手友好的一句话说明 ─────────────────────────────────────────────
+// 模型卡片在名称下方显示，按 RuleCandidate.model 标识索引。只讲“适合做什么、
+// 有什么要求”，不出现量化、参数量等技术细节（技术信息仍在卡片展开详情里）。
+export const chineseModelTaglines: Record<string, string> = {
+  'qwen3.5-0.8b': '最小最快，入门手机也能流畅聊天',
+  'qwen3.5-2b': '日常聊天又快又好，大多数手机首选',
+  'qwen3.5-4b': '更聪明、回答更全面，还能看图',
+  'qwen3.5-9b': '最强的口袋助手，需要 12GB 内存',
+  'qwen3.5-2b-abliterated': '去除内容限制，回答更直接；内容请自行判断',
+  'qwen3.5-4b-abliterated': '去除内容限制的专业版；内容请自行判断',
+  'minicpm5-1b': '面壁出品，小巧省电',
+  'minicpm5-2b': '面壁出品，知识问答扎实',
+  'nanbeige4.2-3b': '文笔好，适合写作和长对话，速度偏慢',
+  'spark-x2.6-4b': '擅长讲题和学习辅导',
+  'ling-3.0-tiny': '大模型的知识量，小模型的速度；需要 8GB 内存',
+  'lfm3-1.7b': '生成速度最快，适合快问快答',
+  'hy-mt2-1.8b': '腾讯混元出品，专业的多语言翻译',
+  'mimo-v2.6-distill-9b': '小米出品，写代码和推理能力强；需要 12GB 内存',
+  'frognano-4b': '擅长写代码、找 bug',
+  'minicpm-v-4.7-1b': '拍照识字、看图问答',
+};
+
+const curatedById = new Map<string, RuleCandidate>();
+Object.values(chineseExtraCandidates)
+  .flat()
+  .forEach(c => curatedById.set(`${c.hfRepo}/${c.hfFilename}`, c));
+
+/** 按 Model.id（`作者/仓库/文件名`）查中文版推荐条目；不是推荐模型时返回 undefined。 */
+export const findCuratedCandidate = (
+  modelId: string,
+): RuleCandidate | undefined => curatedById.get(modelId);
+
+/** 推荐模型的一句话说明；不是推荐模型时返回 undefined。 */
+export const getChineseModelTagline = (modelId: string): string | undefined => {
+  const c = curatedById.get(modelId);
+  return c ? chineseModelTaglines[c.model] : undefined;
+};

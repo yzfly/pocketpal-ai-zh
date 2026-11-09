@@ -1,15 +1,14 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Alert, View} from 'react-native';
 
 import {observer} from 'mobx-react-lite';
-import {Button, Card} from 'react-native-paper';
+import {Button, Card, Text} from 'react-native-paper';
 
+import {AccountSheet} from '../../components/AccountSheet';
 import {useTheme} from '../../hooks';
 import {t} from '../../locales';
 import {L10nContext} from '../../utils';
-import {authService} from '../../services';
-import {deleteAccount} from '../../services/palshub/accountDeletion';
-import type {DeleteAccountOutcome} from '../../services/palshub/accountApi';
+import {accountService} from '../../services';
 
 import {createStyles} from './styles';
 
@@ -18,67 +17,24 @@ export const AccountCard: React.FC = observer(() => {
   const styles = createStyles(theme);
   const l10n = useContext(L10nContext);
   const copy = l10n.settings.account;
-  const [deleting, setDeleting] = useState(false);
-  const mounted = useRef(true);
+  const [showSheet, setShowSheet] = useState(false);
 
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  if (!authService.isAuthenticated) {
+  if (!accountService.isConfigured) {
     return null;
   }
 
-  const outcomeMessage = (outcome: DeleteAccountOutcome): string | null => {
-    switch (outcome.kind) {
-      case 'deleted':
-        return copy.deleted;
-      case 'sign_in_again':
-        return copy.signInAgain;
-      case 'creator':
-        return t(copy.creatorSupport, {contact: outcome.contact});
-      case 'failed':
-        return copy.failed;
-      case 'cancelled':
-        return null;
-    }
-  };
+  const user = accountService.user;
 
-  const confirmWithoutApple = () =>
-    new Promise<boolean>(resolve =>
-      Alert.alert(copy.deleteAccount, copy.confirmWithoutApple, [
-        {
-          text: l10n.common.cancel,
-          style: 'cancel',
-          onPress: () => resolve(false),
-        },
-        {
-          text: l10n.common.delete,
-          style: 'destructive',
-          onPress: () => resolve(true),
-        },
-      ]),
-    );
-
-  const confirmDelete = async () => {
-    setDeleting(true);
-    const outcome = await deleteAccount({confirmWithoutApple});
-    if (mounted.current) {
-      setDeleting(false);
-    }
-    const message = outcomeMessage(outcome);
-    if (message) {
-      Alert.alert(copy.deleteAccount, message);
-    }
-  };
-
-  const handlePress = () =>
-    Alert.alert(copy.confirmTitle, copy.confirmMessage, [
+  const handleSignOut = () =>
+    Alert.alert(copy.signOut, copy.signOutConfirm, [
       {text: l10n.common.cancel, style: 'cancel'},
-      {text: l10n.common.delete, style: 'destructive', onPress: confirmDelete},
+      {
+        text: copy.signOut,
+        style: 'destructive',
+        onPress: () => {
+          accountService.signOut();
+        },
+      },
     ]);
 
   return (
@@ -86,18 +42,43 @@ export const AccountCard: React.FC = observer(() => {
       <Card.Title title={copy.title} />
       <Card.Content>
         <View style={styles.settingItemContainer}>
-          <Button
-            testID="settings-delete-account"
-            mode="outlined"
-            textColor={theme.colors.error}
-            onPress={handlePress}
-            loading={deleting}
-            disabled={deleting}
-            style={styles.menuButton}>
-            {copy.deleteAccount}
-          </Button>
+          {user ? (
+            <>
+              <Text testID="account-signed-in-as">
+                {t(copy.signedInAs, {
+                  email: user.email || user.username || user.name || '',
+                })}
+              </Text>
+              <Button
+                testID="settings-sign-out"
+                mode="outlined"
+                onPress={handleSignOut}
+                style={styles.menuButton}>
+                {copy.signOut}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Text style={{color: theme.colors.onSurfaceVariant}}>
+                {copy.subtitle}
+              </Text>
+              <Button
+                testID="settings-sign-in"
+                mode="contained"
+                onPress={() => setShowSheet(true)}
+                style={styles.menuButton}>
+                {`${copy.signIn} / ${copy.signUp}`}
+              </Button>
+            </>
+          )}
         </View>
       </Card.Content>
+      {showSheet && (
+        <AccountSheet
+          isVisible={showSheet}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
     </Card>
   );
 });

@@ -229,7 +229,7 @@ jobs:
               "client_info": {
                 "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
                 "android_client_info": {
-                  "package_name": "com.pocketpalai"
+                  "package_name": "com.pocketwisdom"
                 }
               },
               "api_key": [{
@@ -250,7 +250,7 @@ jobs:
           PALSHUB_API_BASE_URL=https://dummy-palshub-api.com
 
           # App Configuration
-          APP_URL=pocketpal://app
+          APP_URL=pocketwisdom://app
 
           # Feature Flags (true/false)
           ENABLE_PALSHUB_INTEGRATION=true
@@ -355,10 +355,6 @@ jobs:
             'bench-runner-screen-status'
             'ASR_AUTOMATION_STATE'
             'VOICE_AUTOMATION_STATE'
-            'IAP_API_BASE_OVERRIDE'
-            'IAP_FAKE_STORE'
-            'PLUS_SHIP_OVERRIDE'
-            'PLUS_GATE_PROBE'
           )
           FAIL=0
           for m in "${MARKERS[@]}"; do
@@ -437,7 +433,7 @@ jobs:
           PALSHUB_API_BASE_URL=https://dummy-palshub-api.com
 
           # App Configuration
-          APP_URL=pocketpal://app
+          APP_URL=pocketwisdom://app
 
           # Feature Flags (true/false)
           ENABLE_PALSHUB_INTEGRATION=true

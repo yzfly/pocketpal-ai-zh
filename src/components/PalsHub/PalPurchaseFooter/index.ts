@@ -1,1 +1,0 @@
-export {PalPurchaseFooter} from './PalPurchaseFooter';

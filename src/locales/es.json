@@ -86,7 +86,7 @@
     "importError": "Error al importar las sesiones de chat. Revisa el formato del archivo.",
     "internetSearch": {
       "title": "Búsqueda en Internet",
-      "description": "Permite que los Pals busquen en la web con sus propias herramientas. Usa tu propia clave de API — PocketPal nunca almacena tus claves ni enruta tus consultas.",
+      "description": "Permite que los Pals busquen en la web con sus propias herramientas. Usa tu propia clave de API — PocketWisdom nunca almacena tus claves ni enruta tus consultas.",
       "providerLabel": "Proveedor de búsqueda",
       "providerGated": "Próximamente",
       "keyLabel": "Clave de API",
@@ -102,7 +102,7 @@
       "resultCountLabel": "Resultados por búsqueda",
       "resultCountDescription": "Un menor número de resultados conserva más espacio en el contexto del modelo.",
       "consentTitle": "Las búsquedas salen de tu dispositivo",
-      "consentDescription": "Cuando un Pal busca en la web, tu consulta se envía al proveedor seleccionado a través de internet. Cuando un Pal lee una página, la URL y su contenido pueden enviarse en su lugar a un servicio de lectura predeterminado (r.jina.ai) si el proveedor seleccionado no cuenta con un lector nativo. Las claves y las consultas nunca se envían a PocketPal.",
+      "consentDescription": "Cuando un Pal busca en la web, tu consulta se envía al proveedor seleccionado a través de internet. Cuando un Pal lee una página, la URL y su contenido pueden enviarse en su lugar a un servicio de lectura predeterminado (r.jina.ai) si el proveedor seleccionado no cuenta con un lector nativo. Las claves y las consultas nunca se envían a PocketWisdom.",
       "consentAccept": "Entendido",
       "consentRequired": "Acepta la declaración anterior para ingresar una clave y habilitar la búsqueda.",
       "consentGivenTitle": "La búsqueda en la web está activada",
@@ -235,17 +235,6 @@
       "unloadBoundTitle": "¿Liberar este modelo?",
       "unloadBoundBody": "Este chat lo usa. Se volverá a cargar cuando envíes tu próximo mensaje.",
       "unloadBoundConfirm": "Liberar"
-    },
-    "account": {
-      "title": "Cuenta",
-      "deleteAccount": "Eliminar cuenta",
-      "confirmTitle": "¿Eliminar la cuenta?",
-      "confirmMessage": "Esto elimina para siempre tu cuenta de PalsHub y su biblioteca. Los Pals comprados en la App Store o en Google Play se podrán restaurar en este dispositivo con tu cuenta de la tienda. Los registros de compra se conservan de forma anónima por motivos legales.",
-      "confirmWithoutApple": "No se pudo confirmar con Apple. ¿Quieres eliminar tu cuenta de todos modos?",
-      "deleted": "Tu cuenta se ha eliminado.",
-      "signInAgain": "Vuelve a iniciar sesión",
-      "creatorSupport": "Las cuentas de creador las elimina nuestro equipo de soporte: {{contact}}",
-      "failed": "No se pudo eliminar, inténtalo de nuevo"
     }
   },
   "memory": {
@@ -546,13 +535,13 @@
     "screenTitle": "Información de la aplicación",
     "description": "Una aplicación que lleva los modelos de lenguaje directamente a tu teléfono. Se apoya en los hombros de llama.cpp y llama.rn.",
     "supportProject": "Apoya el proyecto",
-    "supportProjectDescription": "Si disfrutas usando PocketPal AI, considera apoyar el proyecto mediante:",
+    "supportProjectDescription": "Si disfrutas usando PocketWisdom, considera apoyar el proyecto mediante:",
     "githubButton": "Dar una estrella en GitHub",
     "orBy": "o mediante",
     "versionCopiedTitle": "Versión copiada",
     "versionCopiedDescription": "La información de la versión se ha copiado al portapapeles",
     "tour": "Recorrido",
-    "tourDescription": "Vuelve a ver las pantallas de bienvenida para descubrir lo que ofrece PocketPal AI.",
+    "tourDescription": "Vuelve a ver las pantallas de bienvenida para descubrir lo que ofrece PocketWisdom.",
     "showIntroButton": "Volver a mostrar la introducción",
     "privacyPolicy": "Política de privacidad",
     "termsOfService": "Términos de servicio",
@@ -561,10 +550,10 @@
   },
   "feedback": {
     "title": "Enviar comentarios",
-    "description": "¡Tu voz importa! Cuéntanos cómo te está ayudando PocketPal AI y qué podemos hacer para que sea aún más útil.",
+    "description": "¡Tu voz importa! Cuéntanos cómo te está ayudando PocketWisdom y qué podemos hacer para que sea aún más útil.",
     "shareThoughtsButton": "Compartir tus comentarios",
     "useCase": {
-      "label": "¿Para qué estás usando PocketPal AI?",
+      "label": "¿Para qué estás usando PocketWisdom?",
       "placeholder": "p. ej., resumen, juego de rol, etc."
     },
     "featureRequests": {
@@ -576,7 +565,7 @@
       "placeholder": "Comparte cualquier otro comentario que tengas."
     },
     "usageFrequency": {
-      "label": "¿Con qué frecuencia usas PocketPal AI? (Opcional)",
+      "label": "¿Con qué frecuencia usas PocketWisdom? (Opcional)",
       "options": {
         "daily": "Diariamente",
         "weekly": "Semanalmente",
@@ -647,14 +636,14 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "No hay modelos disponibles",
-      "noModelsDescription": "Descarga un modelo para empezar a chatear con PocketPal",
+      "noModelsDescription": "Descarga un modelo para empezar a chatear con PocketWisdom",
       "noModelsButton": "Descargar modelo",
       "activateModelTitle": "Activa un modelo para empezar",
       "activateModelDescription": "Selecciona el modelo y descárgalo. Después de descargarlo, toca \"Cargar\" junto al modelo y empieza a chatear.",
       "activateModelButton": "Seleccionar modelo",
       "loading": "Cargando...",
       "gettingReadyTitle": "{{name}} se está preparando",
-      "gettingReadyDescription": "Te avisaremos en cuanto PocketPal (tu amigo de bolsillo) pueda chatear. Toca el banner de arriba para ver cómo va."
+      "gettingReadyDescription": "Te avisaremos en cuanto PocketWisdom (tu amigo de bolsillo) pueda chatear. Toca el banner de arriba para ver cómo va."
     },
     "chatInput": {
       "inputPlaceholder": "Mensaje",
@@ -700,7 +689,7 @@
     },
     "modelErrorReportSheet": {
       "title": "Reportar problema de carga del modelo",
-      "privacyNote": "Ayúdanos a mejorar PocketPal (tu amigo de bolsillo) compartiendo detalles sobre este error. Revisa a continuación lo que se compartirá; puedes deseleccionar cualquier elemento que prefieras no incluir.",
+      "privacyNote": "Ayúdanos a mejorar PocketWisdom (tu amigo de bolsillo) compartiendo detalles sobre este error. Revisa a continuación lo que se compartirá; puedes deseleccionar cualquier elemento que prefieras no incluir.",
       "errorMessage": "Mensaje de error",
       "modelInfo": "Información del modelo",
       "modelName": "Nombre",
@@ -718,7 +707,7 @@
       "submit": "Enviar reporte",
       "success": {
         "title": "Reporte enviado",
-        "message": "Gracias por ayudarnos a mejorar PocketPal. Su informe nos ayudará a solucionar este problema."
+        "message": "Gracias por ayudarnos a mejorar PocketWisdom. Su informe nos ayudará a solucionar este problema."
       },
       "error": {
         "title": "Error al enviar el reporte",
@@ -1090,11 +1079,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "Mis pals (locales)",
-      "myLibrary": "Mi biblioteca (palshub.ai)",
-      "discoverPals": "Descubrir pals (palshub.ai)"
-    },
     "systemPrompt": "Prompt del sistema",
     "videoAnalysis": "Análisis de video",
     "videoAnalysisDescription": "Este es un asistente de IA basado en video que ofrece comentarios en tiempo real sobre transmisiones de video de la cámara de tu dispositivo.",
@@ -1116,14 +1100,10 @@
     "profile": "Perfil",
     "signIn": "Iniciar sesión",
     "addPal": "Agregar amigo (Pal)",
-    "signInToAccessLibrary": "Inicia sesión para acceder a tu biblioteca desde palshub.ai",
     "signOut": "Cerrar sesión",
     "signOutConfirmation": "¿Seguro que quieres cerrar sesión?",
     "signOutError": "Error al cerrar sesión. Por favor, inténtalo de nuevo.",
     "account": "Cuenta",
-    "signInToPalsHub": "Iniciar sesión en PalsHub",
-    "signInDescription": "Accede a tu biblioteca, crea amigos privados y sincroniza entre dispositivos",
-    "searchAllPals": "Buscar en todos los amigos (Pals)...",
     "deletePalConfirmation": "¿Seguro que quieres eliminar a \"{{palName}}\"?",
     "filters": {
       "all": "Todos",
@@ -1145,66 +1125,6 @@
       "oldest": "Más antiguos",
       "rating": "Mejor valorados",
       "popular": "Más populares"
-    },
-    "palDetailSheet": {
-      "by": "por",
-      "unknown": "Desconocido",
-      "rating": "Valoración",
-      "reviews": "Reseñas",
-      "created": "Creado",
-      "description": "Descripción",
-      "noDescriptionAvailable": "No hay descripción disponible.",
-      "categories": "Categorías",
-      "tags": "Etiquetas",
-      "systemPrompt": "Instrucción del sistema",
-      "downloaded": "Descargado",
-      "success": "Éxito",
-      "palAddedToCollection": "¡El Pal (amigo) se ha añadido a tu colección!",
-      "error": "Error",
-      "failedToLoadDetails": "Error al cargar los detalles del Pal",
-      "failedToDownload": "Error al descargar el Pal",
-      "notAvailable": "N/D"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "Abrir",
-      "install": "Instalar",
-      "pending": "Pendiente",
-      "unlocking": "Desbloqueando",
-      "retry": "Reintentar",
-      "supportCode": "Código de soporte: {{code}}",
-      "noLongerAvailable": "Este Pal ya no está disponible. Puedes {{refundLink}}.",
-      "refundLink": "pedir un reembolso a Apple",
-      "notCompleted": "No se pudo completar esta compra. Google te hará el reembolso.",
-      "withdrawnRefunding": "Este Pal se ha retirado. Contacta con soporte para obtener un reembolso.",
-      "invalid": "No pudimos verificar esta compra.",
-      "heldInvalid": "No pudimos desbloquear esta compra. Contacta con soporte y facilita este código.",
-      "recommendedModel": "Modelo recomendado",
-      "sampleExchange": "Conversación de ejemplo",
-      "signInLine": "¿Ya lo tienes? Inicia sesión",
-      "licenseNotice": "Estás comprando una licencia para usar este Pal.",
-      "termsOfSale": "Condiciones de venta",
-      "appleMediaTerms": "Términos de los Servicios Multimedia de Apple",
-      "linkPrompt": "Inicia sesión para usarlo también en tus otros dispositivos",
-      "linkSignIn": "Iniciar sesión",
-      "dismiss": "Ahora no",
-      "linkConflict": "Estas compras están vinculadas a otra cuenta.",
-      "restorePurchases": "Restaurar compras",
-      "badgePending": "Pendiente",
-      "badgeUnlocking": "Desbloqueando",
-      "badgeUpdate": "Actualización disponible",
-      "updatePrompt": "Hay una nueva versión del creador disponible.",
-      "updatePromptWithNote": "Hay una nueva versión del creador disponible: {{note}}.",
-      "updateButton": "Actualizar",
-      "updateConfirmText": "Esto reemplazará tus cambios en las partes que el creador modificó.",
-      "updateConfirm": "Actualizar",
-      "updateCancel": "Cancelar",
-      "modelStep": {
-        "download": "Descargar · {{size}}",
-        "startChat": "Iniciar chat",
-        "needsMemory": "Este Pal necesita un dispositivo con al menos {{size}} de memoria para su modelo más pequeño.",
-        "noModelFits": "Este dispositivo no tiene suficiente memoria para este Pal."
-      }
     }
   },
   "validation": {
@@ -1233,7 +1153,7 @@
   },
   "video": {
     "permissionTitle": "Permiso de cámara requerido",
-    "permissionMessage": "PocketPal necesita acceso a la cámara para el análisis de video",
+    "permissionMessage": "PocketWisdom necesita acceso a la cámara para el análisis de video",
     "requestingPermission": "Solicitando permiso de cámara...",
     "noDevice": "No se encontró ningún dispositivo de cámara",
     "errorTitle": "Error de cámara",
@@ -1586,14 +1506,14 @@
     "skip": "Omitir",
     "skipForNow": "Omitir por ahora",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "Conoce a tus amigos (Pals).",
       "titleAccent": "amigos.",
       "body": "Pequeños amigos (pals) inteligentes que viven dentro de tu teléfono.\nVamos a configurarlo todo; solo te tomará un minuto.",
       "cta": "Muéstrame cómo funciona",
-      "eyebrow": "Te damos la bienvenida a PocketPal"
+      "eyebrow": "Te damos la bienvenida a PocketWisdom"
     },
     "screen2": {
       "title": "En cualquier momento,\nEn cualquier lugar.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "La entrada de voz necesita memoria adicional además de este modelo de chat. Puede ir muy lento o la aplicación puede cerrarse.",
     "memoryAlertTryAnyway": "Probar de todos modos"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "Lleva la IA local más lejos.",
-    "subline": "Plus mantiene PocketPal gratis y de código abierto. Las funciones extra son nuestra forma de darte las gracias.",
-    "unsupportedSubline": "Las funciones Plus todavía no funcionan en este teléfono. Aun así puedes apoyar PocketPal.",
-    "thanksHeadline": "Gracias por mantener PocketPal en marcha.",
-    "thanksSubline": "Plus está desbloqueado en este dispositivo.",
-    "features": {
-      "handsFreeVoice": "Voz manos libres",
-      "localApiServer": "Servidor de API local"
-    },
-    "ready": "Disponible",
-    "needsRam": "Necesita {{gb}} GB de RAM",
-    "comingSoon": "Próximamente",
-    "speedLine": "La velocidad depende de tu teléfono y del modelo.",
-    "inDevelopment": "Las funciones en desarrollo pueden cambiar o no llegar a lanzarse.",
-    "priceCaption": "Paga lo que quieras. Las mismas funciones a cualquier precio.",
-    "buyError": "La compra no se ha completado. Inténtalo de nuevo.",
-    "getPlus": "Obtener Plus · {{price}}",
-    "getPlusAnyway": "Obtener Plus de todos modos · {{price}}",
-    "loading": "Cargando",
-    "pending": "Pendiente",
-    "pendingTitle": "Esperando a que la tienda confirme tu pago.",
-    "pendingBody": "Plus se desbloqueará solo en cuanto se complete. Puedes cerrar esta pantalla.",
-    "unavailableTitle": "Las compras no están disponibles ahora mismo.",
-    "unavailableBody": "No se ha podido conectar con la tienda. Inténtalo más tarde o restaura una compra anterior.",
-    "done": "Listo",
-    "oneTimePurchase": "Compra única",
-    "restore": "Restaurar",
-    "openSource": "Código abierto ↗",
-    "licence": "Compra única de una licencia para usar Plus.",
-    "terms": "Condiciones",
-    "appleMediaTerms": "Términos de los Servicios Multimedia de Apple",
-    "noPurchaseFound": "No se ha encontrado ninguna compra de Plus.",
-    "restoreFailed": "No se ha podido conectar con la tienda. Inténtalo de nuevo.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "Desbloqueado",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}, {{second}}",
-      "subtitleMore": "{{first}}, {{second}} y más"
-    },
-    "optIn": "Desactivado",
-    "optInNote": "Desactivado en este teléfono. Actívalo en Ajustes si te atreves.",
-    "offInSettingsNote": "Desactivado en Ajustes.",
-    "chatStaysFree": "Plus es opcional. Chatear sigue siendo gratis.",
-    "chooseAmount": "Elige una cantidad"
-  },
   "voiceMode": {
     "settingTitle": "Voz manos libres",
     "settingDescription": "Habla con el modelo en el chat y escucha sus respuestas.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "Continuar de todos modos",
     "chooseSmallerModelCta": "Elegir un modelo más pequeño",
     "startLabel": "Iniciar el modo de voz",
-    "startLockedLabel": "Voz manos libres, PocketPal Plus",
+    "startLockedLabel": "Voz manos libres, PocketWisdom Plus",
     "startLockedHint": "Abre una vista previa breve. Escribir y dictar siguen siendo gratis.",
     "teaserTitle": "La conversación por voz es una función Plus",
     "teaserBody": "Habla sin usar las manos. Te responde en voz alta.",

@@ -16,7 +16,7 @@ exports[`Divider — snapshot matrix baseline (variant x size x {default,disable
       [
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#a1a1a1",
+          "backgroundColor": "#C9C9C9",
           "height": 1,
         },
         undefined,
@@ -43,7 +43,7 @@ exports[`Divider — snapshot matrix baseline (variant x size x {default,disable
       [
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#a1a1a1",
+          "backgroundColor": "#C9C9C9",
           "height": 1,
         },
         undefined,
@@ -70,7 +70,7 @@ exports[`Divider — snapshot matrix baseline (variant x size x {default,disable
       [
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#a1a1a1",
+          "backgroundColor": "#C9C9C9",
           "width": 1,
         },
         undefined,
@@ -97,7 +97,7 @@ exports[`Divider — snapshot matrix baseline (variant x size x {default,disable
       [
         {
           "alignSelf": "stretch",
-          "backgroundColor": "#a1a1a1",
+          "backgroundColor": "#C9C9C9",
           "width": 1,
         },
         undefined,

@@ -10,7 +10,8 @@ import * as RNFS from '@dr.pogodin/react-native-fs';
 import {l10n} from '../locales';
 import {modelStore} from '../store';
 import {getHFDefaultSettings} from './chat';
-import {formatBytes, formatNumber} from './formatters';
+import {formatBytes, formatNumber, friendlyModelName} from './formatters';
+import {findCuratedCandidate} from '../store/chineseModelPresets';
 import {getVerboseDateTimeRepresentation} from './formatters';
 import {
   HuggingFaceModel,
@@ -470,7 +471,10 @@ export function hfAsModel(
     type: extractHFModelType(hfModel.id),
     author: hfModel.author,
     repo: repo,
-    name: extractHFModelTitle(modelFile.rfilename),
+    // 中文版：推荐模型用中文名，其他模型用去掉技术后缀的文件名。
+    name:
+      findCuratedCandidate(hfModel.id + '/' + modelFile.rfilename)
+        ?.displayName ?? friendlyModelName(modelFile.rfilename),
     size: modelFile.size ?? 0,
     params: hfModel.specs?.gguf?.total ?? 0,
     isDownloaded: false,

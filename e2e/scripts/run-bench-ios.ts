@@ -27,7 +27,7 @@ import {
 } from '../helpers/bench-runner';
 
 export const BUNDLE_ID = 'ai.pocketpal';
-export const DEEP_LINK = 'pocketpal://e2e/benchmark?autostart=1';
+export const DEEP_LINK = 'pocketwisdom://e2e/benchmark?autostart=1';
 const APP_CONTAINER = [
   '--domain-type',
   'appDataContainer',

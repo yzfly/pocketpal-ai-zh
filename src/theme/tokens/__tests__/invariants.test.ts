@@ -126,8 +126,6 @@ describe('design-token grep invariants', () => {
       'components/VoiceBar',
       'components/VoiceModeButton',
       'components/VoiceTeaser',
-      'screens/PlusScreen',
-      'components/SidebarContent/PlusDrawerItem',
     ];
     const files = listFiles(SRC).filter(f => {
       const rel = path.relative(SRC, f).replace(/\\/g, '/');

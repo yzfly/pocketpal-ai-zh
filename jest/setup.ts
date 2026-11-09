@@ -12,7 +12,6 @@ import 'react-native-gesture-handler/jestSetup';
 // adapter renders but no-ops; tests that need the bypass-on path override
 // with `(global as any).__E2E_SKIP_ONBOARDING__ = true`.
 (global as any).__E2E_SKIP_ONBOARDING__ = false;
-(global as any).__PLUS_STORE_GATE__ = true;
 
 jest.mock('react-native-haptic-feedback');
 
@@ -68,7 +67,6 @@ import {
   mockVoiceModeStore,
 } from '../__mocks__/stores/voiceModeStore';
 import {mockSearchProviderStore} from '../__mocks__/stores/searchProviderStore';
-import {mockPurchaseStore} from '../__mocks__/stores/purchaseStore';
 import {mockLocalApiServerStore} from '../__mocks__/stores/localApiServerStore';
 
 jest.mock('@react-native-clipboard/clipboard', () => mockClipboard);
@@ -146,7 +144,6 @@ jest.mock('../src/store', () => {
     voiceModeStore: mockVoiceModeStore,
     voiceEntitlement: mockVoiceEntitlement,
     searchProviderStore: mockSearchProviderStore,
-    purchaseStore: mockPurchaseStore,
     localApiServerStore: mockLocalApiServerStore,
     isValidLocalApiPort,
     defaultCompletionSettings: mockDefaultCompletionSettings,
@@ -212,7 +209,3 @@ jest.mock('../src/database', () => {
 jest.mock('../src/services', () => {
   return require('../__mocks__/services');
 });
-
-jest.mock('../src/services/palshub/accountDeletion', () =>
-  require('../__mocks__/services/palshub/accountDeletion'),
-);

@@ -40,8 +40,8 @@ export const config: Options.Testrunner = {
       'appium:platformVersion': PLATFORM_VERSION,
       'appium:automationName': 'UiAutomator2',
       'appium:app': APP_PATH,
-      'appium:appPackage': 'com.pocketpalai.e2e',
-      'appium:appActivity': 'com.pocketpal.MainActivity',
+      'appium:appPackage': 'com.pocketwisdom.e2e',
+      'appium:appActivity': 'com.pocketwisdom.MainActivity',
       // Force fresh install to ensure clean state. Env-overridable so
       // MIUI/HyperOS devices that hit INSTALL_FAILED_USER_RESTRICTED can keep
       // the existing install (E2E_NO_RESET=true E2E_FULL_RESET=false).

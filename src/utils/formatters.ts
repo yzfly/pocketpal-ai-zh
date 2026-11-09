@@ -181,5 +181,22 @@ export const getDisplayNameFromFilename = (filename: string): string => {
  * @returns The original display name
  */
 export const getOriginalModelName = (model: {filename: string}): string => {
-  return getDisplayNameFromFilename(model.filename);
+  return friendlyModelName(model.filename);
+};
+
+/**
+ * 中文版：把 GGUF 文件名整理成普通用户看得懂的名字，去掉量化、分片、
+ * `.gguf` / `-GGUF` 等技术后缀，并把连字符/下划线换成空格。
+ * 例：`Qwen3.5-2B-Q4_0.gguf` → `Qwen3.5 2B`。
+ */
+export const friendlyModelName = (filename: string): string => {
+  let name = (filename || '').replace(/\.gguf$/i, '');
+  name = name.replace(/-\d{5}-of-\d{5}$/i, '');
+  name = name.replace(
+    /[-_.](i1-)?(UD-)?(I?Q[0-9][A-Z0-9_]*|BF16|F16|F32|FP16)$/i,
+    '',
+  );
+  name = name.replace(/[-_]GGUF$/i, '');
+  name = name.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return name || filename;
 };

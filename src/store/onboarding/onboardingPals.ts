@@ -22,10 +22,8 @@
  */
 
 import type {TopicKey} from './types';
-import {
-  chineseOnboardingModels,
-  chineseSystemPromptSuffix,
-} from '../chineseModelPresets';
+import {chineseOnboardingModels} from '../chineseModelPresets';
+import {chinesePals} from '../chinesePals';
 import type {RuleCandidate} from '../../services/deviceRules/types';
 
 export type OnboardingModelTier = 'quick' | 'balanced' | 'best';
@@ -352,7 +350,7 @@ const PAL_MUSE: OnboardingPalDef = {
 };
 
 // 中文版：把上游写死的三档模型换成 chineseModelPresets 的推荐（见该文件说明），
-// 并在系统提示词后追加中文回答约定。上游定义保持原样，方便后续同步。
+// 名称、简介与系统提示词改用 chinesePals 的中文版本。上游定义保持原样，方便后续同步。
 const candidateEntry = (
   tier: OnboardingModelTier,
   c: RuleCandidate,
@@ -369,9 +367,12 @@ const candidateEntry = (
 
 const withChineseModels = (pal: OnboardingPalDef): OnboardingPalDef => {
   const picks = chineseOnboardingModels[pal.key];
+  const copy = chinesePals[pal.key];
   return {
     ...pal,
-    systemPrompt: pal.systemPrompt + chineseSystemPromptSuffix,
+    name: copy.name,
+    description: copy.description,
+    systemPrompt: copy.systemPrompt,
     models: [
       candidateEntry('quick', picks.quick),
       candidateEntry('balanced', picks.balanced),

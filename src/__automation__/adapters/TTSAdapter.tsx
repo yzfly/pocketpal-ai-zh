@@ -14,7 +14,7 @@ const READ_CMD = 'read::status';
  * - setValue('release')              releases the active engine
  * - setValue('read::status')         exposes the latest command status JSON
  *
- * iOS drives the same commands via the `pocketpal://tts?cmd=...` deep link;
+ * iOS drives the same commands via the `pocketwisdom://tts?cmd=...` deep link;
  * status is read from the file directly via simctl.
  *
  * Uses opacity 0.01 to stay in Android's accessibility tree.

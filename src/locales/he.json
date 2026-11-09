@@ -167,7 +167,7 @@
     "serverTypeHelp": "מזוהה אוטומטית; שנה אם זה לא נכון.",
     "internetSearch": {
       "title": "חיפוש באינטרנט",
-      "description": "אפשר ל-Pals לחפש ברשת באמצעות הכלים שלהם. השתמש במפתח API משלך — PocketPal לעולם לא שומר את המפתחות שלך ולא מנתב את השאילתות שלך.",
+      "description": "אפשר ל-Pals לחפש ברשת באמצעות הכלים שלהם. השתמש במפתח API משלך — PocketWisdom לעולם לא שומר את המפתחות שלך ולא מנתב את השאילתות שלך.",
       "providerLabel": "ספק חיפוש",
       "providerGated": "בקרוב",
       "keyLabel": "מפתח API",
@@ -183,7 +183,7 @@
       "resultCountLabel": "תוצאות לכל חיפוש",
       "resultCountDescription": "פחות תוצאות משאירות יותר מקום בהקשר של המודל.",
       "consentTitle": "החיפושים יוצאים מהמכשיר שלך",
-      "consentDescription": "כאשר Pal מחפש ברשת, השאילתה שלך נשלחת לספק שנבחר דרך האינטרנט. כאשר Pal קורא דף, ייתכן שכתובת ה-URL ותוכן הדף יישלחו במקום זאת לשירות קריאה כברירת מחדל (r.jina.ai) אם לספק שנבחר אין קורא מובנה. מפתחות ושאילתות לעולם אינם נשלחים ל-PocketPal.",
+      "consentDescription": "כאשר Pal מחפש ברשת, השאילתה שלך נשלחת לספק שנבחר דרך האינטרנט. כאשר Pal קורא דף, ייתכן שכתובת ה-URL ותוכן הדף יישלחו במקום זאת לשירות קריאה כברירת מחדל (r.jina.ai) אם לספק שנבחר אין קורא מובנה. מפתחות ושאילתות לעולם אינם נשלחים ל-PocketWisdom.",
       "consentAccept": "הבנתי",
       "consentRequired": "אשר את הגילוי הנאות שלמעלה כדי להגדיר מפתח ולהפעיל חיפוש.",
       "consentGivenTitle": "חיפוש ברשת מופעל",
@@ -235,17 +235,6 @@
       "unloadBoundTitle": "לפרוק את המודל הזה?",
       "unloadBoundBody": "הצ'אט הזה משתמש בו. הוא ייטען מחדש כשתשלח את ההודעה הבאה.",
       "unloadBoundConfirm": "פרוק"
-    },
-    "account": {
-      "title": "חשבון",
-      "deleteAccount": "מחק חשבון",
-      "confirmTitle": "למחוק את החשבון?",
-      "confirmMessage": "הפעולה הזו מוחקת לצמיתות את חשבון ה-PalsHub שלך ואת הספרייה שלו. Pals שקנית דרך App Store או Google Play יישארו זמינים לשחזור במכשיר הזה עם חשבון החנות שלך. רשומות הרכישה נשמרות באופן אנונימי מטעמים משפטיים.",
-      "confirmWithoutApple": "לא הצלחנו לאמת מול Apple. למחוק את החשבון בכל זאת?",
-      "deleted": "החשבון שלך נמחק.",
-      "signInAgain": "אנא התחבר שוב",
-      "creatorSupport": "חשבונות יוצרים נמחקים על ידי צוות התמיכה שלנו: {{contact}}",
-      "failed": "המחיקה נכשלה, נסה שוב"
     }
   },
   "memory": {
@@ -546,7 +535,7 @@
     "screenTitle": "מידע על האפליקציה",
     "description": "אפליקציה שמביאה מודלי שפה ישירות לטלפון שלך. מבוססת על התשתית של llama.cpp ו-llama.rn.",
     "supportProject": "תמוך בפרוייקט",
-    "supportProjectDescription": "אם אתם נהנים מהשימוש ב-PocketPal AI, אנא שקלו לתמוך בפרויקט באמצעות:",
+    "supportProjectDescription": "אם אתם נהנים מהשימוש ב-PocketWisdom, אנא שקלו לתמוך בפרויקט באמצעות:",
     "githubButton": "ככב אותנו ב-GitHub",
     "orBy": "או על ידי",
     "versionCopiedTitle": "הגרסה הועתקה",
@@ -554,17 +543,17 @@
     "privacyPolicy": "מדיניות הפרטיות",
     "termsOfService": "תנאי השירות",
     "tour": "סיור",
-    "tourDescription": "צפה שוב במסכי הפתיחה כדי לגלות מה PocketPal AI מציע.",
+    "tourDescription": "צפה שוב במסכי הפתיחה כדי לגלות מה PocketWisdom מציע.",
     "showIntroButton": "הצג שוב את ההקדמה",
     "openSourceNotices": "הצהרות קוד פתוח",
     "phononNoticesCredit": "מודל הקול והקולות של Phonon מאת Gradium, ברישיון Apache-2.0. מבוסס על Pocket TTS ועל קודק Mimi של Kyutai."
   },
   "feedback": {
     "title": "שלח משוב",
-    "description": "הקול שלכם חשוב! ספרו לנו איך PocketPal AI עוזר לכם ומה אנחנו יכולים לעשות כדי להפוך אותו לשימושי עוד יותר.",
+    "description": "הקול שלכם חשוב! ספרו לנו איך PocketWisdom עוזר לכם ומה אנחנו יכולים לעשות כדי להפוך אותו לשימושי עוד יותר.",
     "shareThoughtsButton": "שתף את מחשבותיך",
     "useCase": {
-      "label": "עבור אילו שימושים אתם נעזרים ב-PocketPal AI?",
+      "label": "עבור אילו שימושים אתם נעזרים ב-PocketWisdom?",
       "placeholder": "למשל: סיכום טקסטים, משחקי תפקידים וכו'."
     },
     "featureRequests": {
@@ -576,7 +565,7 @@
       "placeholder": "שתף בכל מחשבה נוספת שעשויה להיות לך."
     },
     "usageFrequency": {
-      "label": "באיזו תדירות אתה משתמש ב-PocketPal AI? (אופציונלי)",
+      "label": "באיזו תדירות אתה משתמש ב-PocketWisdom? (אופציונלי)",
       "options": {
         "daily": "יומי",
         "weekly": "שבועי",
@@ -626,7 +615,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "אין מודלים זמינים",
-      "noModelsDescription": "הורד מודל כדי להתחיל לשוחח בצ'אט עם PocketPal",
+      "noModelsDescription": "הורד מודל כדי להתחיל לשוחח בצ'אט עם PocketWisdom",
       "noModelsButton": "הורד מודל",
       "activateModelTitle": "טען מודל כדי להתחיל",
       "activateModelDescription": "בחר את המודל והורד אותו. לאחר ההורדה, הקש על \"טען\" ליד המודל והתחל לשוחח בצ'אט.",
@@ -679,7 +668,7 @@
     },
     "modelErrorReportSheet": {
       "title": "דיווח בעיית טעינת מודל",
-      "privacyNote": "עזור לנו לשפר את PocketPal על ידי שיתוף פרטים על שגיאה זו. סקור למטה מה ישותף - תוכל לבטל את הסימון של כל פריט שאתה מעדיף לא לכלול.",
+      "privacyNote": "עזור לנו לשפר את PocketWisdom על ידי שיתוף פרטים על שגיאה זו. סקור למטה מה ישותף - תוכל לבטל את הסימון של כל פריט שאתה מעדיף לא לכלול.",
       "errorMessage": "הודעת שגיאה",
       "modelInfo": "מידע על המודל",
       "modelName": "שם",
@@ -697,7 +686,7 @@
       "submit": "שלח דיווח",
       "success": {
         "title": "דיווח נשלח",
-        "message": "תודה שעזרת לנו לשפר את PocketPal. הדיווח שלך יעזור לנו לתקן את הבעיה הזו."
+        "message": "תודה שעזרת לנו לשפר את PocketWisdom. הדיווח שלך יעזור לנו לתקן את הבעיה הזו."
       },
       "error": {
         "title": "דיווח נכשל",
@@ -1090,11 +1079,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "ה-Pals שלי (מקומי)",
-      "myLibrary": "הספרייה שלי (palshub.ai)",
-      "discoverPals": "גלו את ה-Pals (palshub.ai)"
-    },
     "systemPrompt": "הנחיית מערכת",
     "videoAnalysis": "ניתוח וידאו",
     "videoAnalysisDescription": "זהו סייען AI מבוסס וידאו המספק פרשנות בזמן אמת על שידורי וידאו ממצלמת המכשיר שלך.",
@@ -1116,14 +1100,10 @@
     "profile": "פרופיל",
     "signIn": "התחברות",
     "addPal": "הוסף Pal",
-    "signInToAccessLibrary": "התחבר כדי לגשת לספרייה שלך מ-palshub.ai",
     "signOut": "התנתקות",
     "signOutConfirmation": "האם אתה בטוח שאתה רוצה להתנתק?",
     "signOutError": "ההתנתקות נכשלה. אנא נסה שוב.",
     "account": "חשבון",
-    "signInToPalsHub": "התחבר ל-PalsHub",
-    "signInDescription": "גש לספרייה שלך, צור Pals פרטיים וסנכרן בין מכשירים",
-    "searchAllPals": "חפש את כל ה-Pals...",
     "deletePalConfirmation": "האם אתה בטוח שברצונך למחוק את \"{{palName}}\"?",
     "filters": {
       "all": "הכל",
@@ -1145,66 +1125,6 @@
       "oldest": "הישן ביותר",
       "rating": "הדירוג הגבוה ביותר",
       "popular": "הכי פופולרי"
-    },
-    "palDetailSheet": {
-      "by": "על ידי",
-      "unknown": "לא ידוע",
-      "rating": "דירוג",
-      "reviews": "ביקורות",
-      "created": "נוצר",
-      "description": "תאור",
-      "noDescriptionAvailable": "אין תיאור זמין.",
-      "categories": "קטגוריות",
-      "tags": "תגיות",
-      "systemPrompt": "הנחיית מערכת",
-      "downloaded": "הורדו",
-      "success": "הצליח",
-      "palAddedToCollection": "Pal נוסף לאוסף שלך!",
-      "error": "שגיאה",
-      "failedToLoadDetails": "טעינת פרטי ה-Pal נכשלה",
-      "failedToDownload": "הורדת Pal נכשלה",
-      "notAvailable": "N/A"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "פתח",
-      "install": "התקן",
-      "pending": "בהמתנה",
-      "unlocking": "פותח נעילה",
-      "retry": "נסה שוב",
-      "supportCode": "קוד תמיכה: {{code}}",
-      "noLongerAvailable": "Pal זה אינו זמין יותר. אפשר {{refundLink}}.",
-      "refundLink": "בקש החזר כספי מ-Apple",
-      "notCompleted": "לא ניתן היה להשלים את הרכישה הזו. Google תשיב לך את הכסף.",
-      "withdrawnRefunding": "Pal זה הוסר מהמכירה. פנה לתמיכה לקבלת החזר כספי.",
-      "invalid": "לא הצלחנו לאמת את הרכישה הזו.",
-      "heldInvalid": "לא הצלחנו לשחרר את הרכישה הזו. פנה לתמיכה עם הקוד הזה.",
-      "recommendedModel": "מודל מומלץ",
-      "sampleExchange": "שיחה לדוגמה",
-      "signInLine": "כבר יש לך? התחבר",
-      "licenseNotice": "אתה רוכש רישיון שימוש ב-Pal הזה.",
-      "termsOfSale": "תנאי המכירה",
-      "appleMediaTerms": "תנאי השימוש של Apple Media Services",
-      "linkPrompt": "התחבר כדי להשתמש בו גם במכשירים האחרים שלך",
-      "linkSignIn": "התחברות",
-      "dismiss": "לא עכשיו",
-      "linkConflict": "הרכישות האלה מקושרות לחשבון אחר.",
-      "restorePurchases": "שחזור רכישות",
-      "badgePending": "בהמתנה",
-      "badgeUnlocking": "פותח נעילה",
-      "badgeUpdate": "עדכון זמין",
-      "updatePrompt": "גרסה חדשה מהיוצר זמינה.",
-      "updatePromptWithNote": "גרסה חדשה מהיוצר זמינה: {{note}}.",
-      "updateButton": "עדכן",
-      "updateConfirmText": "הפעולה תחליף את העריכות שלך בחלקים שהיוצר שינה.",
-      "updateConfirm": "עדכן",
-      "updateCancel": "ביטול",
-      "modelStep": {
-        "download": "הורדה · {{size}}",
-        "startChat": "פתח צ'אט",
-        "needsMemory": "Pal זה דורש מכשיר עם {{size}} זיכרון לפחות עבור המודל הקטן ביותר שלו.",
-        "noModelFits": "למכשיר הזה אין מספיק זיכרון עבור Pal זה."
-      }
     }
   },
   "validation": {
@@ -1219,7 +1139,7 @@
   },
   "camera": {
     "permissionTitle": "נדרשת הרשאת מצלמה",
-    "permissionMessage": "PocketPal זקוק לגישה למצלמה כדי לנתח תמונות",
+    "permissionMessage": "PocketWisdom זקוק לגישה למצלמה כדי לנתח תמונות",
     "requestingPermission": "מבקש הרשאת מצלמה...",
     "noDevice": "לא נמצאה מצלמה במכשיר",
     "errorTitle": "שגיאת מצלמה",
@@ -1233,7 +1153,7 @@
   },
   "video": {
     "permissionTitle": "נדרשת הרשאת מצלמה",
-    "permissionMessage": "PocketPal זקוק לגישה למצלמה לצורך ניתוח וידאו",
+    "permissionMessage": "PocketWisdom זקוק לגישה למצלמה לצורך ניתוח וידאו",
     "requestingPermission": "מבקש הרשאת מצלמה...",
     "noDevice": "לא נמצאה מצלמה במכשיר",
     "errorTitle": "שגיאת מצלמה",
@@ -1586,14 +1506,14 @@
     "skip": "דלג",
     "skipForNow": "דלג בינתיים",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "הכירו את ה-pals שלכם.",
       "titleAccent": "pals.",
       "body": "חברים קטנים וחכמים שגרים בתוך הטלפון שלכם.\nבואו נסדר לכם הכל - זה ייקח רק רגע.",
       "cta": "סיור קצר",
-      "eyebrow": "ברוכים הבאים ל-PocketPal"
+      "eyebrow": "ברוכים הבאים ל-PocketWisdom"
     },
     "screen2": {
       "title": "בכל זמן,\nבכל מקום.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "הקלט הקולי צריך זיכרון נוסף לצד מודל הצ'אט הזה. זה עלול להיות איטי מאוד, או שהאפליקציה עלולה להיסגר.",
     "memoryAlertTryAnyway": "נסה בכל זאת"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "קח את ה-AI המקומי צעד קדימה.",
-    "subline": "Plus משאיר את PocketPal חינמי ובקוד פתוח. התכונות הנוספות הן התודה שלנו.",
-    "unsupportedSubline": "תכונות Plus עדיין לא פועלות בטלפון הזה. אתה עדיין יכול לתמוך ב-PocketPal.",
-    "thanksHeadline": "תודה שאתה עוזר ל-PocketPal להמשיך.",
-    "thanksSubline": "Plus פעיל במכשיר הזה.",
-    "features": {
-      "handsFreeVoice": "שיחה קולית ללא ידיים",
-      "localApiServer": "שרת API מקומי"
-    },
-    "ready": "מוכן",
-    "needsRam": "נדרש {{gb}} GB RAM",
-    "comingSoon": "בקרוב",
-    "speedLine": "המהירות תלויה בטלפון ובמודל שלך.",
-    "inDevelopment": "תכונות בפיתוח עשויות להשתנות או לא להגיע לגרסה סופית.",
-    "priceCaption": "שלם כמה שתרצה. אותן תכונות בכל מחיר.",
-    "buyError": "הרכישה לא הושלמה. נסה שוב.",
-    "getPlus": "קבל את Plus · {{price}}",
-    "getPlusAnyway": "קבל את Plus בכל זאת · {{price}}",
-    "loading": "טוען",
-    "pending": "בהמתנה",
-    "pendingTitle": "ממתינים לאישור התשלום מהחנות.",
-    "pendingBody": "ברגע שהתשלום יאושר, Plus ייפתח אוטומטית. אפשר לסגור את המסך הזה.",
-    "unavailableTitle": "רכישות לא זמינות כרגע.",
-    "unavailableBody": "לא הצלחנו להתחבר לחנות. נסה שוב מאוחר יותר, או שחזר רכישה קודמת.",
-    "done": "סיום",
-    "oneTimePurchase": "רכישה חד-פעמית",
-    "restore": "שחזור רכישה",
-    "openSource": "קוד פתוח ↗",
-    "licence": "רכישה חד-פעמית של רישיון לשימוש ב-Plus.",
-    "terms": "תנאים",
-    "appleMediaTerms": "תנאי השימוש של Apple Media Services",
-    "noPurchaseFound": "לא נמצאה רכישה של Plus.",
-    "restoreFailed": "לא הצלחנו להתחבר לחנות. נסה שוב.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "מופעל",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}, {{second}}",
-      "subtitleMore": "{{first}}, {{second}} ועוד"
-    },
-    "optIn": "כבוי",
-    "optInNote": "כבוי בטלפון הזה. אם יש לך אומץ, אפשר להפעיל בהגדרות.",
-    "offInSettingsNote": "כבוי בהגדרות.",
-    "chatStaysFree": "Plus הוא אופציונלי. הצ'אט נשאר חינמי.",
-    "chooseAmount": "בחר סכום"
-  },
   "voiceMode": {
     "settingTitle": "שיחה קולית ללא ידיים",
     "settingDescription": "דבר עם המודל בצ'אט ושמע את תשובותיו.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "המשך בכל זאת",
     "chooseSmallerModelCta": "בחר מודל קטן יותר",
     "startLabel": "הפעל מצב קולי",
-    "startLockedLabel": "שיחה קולית ללא ידיים, PocketPal Plus",
+    "startLockedLabel": "שיחה קולית ללא ידיים, PocketWisdom Plus",
     "startLockedHint": "נפתחת תצוגה מקדימה קצרה. הקלדה והכתבה נשארות חינמיות.",
     "teaserTitle": "שיחה קולית היא תכונת Plus",
     "teaserBody": "דבר בלי ידיים. התשובה נשמעת בקול.",

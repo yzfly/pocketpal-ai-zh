@@ -13,7 +13,7 @@
  * Coverage:
  *   - Legacy `theme.spacing.default === 16` (= spacing.m).
  *   - `theme.borders.{inputBorderRadius, messageBorderRadius, default}`
- *     match today's hard-coded values (16 / 15 / 12).
+ *     match the 口袋AI values (10 / 12 / 8).
  *   - `theme.insets.{messageInsetsHorizontal, messageInsetsVertical}`
  *     match today's hard-coded values (20 / 10).
  *   - MD3 typescale keys are present on `theme.fonts.*` and resolve to
@@ -57,11 +57,11 @@ describe('Theme builder — legacy surface preservation', () => {
   });
 
   describe('borders', () => {
-    it("matches today's pinned values (16 / 15 / 12)", () => {
+    it('matches the pinned values (10 / 12 / 8)', () => {
       expect(lightTheme.borders).toEqual({
-        inputBorderRadius: 16,
-        messageBorderRadius: 15,
-        default: 12,
+        inputBorderRadius: 10,
+        messageBorderRadius: 12,
+        default: 8,
       });
     });
 

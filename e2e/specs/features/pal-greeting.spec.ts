@@ -44,7 +44,7 @@ const GREETING_TEXT = 'Hi from a friendly pal';
 const SUGGESTED_PROMPT = 'Send a test message';
 
 const getAppBundleId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
+  (driver as any).isAndroid ? 'com.pocketwisdom.e2e' : 'ai.pocketpal';
 
 describe('Pal greeting editor round-trip', () => {
   let chatPage: ChatPage;

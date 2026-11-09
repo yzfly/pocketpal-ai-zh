@@ -11,7 +11,7 @@
 	-->
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)ai.pocketpal</string>
+		<string>$(AppIdentifierPrefix)com.pocketwisdom</string>
 	</array>
 
 	<!--

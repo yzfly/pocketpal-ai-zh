@@ -29,13 +29,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={false}
     />
   </View>
@@ -71,13 +71,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={true}
     />
   </View>
@@ -113,13 +113,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={false}
     />
   </View>
@@ -155,13 +155,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={true}
     />
   </View>
@@ -197,13 +197,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={false}
     />
   </View>
@@ -239,13 +239,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={true}
     />
   </View>
@@ -281,13 +281,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={false}
     />
   </View>
@@ -323,13 +323,13 @@ exports[`Switch — snapshot matrix baseline (variant x size x {default,disabled
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={true}
     />
   </View>
@@ -365,13 +365,13 @@ exports[`Switch — snapshot matrix non-Latin font-fallback canary (canaryVarian
       onChange={[Function]}
       onResponderTerminationRequest={[Function]}
       onStartShouldSetResponder={[Function]}
-      onTintColor="#333333"
+      onTintColor="#000000"
       style={
         {
           "alignSelf": "flex-start",
         }
       }
-      tintColor="#333333"
+      tintColor="#000000"
       value={false}
     />
   </View>

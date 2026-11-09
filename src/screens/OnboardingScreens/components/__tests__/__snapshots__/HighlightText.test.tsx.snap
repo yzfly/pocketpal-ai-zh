@@ -27,7 +27,7 @@ exports[`HighlightText ignores empty phrase entries (defensive) 1`] = `
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 16,
             "fontWeight": "400",
@@ -39,8 +39,8 @@ exports[`HighlightText ignores empty phrase entries (defensive) 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#FCE7CF",
-              "color": "#111111",
+              "backgroundColor": "#F2F2F2",
+              "color": "#000000",
             }
           }
         >
@@ -82,7 +82,7 @@ exports[`HighlightText renders the body plain when no phrase matches 1`] = `
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 16,
             "fontWeight": "400",
@@ -127,7 +127,7 @@ exports[`HighlightText wraps a single matching phrase in a pill segment 1`] = `
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 16,
             "fontWeight": "400",
@@ -142,8 +142,8 @@ exports[`HighlightText wraps a single matching phrase in a pill segment 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#FCE7CF",
-              "color": "#111111",
+              "backgroundColor": "#F2F2F2",
+              "color": "#000000",
             }
           }
         >
@@ -185,7 +185,7 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 16,
             "fontWeight": "400",
@@ -197,8 +197,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#FCE7CF",
-              "color": "#111111",
+              "backgroundColor": "#F2F2F2",
+              "color": "#000000",
             }
           }
         >
@@ -210,8 +210,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#FCE7CF",
-              "color": "#111111",
+              "backgroundColor": "#F2F2F2",
+              "color": "#000000",
             }
           }
         >
@@ -223,8 +223,8 @@ exports[`HighlightText wraps multiple distinct phrases in separate pills 1`] = `
         <Text
           style={
             {
-              "backgroundColor": "#FCE7CF",
-              "color": "#111111",
+              "backgroundColor": "#F2F2F2",
+              "color": "#000000",
             }
           }
         >

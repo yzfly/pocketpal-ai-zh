@@ -5,7 +5,7 @@
  * release a neural engine so memory can be sampled around each step. Mirrors
  * the platform split in memory.ts:
  * - Android: TextInput setValue (onChangeText fires reliably)
- * - iOS: deep link pocketpal://tts?cmd=...
+ * - iOS: deep link pocketwisdom://tts?cmd=...
  *
  * Each command is async and may be long-running (Supertonic download is
  * ~380 MB), so completion is awaited by polling a status file the app writes:
@@ -44,7 +44,7 @@ async function sendCommand(command: string): Promise<void> {
   } else {
     const encoded = encodeURIComponent(command);
     await driver.execute('mobile: deepLink', {
-      url: `pocketpal://tts?cmd=${encoded}`,
+      url: `pocketwisdom://tts?cmd=${encoded}`,
       bundleId: IOS_BUNDLE_ID,
     });
   }

@@ -5,10 +5,8 @@ import {
   resolvePalForTopic,
 } from '../onboardingPals';
 import {TOPIC_KEYS} from '../types';
-import {
-  chineseExtraCandidates,
-  chineseSystemPromptSuffix,
-} from '../../chineseModelPresets';
+import {chineseExtraCandidates} from '../../chineseModelPresets';
+import {chinesePals} from '../../chinesePals';
 
 const ID_PATTERN = /^[^/]+\/[^/]+\/[^/]+\.gguf$/;
 
@@ -97,11 +95,12 @@ describe('onboardingPals', () => {
     );
 
     it.each(ONBOARDING_PALS.map(p => [p.key, p] as const))(
-      'pal %s 三档按体积递增，且系统提示词带中文回答约定',
+      'pal %s 三档按体积递增，且名称与提示词使用中文版',
       (_key, pal) => {
         const sizes = pal.models.map(m => m.sizeBytes);
         expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
-        expect(pal.systemPrompt.endsWith(chineseSystemPromptSuffix)).toBe(true);
+        expect(pal.name).toBe(chinesePals[pal.key].name);
+        expect(pal.systemPrompt).toBe(chinesePals[pal.key].systemPrompt);
       },
     );
   });

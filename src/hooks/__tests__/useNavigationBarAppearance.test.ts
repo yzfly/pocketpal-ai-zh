@@ -116,7 +116,7 @@ describe('navigation bar appearance writer', () => {
     const kotlin = readCode(
       path.join(
         ROOT,
-        'android/app/src/main/java/com/pocketpalai/NavigationBarModule.kt',
+        'android/app/src/main/java/com/pocketwisdom/NavigationBarModule.kt',
       ),
     );
 

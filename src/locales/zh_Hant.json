@@ -3,14 +3,14 @@
     "screenTitle": "應用程式資訊",
     "description": "一個能把語言模型直接帶到你手機上的應用程式，基於 llama.cpp 與 llama.rn 構建。",
     "supportProject": "支援此專案",
-    "supportProjectDescription": "如果您喜歡使用 PocketPal AI，請考慮透過以下方式支援此專案：",
+    "supportProjectDescription": "如果您喜歡使用口袋AI，請考慮透過以下方式支援此專案：",
     "githubButton": "在 GitHub 上點讚",
     "orBy": "或通過",
     "versionCopiedTitle": "版本已複製",
     "versionCopiedDescription": "版本資訊已複製至剪貼板",
     "privacyPolicy": "隱私權政策",
     "termsOfService": "服務條款",
-    "tourDescription": "重播歡迎畫面，以查看 PocketPal AI 提供的功能。",
+    "tourDescription": "重播歡迎畫面，以查看口袋AI提供的功能。",
     "showIntroButton": "再次顯示介紹",
     "tour": "導覽",
     "openSourceNotices": "開源授權公告",
@@ -293,7 +293,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "無可用模型",
-      "noModelsDescription": "下載模型後即可開始使用 PocketPal 進行聊天",
+      "noModelsDescription": "下載模型後即可開始使用口袋AI進行聊天",
       "noModelsButton": "下載模型",
       "activateModelTitle": "啟動模型以開始",
       "activateModelDescription": "請先選擇模型並下載。下載完成後，點擊模型右側的「載入」按鈕即可開始對話。",
@@ -328,7 +328,7 @@
         "title": "成功",
         "message": "這些設定將應用於所有未來會話"
       },
-      "palSettings": "Pal 設定",
+      "palSettings": "助手設定",
       "settingsSource": "設定來源"
     },
     "modelsHeaderRight": {
@@ -381,7 +381,7 @@
         "appInfo": "應用程式資訊",
         "settings": "設定",
         "benchmark": "基準測試",
-        "pals": "Pal",
+        "pals": "助手",
         "models": "模型",
         "chat": "聊天"
       },
@@ -424,20 +424,20 @@
       },
       "generatingPrompt": {
         "label": "目的與情境",
-        "placeholder": "請描述這個 Pal 的角色、目的或情境…"
+        "placeholder": "請描述這個助手的角色、目的或情境…"
       },
       "generationBusy": "回覆仍在執行中。請在完成後再試一次。"
     },
     "chatPalModelPickerSheet": {
-      "palsTab": "Pal",
+      "palsTab": "助手",
       "modelsTab": "模型",
-      "noPal": "沒 Pal",
+      "noPal": "沒助手",
       "disablePal": "停用活躍 pal",
       "noDescription": "未提供描述",
       "assistantType": "助手",
       "roleplayType": "角色扮演",
       "confirmationTitle": "確認",
-      "modelSwitchMessage": "此 pal 的預設模型不同 ({{modelName}})。您是否想切換到 Pal 的預設模型？",
+      "modelSwitchMessage": "此 pal 的預設模型不同 ({{modelName}})。您是否想切換到助手的預設模型？",
       "keepButton": "保持",
       "switchButton": "切換",
       "videoType": "影片"
@@ -475,10 +475,10 @@
     },
     "assistantPalSheet": {
       "title": {
-        "create": "新建助理 Pal",
-        "edit": "編輯助理 Pal"
+        "create": "新建助理助手",
+        "edit": "編輯助理助手"
       },
-      "palName": "Pal 名稱",
+      "palName": "助手名稱",
       "palNamePlaceholder": "名稱",
       "defaultModel": "預設模型",
       "defaultModelPlaceholder": "選擇模型",
@@ -499,10 +499,10 @@
     },
     "roleplayPalSheet": {
       "title": {
-        "create": "新建角色扮演 Pal",
-        "edit": "編輯角色扮演 Pal"
+        "create": "新建角色扮演助手",
+        "edit": "編輯角色扮演助手"
       },
-      "palName": "Pal 名稱",
+      "palName": "助手名稱",
       "palNamePlaceholder": "名稱",
       "defaultModel": "預設模型",
       "defaultModelPlaceholder": "選擇模型",
@@ -559,7 +559,7 @@
       "modelSize": "大小",
       "errorMessage": "錯誤訊息",
       "title": "報告模型載入問題",
-      "privacyNote": "請分享有關此錯誤的細節，以幫助我們改進 PocketPal。以下列出將會分享的內容 - 您可以選擇不包含任何您不希望包含的項目。",
+      "privacyNote": "請分享有關此錯誤的細節，以幫助我們改進口袋AI。以下列出將會分享的內容 - 您可以選擇不包含任何您不希望包含的項目。",
       "contextParams": "上下文參數",
       "deviceInfo": "裝置資訊",
       "deviceModel": "裝置",
@@ -570,7 +570,7 @@
       "submit": "提交報告",
       "success": {
         "title": "報告已提交",
-        "message": "感謝您協助我們改進 PocketPal。您的報告將有助於我們解決此問題。"
+        "message": "感謝您協助我們改進口袋AI。您的報告將有助於我們解決此問題。"
       },
       "error": {
         "title": "報告失敗",
@@ -580,7 +580,7 @@
     "palGenerationSettingsSheet": {
       "ok": "確定",
       "error": "錯誤",
-      "clearPalSettings": "清除 Pal 設定",
+      "clearPalSettings": "清除助手設定",
       "title": "生成設定 - {{palName}}",
       "invalidValues": "無效值",
       "invalidNumericValuesMessage": "必須是有效數字",
@@ -648,9 +648,9 @@
     },
     "palSheet": {
       "title": {
-        "edit": "編輯 Pal",
-        "newPal": "新建 Pal",
-        "newVideoPal": "新建影片 Pal"
+        "edit": "編輯助手",
+        "newPal": "新建助手",
+        "newVideoPal": "新建影片助手"
       },
       "description": "描述",
       "descriptionPlaceholder": "輸入您 pal 的簡短描述",
@@ -697,14 +697,14 @@
       }
     },
     "lookiePalSheet": {
-      "palName": "Pal 名稱",
+      "palName": "助手名稱",
       "visionModel": "視覺模型",
       "visionModelPlaceholder": "選擇視覺模型",
       "title": {
-        "create": "新建 Lookie Pal",
-        "edit": "編輯 Lookie Pal"
+        "create": "新建 看图助手",
+        "edit": "編輯 看图助手"
       },
-      "palNamePlaceholder": "輸入您 Lookie Pal 的名稱",
+      "palNamePlaceholder": "輸入您 看图助手的名稱",
       "requiredModelsSection": "所需模型",
       "captureInterval": "捕捉間隔",
       "captureIntervalHelper": "自動捕捉之間的時間（毫秒）",
@@ -755,7 +755,7 @@
       }
     },
     "palHeaderRight": {
-      "exportAllPals": "匯出所有 Pal",
+      "exportAllPals": "匯出所有助手",
       "importPals": "匯入 pal",
       "importSuccess": "已成功匯入 {{count}} 個 pal。",
       "importError": "匯入 pal 失敗。請檢查檔案格式。"
@@ -781,10 +781,10 @@
   },
   "feedback": {
     "title": "送出反饋",
-    "description": "您的意見很重要！請告訴我們 PocketPal AI 如何幫助您，以及我們能做些什麼讓它變得更實用。",
+    "description": "您的意見很重要！請告訴我們口袋AI如何幫助您，以及我們能做些什麼讓它變得更實用。",
     "shareThoughtsButton": "分享您的想法",
     "useCase": {
-      "label": "您正在使用 PocketPal AI 做什麼？",
+      "label": "您正在使用口袋AI做什麼？",
       "placeholder": "例如：摘要、角色扮演等。"
     },
     "featureRequests": {
@@ -796,7 +796,7 @@
       "placeholder": "分享您可能有的其他想法。"
     },
     "usageFrequency": {
-      "label": "您多久使用一次 PocketPal AI？（可選）",
+      "label": "您多久使用一次口袋AI？（可選）",
       "options": {
         "daily": "每日",
         "weekly": "每週",
@@ -1080,7 +1080,7 @@
   "screenTitles": {
     "chat": "聊天",
     "models": "模型",
-    "pals": "Pal (實驗)",
+    "pals": "助手(實驗)",
     "benchmark": "基準測試",
     "settings": "設定",
     "appInfo": "應用程式資訊",
@@ -1169,10 +1169,10 @@
     "useHfTokenDescription": "請啟用此 Token 以用於 API 請求。如果該 Token 引發了身份驗證問題，則應停用它。",
     "cacheStorageTitle": "快取與儲存",
     "clearPalCaches": "清除捷徑快取",
-    "clearPalCachesDescription": "清除用來加速捷徑的快取資料。這不會影響您的 Pal 或聊天記錄。",
+    "clearPalCachesDescription": "清除用來加速捷徑的快取資料。這不會影響您的助手或聊天記錄。",
     "clearCachesButton": "清除快取",
     "clearCachesConfirmTitle": "要清除捷徑快取嗎？",
-    "clearCachesConfirmMessage": "這將清除所有快取會話資料（{{fileCount}} 個檔案，大小為 {{size}}）。清除後第一次使用捷徑可能會變慢。這不會影響您的 Pal 或聊天記錄。",
+    "clearCachesConfirmMessage": "這將清除所有快取會話資料（{{fileCount}} 個檔案，大小為 {{size}}）。清除後第一次使用捷徑可能會變慢。這不會影響您的助手或聊天記錄。",
     "clearCachesSuccess": "成功清除 {{count}} 個快取檔案。",
     "clearCachesError": "清除快取失敗。請再試一次。",
     "noCachesToClear": "沒有需要清除的快取。",
@@ -1219,7 +1219,7 @@
     "serverTypeHelp": "自動偵測；若有誤請修改。",
     "internetSearch": {
       "title": "網路搜尋",
-      "description": "讓 Pals 用自己的工具搜尋網路。請自備 API 金鑰 — PocketPal 絕不會保存你的金鑰，也不會轉送你的查詢。",
+      "description": "讓助手用自己的工具搜尋網路。請自備 API 金鑰 — 口袋AI絕不會保存你的金鑰，也不會轉送你的查詢。",
       "providerLabel": "搜尋服務供應商",
       "providerGated": "即將推出",
       "keyLabel": "API 金鑰",
@@ -1235,7 +1235,7 @@
       "resultCountLabel": "每次搜尋的結果數",
       "resultCountDescription": "結果越少，模型的上下文就能保留更多空間。",
       "consentTitle": "搜尋會離開你的裝置",
-      "consentDescription": "當 Pal 搜尋網路時，你的查詢會透過網際網路傳送給所選的供應商。當 Pal 讀取網頁時，若所選供應商沒有內建的閱讀器，網址與頁面內容可能會改為傳送給預設的閱讀器服務（r.jina.ai）。金鑰與查詢絕不會傳送給 PocketPal。",
+      "consentDescription": "當助手搜尋網路時，你的查詢會透過網際網路傳送給所選的供應商。當助手讀取網頁時，若所選供應商沒有內建的閱讀器，網址與頁面內容可能會改為傳送給預設的閱讀器服務（r.jina.ai）。金鑰與查詢絕不會傳送給口袋AI。",
       "consentAccept": "我了解",
       "consentRequired": "請接受上方的說明，以設定金鑰並啟用搜尋。",
       "consentGivenTitle": "網路搜尋已啟用",
@@ -1289,15 +1289,31 @@
       "failureWithServerWords": "{{label}}\n\n“{{message}}”"
     },
     "account": {
-      "title": "帳戶",
-      "deleteAccount": "刪除帳戶",
-      "confirmTitle": "刪除帳戶？",
-      "confirmMessage": "這將永久刪除您的 PalsHub 帳戶及其庫。透過 App Store 或 Google Play 購買的 Pal，仍可透過您的商店帳號在此裝置上恢復。出於法律考量，購買記錄將以匿名方式保留。",
-      "confirmWithoutApple": "無法與 Apple 確認。仍要刪除您的帳戶嗎？",
-      "deleted": "您的帳戶已刪除。",
-      "signInAgain": "請重新登入",
-      "creatorSupport": "創作者帳號將由我們的支援團隊刪除：{{contact}}",
-      "failed": "無法刪除，請再試一次"
+      "title": "帳號",
+      "subtitle": "可選。不登入也能完整離線使用。",
+      "signedInAs": "已登入：{{email}}",
+      "signIn": "登入",
+      "signUp": "註冊",
+      "signOut": "登出",
+      "signOutConfirm": "確定登出目前帳號？",
+      "email": "電子郵件",
+      "password": "密碼",
+      "passwordHint": "至少 8 位，包含字母和數字",
+      "code": "郵件驗證碼",
+      "sendCode": "傳送驗證碼",
+      "resendCode": "重新傳送（{{seconds}} 秒）",
+      "codeSent": "驗證碼已傳送到 {{email}}",
+      "captcha": "圖形驗證碼",
+      "captchaHint": "輸入圖中的字元",
+      "captchaRefresh": "換一張",
+      "captchaConfirm": "確認",
+      "toSignUp": "還沒有帳號？去註冊",
+      "toSignIn": "已有帳號？去登入",
+      "invalidEmail": "請輸入正確的電子郵件地址",
+      "weakPassword": "密碼至少 8 位，需包含字母和數字",
+      "notConfigured": "目前版本尚未開通帳號功能。",
+      "signedIn": "登入成功",
+      "signedUp": "註冊成功"
     },
     "useHfMirror": "HF 鏡像加速",
     "useHfMirrorDescription": "透過 hf-mirror.com 鏡像下載模型（適用於無法直連 huggingface.co 的網路）。開啟期間 HF 權杖不會發給鏡像；如需用權杖下載受限模型，請先關閉鏡像。"
@@ -1344,7 +1360,7 @@
     "stopCamera": "停止相機",
     "errorTitle": "相機錯誤",
     "permissionTitle": "需要相機權限",
-    "permissionMessage": "PocketPal 需要使用相機，以便進行影片分析",
+    "permissionMessage": "口袋AI需要使用相機，以便進行影片分析",
     "requestingPermission": "請求相機權限中...",
     "noDevice": "未偵測到相機裝置",
     "errorMessage": "相機發生錯誤",
@@ -1355,7 +1371,7 @@
     "captureIntervalUnit": "毫秒",
     "liveCommentary": "即時解說",
     "emptyPlaceholder": {
-      "title": "歡迎來到 Lookie",
+      "title": "歡迎來到 看圖助手",
       "subtitle": "私密本地即時影片分析",
       "experimentalNotice": "這是一個實驗性功能。準確度取決於所選模型，速度取決於您的設備規格，並且某些模型可能無法正常運作。",
       "howToUse": "如何使用：",
@@ -1371,7 +1387,7 @@
     "startCamera": "啟動相機",
     "stopCamera": "停止相機",
     "permissionTitle": "需要相機權限",
-    "permissionMessage": "PocketPal 需要存取相機，以分析影像",
+    "permissionMessage": "口袋AI需要存取相機，以分析影像",
     "requestingPermission": "請求相機權限中...",
     "noDevice": "未偵測到相機裝置",
     "errorMessage": "拍攝照片時發生錯誤",
@@ -1380,27 +1396,8 @@
     "promptPlaceholder": "你想知道這張圖片的什麼內容？"
   },
   "palsScreen": {
-    "palDetailSheet": {
-      "downloaded": "已下載",
-      "success": "成功",
-      "error": "錯誤",
-      "by": "由",
-      "unknown": "未知",
-      "rating": "評級",
-      "reviews": "評論",
-      "created": "新建",
-      "description": "描述",
-      "noDescriptionAvailable": "暫無描述。",
-      "categories": "類別",
-      "tags": "標籤",
-      "systemPrompt": "系統提示詞",
-      "palAddedToCollection": "Pal 已新增至您的收藏！",
-      "failedToLoadDetails": "載入 pal 詳情失敗",
-      "failedToDownload": "下載 pal 失敗",
-      "notAvailable": "不適用"
-    },
     "filters": {
-      "myPals": "我的 Pal",
+      "myPals": "我的助手",
       "all": "全部",
       "video": "影片",
       "local": "本地",
@@ -1408,14 +1405,9 @@
       "premium": "高級"
     },
     "video": "影片",
-    "addPal": "新增 Pal",
+    "addPal": "新增助手",
     "systemPrompt": "系統提示詞",
-    "deletePal": "刪除 Pal",
-    "sectionTitles": {
-      "myPalsLocal": "我的 Pal（本地）",
-      "myLibrary": "我的資料庫（palshub.ai）",
-      "discoverPals": "探索 Pal（palshub.ai）"
-    },
+    "deletePal": "刪除助手",
     "videoAnalysis": "影片分析",
     "videoAnalysisDescription": "這是一個基於影片的 AI 助理，可從您裝置相機的影片流中提供即時評論。",
     "captureInterval": "捕捉間隔",
@@ -1433,14 +1425,10 @@
     "search": "搜尋",
     "profile": "個人資料",
     "signIn": "登入",
-    "signInToAccessLibrary": "登入以從 palshub.ai 存取您的資料庫",
     "signOut": "登出",
     "signOutConfirmation": "您確定要登出嗎？",
     "signOutError": "登出失敗。請再試一次。",
     "account": "帳戶",
-    "signInToPalsHub": "登入 PalsHub",
-    "signInDescription": "存取您的資料庫、建立私人 Pal 並在裝置間同步",
-    "searchAllPals": "搜尋所有 Pal...",
     "deletePalConfirmation": "您確定要刪除 \"{{palName}}\" 嗎？",
     "labels": {
       "free": "免費",
@@ -1455,47 +1443,7 @@
       "rating": "最高評級",
       "popular": "最受歡迎"
     },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "開啟",
-      "install": "安裝",
-      "pending": "待處理",
-      "unlocking": "解鎖中",
-      "retry": "重試",
-      "supportCode": "客服代碼：{{code}}",
-      "noLongerAvailable": "此 Pal 已不再可用。您可以 {{refundLink}}。",
-      "refundLink": "向 Apple 申請退款",
-      "notCompleted": "此筆購買無法完成。Google 將會為您退款。",
-      "withdrawnRefunding": "此 Pal 已下架。請聯絡客服申請退款。",
-      "invalid": "無法驗證此筆購買。",
-      "heldInvalid": "我們無法解鎖此項購買。請提供此代碼給客服。",
-      "recommendedModel": "推薦模型",
-      "sampleExchange": "範例對話",
-      "signInLine": "已擁有？登入",
-      "licenseNotice": "您正在購買此 Pal 的使用授權。",
-      "termsOfSale": "銷售條款",
-      "appleMediaTerms": "Apple 媒體服務條款",
-      "linkPrompt": "登入以在您的其他裝置上使用",
-      "linkSignIn": "登入",
-      "dismiss": "現在不用",
-      "linkConflict": "這些購買項目已連結至另一個帳號。",
-      "restorePurchases": "恢復購買項目",
-      "badgePending": "待處理",
-      "badgeUnlocking": "解鎖中",
-      "badgeUpdate": "有可用更新",
-      "updatePrompt": "創作者發布了新版本。",
-      "updatePromptWithNote": "創作者發布了新版本：{{note}}。",
-      "updateButton": "更新",
-      "updateConfirmText": "此操作將取代您對創作者修改部分的編輯內容。",
-      "updateConfirm": "更新",
-      "updateCancel": "取消",
-      "modelStep": {
-        "download": "下載 · {{size}}",
-        "startChat": "開始對話",
-        "needsMemory": "此 Pal 需要至少 {{size}} 的記憶體才能執行其最小模型。",
-        "noModelFits": "此裝置的記憶體不足以執行此 Pal。"
-      }
-    }
+    "emptyState": "還沒有助手。\n點下方 + 新增一個。"
   },
   "voiceAndSpeech": {
     "sectionTitle": "語音與朗讀",
@@ -1604,19 +1552,19 @@
       "subtitleTemplate": "{{name}} 透過手機上的小型 AI 模型進行推理 - 請選擇適合的選項。",
       "pal": {
         "pip": {
-          "body": "我們為您找到了完美的 Pal - 一位親切的日常伴侶。它足夠聰明以應對大多數需求，且運作輕巧，適合任何手機使用。"
+          "body": "為您準備了聊天助手 —— 貼心的日常小夥伴。夠聰明，能應付大多數事情；夠輕量，適配大多數手機。"
         },
         "codie": {
-          "body": "認識 Codie — 您的本地配對程式設計師。它能讀取與編寫程式碼，並在不離開手機的情況下解釋各種棘手的細節。"
+          "body": "認識一下程式助手 —— 您本地的結對程式設計夥伴。讀程式、寫程式、講解難點，全程不離開您的手機。"
         },
         "sage": {
-          "body": "Sage 很有耐心且充滿好奇心，會引導您逐步實踐想法。它是您隨身攜帶的學習夥伴。"
+          "body": "學習助手耐心又好奇，會一步步帶您理清思路，是揣在口袋裡的學習搭檔。"
         },
         "echo": {
-          "body": "Echo 是一位多才多藝的角色扮演夥伴 — 它能維持人設、描繪場景，並隨您的故事走向而變幻。"
+          "body": "角色扮演助手多才多藝 —— 始終入戲、描繪場景，跟著您的故事走。"
         },
         "muse": {
-          "body": "Muse 協助您進行創作。它能提供措辭建議、掌握節奏，並維持您的語調。"
+          "body": "寫作助手幫您寫作：提供措辭建議、找準節奏，並保持您獨有的語氣。"
         }
       },
       "cta": "下載 {{name}}",
@@ -1626,14 +1574,14 @@
       "deviceFreeSuffix": "GB 剩餘空間"
     },
     "splash": {
-      "brand": "PocketPal"
+      "brand": "口袋AI"
     },
     "screen1": {
       "title": "認識您的 pal。",
       "titleAccent": "pal。",
       "body": "住在您手機裡的聰明小夥伴。\n讓我們開始設定吧——只需花一點時間即可。",
       "cta": "帶我導覽",
-      "eyebrow": "歡迎來到 PocketPal"
+      "eyebrow": "歡迎來到口袋AI"
     },
     "screen2": {
       "title": "隨時，\n隨地。",
@@ -1646,7 +1594,7 @@
     "screen3": {
       "title": "更小，\n但屬於您。",
       "titleAccent": "更小，",
-      "body": "手機上的 Pal 快速且具備隱私性——但比雲端 AI 更輕量。將它們想像成隨身伴侶，而非無所不知的神諭。",
+      "body": "手機上的助手快速且具備隱私性——但比雲端 AI 更輕量。將它們想像成隨身伴侶，而非無所不知的神諭。",
       "highlight": "快速且保有隱私",
       "cta": "了解",
       "eyebrow": "事先告知"
@@ -1654,14 +1602,14 @@
     "screen4": {
       "title": "任何內容都不會離開您的手機。",
       "titleAccent": "離開",
-      "body": "無需帳號。無需雲端。無需追蹤。您的對話內容仍屬於您。",
-      "highlight": "無需帳號。無需雲端。無需追蹤。",
+      "body": "登入可選。對話不上雲。不做追蹤。您的對話內容仍屬於您。",
+      "highlight": "登入可選。對話不上雲。不做追蹤。",
       "cta": "開始使用",
       "eyebrow": "承諾隱私"
     },
     "screen5": {
-      "title": "您的 Pal 是為了什麼用途？",
-      "body": "選擇您想要討論的主題 - 我們將為您配對一個適合您手機的 Pal。",
+      "title": "您的助手是為了什麼用途？",
+      "body": "選擇您想要討論的主題 - 我們將為您配對一個適合您手機的助手。",
       "topic": {
         "smartchat": "智慧對話",
         "coding": "程式開發",
@@ -1676,7 +1624,7 @@
         "education": "學習、解釋、測驗",
         "roleplay": "角色、場景",
         "creative_writing": "故事、創意、草稿",
-        "else": "稍後可在應用程式中瀏覽所有 Pal"
+        "else": "稍後可在應用程式中瀏覽所有助手"
       }
     }
   },
@@ -1733,54 +1681,6 @@
     "memoryAlertBody": "此聊天模型與語音輸入會額外佔用記憶體。這可能導致運行速度變慢，或導致應用程式關閉。",
     "memoryAlertTryAnyway": "儘管嘗試"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "讓本地 AI 走得更遠。",
-    "subline": "Plus 讓 PocketPal 維持免費與開源。額外的功能是我們的謝意。",
-    "unsupportedSubline": "Plus 功能尚未能在這台手機上執行。您仍可支持 PocketPal。",
-    "thanksHeadline": "謝謝您支持 PocketPal 的發展。",
-    "thanksSubline": "此裝置已解鎖 Plus 功能。",
-    "features": {
-      "handsFreeVoice": "免持語音",
-      "localApiServer": "本地 API 伺服器"
-    },
-    "ready": "可使用",
-    "needsRam": "需要 {{gb}} GB RAM",
-    "comingSoon": "即將推出",
-    "speedLine": "速度取決於您的手機與模型。",
-    "inDevelopment": "開發中的功能可能會變更，也可能不會推出。",
-    "priceCaption": "按您覺得合適的金額支付。任何金額皆可解鎖相同功能。",
-    "buyError": "購買未完成。請再試一次。",
-    "getPlus": "取得 Plus · {{price}}",
-    "getPlusAnyway": "仍要取得 Plus · {{price}}",
-    "loading": "載入中",
-    "pending": "待處理",
-    "pendingTitle": "正在等待商店確認您的付款。",
-    "pendingBody": "付款完成後，Plus 會自動解鎖。您可以關閉此畫面。",
-    "unavailableTitle": "目前無法進行購買。",
-    "unavailableBody": "無法連線到商店。請稍後再試，或恢復先前的購買項目。",
-    "done": "完成",
-    "oneTimePurchase": "一次性購買",
-    "restore": "恢復購買",
-    "openSource": "開放原始碼 ↗",
-    "licence": "一次性購買 Plus 的使用授權。",
-    "terms": "條款",
-    "appleMediaTerms": "Apple 媒體服務條款",
-    "noPurchaseFound": "找不到 Plus 的購買記錄。",
-    "restoreFailed": "無法連線到商店。請再試一次。",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "已解鎖",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}、{{second}}",
-      "subtitleMore": "{{first}}、{{second}} 等"
-    },
-    "optIn": "關閉",
-    "optInNote": "在此手機上處於關閉狀態。如果您夠勇，可以在設定中將其開啟。",
-    "offInSettingsNote": "已在設定中關閉。",
-    "chatStaysFree": "Plus 為選配。對話仍可免費。",
-    "chooseAmount": "選擇金額"
-  },
   "voiceMode": {
     "settingTitle": "免持語音",
     "settingDescription": "透過聊天與模型對話並聆聽其回覆。",
@@ -1830,11 +1730,11 @@
     "continueAnywayCta": "不論如何繼續",
     "chooseSmallerModelCta": "選擇較小的模型",
     "startLabel": "開啟語音模式",
-    "startLockedLabel": "免持語音，PocketPal Plus",
+    "startLockedLabel": "免持語音",
     "startLockedHint": "開啟簡短預覽。打字與語音輸入仍可免費使用。",
-    "teaserTitle": "語音對話 (Plus 功能)",
+    "teaserTitle": "語音對話",
     "teaserBody": "免持對話。它會以語音回答。",
-    "teaserGetPlus": "獲取 Plus",
+    "teaserGetPlus": "開啟",
     "teaserKeepTyping": "持續輸入，免費使用",
     "sttRowModel": "Whisper {{tier}} · {{size}}",
     "memorySttRowModel": "語音辨識 · Whisper {{tier}}",

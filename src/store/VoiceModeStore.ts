@@ -4,7 +4,6 @@ import {makeAutoObservable} from 'mobx';
 import {makePersistable} from 'mobx-persist-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {isPlusUnlocked, openPlus} from '../services/plus/gate';
 import {VoiceEntitlement, voiceModeDeviceSupported} from '../services/voice';
 
 import {modelStore} from './ModelStore';
@@ -110,6 +109,7 @@ export class VoiceModeStore {
 export const voiceModeStore = new VoiceModeStore();
 
 export const voiceEntitlement = new VoiceEntitlement({
-  isUnlocked: () => voiceModeStore.unlockOverride ?? isPlusUnlocked(),
-  openPaywall: ({onUnlocked}) => openPlus({onUnlocked}),
+  // 口袋AI 没有付费墙：语音模式默认解锁（unlockOverride 仅供测试）。
+  isUnlocked: () => voiceModeStore.unlockOverride ?? true,
+  openPaywall: ({onUnlocked}) => onUnlocked?.(),
 });

@@ -7,10 +7,6 @@ import {
   clearMemorySnapshots,
 } from '../../utils/memoryProfile';
 
-jest.mock('../fakeStore', () => ({
-  fakeStore: {run: jest.fn().mockResolvedValue('{}')},
-}));
-
 jest.mock('../../utils/memoryProfile', () => ({
   takeMemorySnapshot: jest.fn().mockResolvedValue(undefined),
   clearMemorySnapshots: jest.fn().mockResolvedValue(undefined),
@@ -20,8 +16,8 @@ jest.mock('../../utils/memoryProfile', () => ({
 // Helper: every DeepLinkParams has url+scheme+host at minimum; tests only
 // care about host + queryParams so we fill the rest with placeholders.
 const makeParams = (overrides: Partial<DeepLinkParams>): DeepLinkParams => ({
-  url: 'pocketpal://placeholder',
-  scheme: 'pocketpal',
+  url: 'pocketwisdom://placeholder',
+  scheme: 'pocketwisdom',
   host: 'memory',
   ...overrides,
 });
@@ -29,16 +25,6 @@ const makeParams = (overrides: Partial<DeepLinkParams>): DeepLinkParams => ({
 describe('dispatchAutomationDeepLink', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('runs a FakeStore command for host=iap', async () => {
-    const {fakeStore} = require('../fakeStore');
-    const handled = await dispatchAutomationDeepLink(
-      makeParams({host: 'iap', queryParams: {cmd: 'next::pending'}}),
-    );
-
-    expect(handled).toBe(true);
-    expect(fakeStore.run).toHaveBeenCalledWith('next::pending');
   });
 
   it('takes a memory snapshot for host=memory + cmd=snap::<label>', async () => {
@@ -113,11 +99,11 @@ describe('dispatchAutomationDeepLink', () => {
   });
 
   describe('bench host', () => {
-    it('navigates to BenchmarkRunner with autostart:false for pocketpal://e2e/benchmark', async () => {
+    it('navigates to BenchmarkRunner with autostart:false for pocketwisdom://e2e/benchmark', async () => {
       const navigate = jest.fn();
       const handled = await dispatchAutomationDeepLink(
         makeParams({
-          url: 'pocketpal://e2e/benchmark',
+          url: 'pocketwisdom://e2e/benchmark',
           host: 'e2e',
         }),
         {navigate},
@@ -130,11 +116,11 @@ describe('dispatchAutomationDeepLink', () => {
       });
     });
 
-    it('navigates with autostart:true for pocketpal://e2e/benchmark?autostart=1', async () => {
+    it('navigates with autostart:true for pocketwisdom://e2e/benchmark?autostart=1', async () => {
       const navigate = jest.fn();
       const handled = await dispatchAutomationDeepLink(
         makeParams({
-          url: 'pocketpal://e2e/benchmark?autostart=1',
+          url: 'pocketwisdom://e2e/benchmark?autostart=1',
           host: 'e2e',
         }),
         {navigate},
@@ -146,11 +132,11 @@ describe('dispatchAutomationDeepLink', () => {
       });
     });
 
-    it('navigates with autostart:false for pocketpal://e2e/benchmark?autostart=0', async () => {
+    it('navigates with autostart:false for pocketwisdom://e2e/benchmark?autostart=0', async () => {
       const navigate = jest.fn();
       const handled = await dispatchAutomationDeepLink(
         makeParams({
-          url: 'pocketpal://e2e/benchmark?autostart=0',
+          url: 'pocketwisdom://e2e/benchmark?autostart=0',
           host: 'e2e',
         }),
         {navigate},
@@ -165,7 +151,7 @@ describe('dispatchAutomationDeepLink', () => {
     it('returns true even when no navigation is supplied (cold-launch path handles nav itself)', async () => {
       const handled = await dispatchAutomationDeepLink(
         makeParams({
-          url: 'pocketpal://e2e/benchmark',
+          url: 'pocketwisdom://e2e/benchmark',
           host: 'e2e',
         }),
       );
@@ -176,7 +162,7 @@ describe('dispatchAutomationDeepLink', () => {
       const navigate = jest.fn();
       const handled = await dispatchAutomationDeepLink(
         makeParams({
-          url: 'pocketpal://e2e/other',
+          url: 'pocketwisdom://e2e/other',
           host: 'e2e',
         }),
         {navigate},

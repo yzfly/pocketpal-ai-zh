@@ -3,18 +3,18 @@ import {isBenchmarkRunnerUrl, parseBenchmarkAutostart} from '../benchmarkRoute';
 describe('benchmarkRoute', () => {
   describe('isBenchmarkRunnerUrl', () => {
     it('matches the bare bench URL', () => {
-      expect(isBenchmarkRunnerUrl('pocketpal://e2e/benchmark')).toBe(true);
+      expect(isBenchmarkRunnerUrl('pocketwisdom://e2e/benchmark')).toBe(true);
     });
 
     it('matches the bench URL with a query string (prefix tolerates query)', () => {
       expect(
-        isBenchmarkRunnerUrl('pocketpal://e2e/benchmark?autostart=1'),
+        isBenchmarkRunnerUrl('pocketwisdom://e2e/benchmark?autostart=1'),
       ).toBe(true);
     });
 
     it('does not match unrelated URLs', () => {
-      expect(isBenchmarkRunnerUrl('pocketpal://chat?palId=foo')).toBe(false);
-      expect(isBenchmarkRunnerUrl('pocketpal://e2e/other')).toBe(false);
+      expect(isBenchmarkRunnerUrl('pocketwisdom://chat?palId=foo')).toBe(false);
+      expect(isBenchmarkRunnerUrl('pocketwisdom://e2e/other')).toBe(false);
     });
 
     it('does not match null / undefined', () => {
@@ -26,62 +26,66 @@ describe('benchmarkRoute', () => {
   describe('parseBenchmarkAutostart', () => {
     it('returns true for autostart=1', () => {
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=1'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=1'),
       ).toBe(true);
     });
 
     it('returns true for autostart=true (case-insensitive)', () => {
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=true'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=true'),
       ).toBe(true);
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=TRUE'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=TRUE'),
       ).toBe(true);
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=True'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=True'),
       ).toBe(true);
     });
 
     it('returns true when autostart sits alongside other query params', () => {
       expect(
         parseBenchmarkAutostart(
-          'pocketpal://e2e/benchmark?foo=bar&autostart=1',
+          'pocketwisdom://e2e/benchmark?foo=bar&autostart=1',
         ),
       ).toBe(true);
     });
 
     it('returns false for autostart=0', () => {
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=0'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=0'),
       ).toBe(false);
     });
 
     it('returns false for autostart=false', () => {
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=false'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=false'),
       ).toBe(false);
     });
 
     it('returns false for an unrecognized value (garbage)', () => {
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=banana'),
+        parseBenchmarkAutostart(
+          'pocketwisdom://e2e/benchmark?autostart=banana',
+        ),
       ).toBe(false);
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart='),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart='),
       ).toBe(false);
       expect(
-        parseBenchmarkAutostart('pocketpal://e2e/benchmark?autostart=11'),
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?autostart=11'),
       ).toBe(false);
     });
 
     it('returns false for the bare URL (no query)', () => {
-      expect(parseBenchmarkAutostart('pocketpal://e2e/benchmark')).toBe(false);
+      expect(parseBenchmarkAutostart('pocketwisdom://e2e/benchmark')).toBe(
+        false,
+      );
     });
 
     it('returns false when the query has no autostart key', () => {
-      expect(parseBenchmarkAutostart('pocketpal://e2e/benchmark?foo=bar')).toBe(
-        false,
-      );
+      expect(
+        parseBenchmarkAutostart('pocketwisdom://e2e/benchmark?foo=bar'),
+      ).toBe(false);
     });
 
     it('returns false for null / undefined / non-string without throwing', () => {
@@ -102,7 +106,7 @@ describe('benchmarkRoute', () => {
       // helper, so an iOS (DeepLinkService) launch and an Android (Linking)
       // launch of the same URL cannot diverge in truthiness. This is the
       // unit-level parity guarantee that the two routing paths share.
-      const url = 'pocketpal://e2e/benchmark?autostart=1';
+      const url = 'pocketwisdom://e2e/benchmark?autostart=1';
       const androidOrigin = parseBenchmarkAutostart(url);
       const iosOrigin = parseBenchmarkAutostart(url);
       expect(androidOrigin).toBe(iosOrigin);

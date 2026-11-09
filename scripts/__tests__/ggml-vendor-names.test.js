@@ -14,7 +14,7 @@ const HEXAGON_HEADER = path.join(VENDORED_GGML, 'include', 'ggml-hexagon.h');
 const WHISPER_CPP = path.join(ROOT, 'node_modules', 'whisper.rn', 'cpp');
 const MAIN_APPLICATION = path.join(
   ROOT,
-  'android/app/src/main/java/com/pocketpalai/MainApplication.kt',
+  'android/app/src/main/java/com/pocketwisdom/MainApplication.kt',
 );
 const APP_DELEGATE = path.join(ROOT, 'ios/PocketPal/AppDelegate.swift');
 const MANIFEST = JSON.parse(

@@ -40,7 +40,6 @@ const EXPECTED_SECTIONS = [
   'downloadBanner',
   'voiceInput',
   'voiceMode',
-  'plus',
 ];
 
 const ALL_LANGUAGES: AvailableLanguage[] = [

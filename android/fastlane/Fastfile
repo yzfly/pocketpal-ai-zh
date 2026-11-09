@@ -58,11 +58,10 @@ platform :android do
     android_dir = File.expand_path('..', Dir.pwd)
     aab = File.join(android_dir, "app/build/outputs/bundle/prodRelease/app-prod-release.aab")
 
-    sh(File.expand_path("../../scripts/verify-plus-gate.sh", Dir.pwd), aab, "--gated")
 
     upload_to_play_store(
       track: "alpha",
-      package_name: "com.pocketpalai",
+      package_name: "com.pocketwisdom",
       # Passed explicitly, and must stay that way. supply otherwise takes the
       # bundle from lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH], which
       # only exists in the process that ran `gradle(task: "bundle")` — a

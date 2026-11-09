@@ -13,7 +13,6 @@ import {
   MAX_ADMITTED_REQUESTS,
   OpenConnection,
 } from '../services/localApiServer';
-import {isPlusUnlocked} from '../services/plus/gate';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
 import {modelStore} from './ModelStore';
 
@@ -138,9 +137,6 @@ class LocalApiServerStore {
   }
 
   setEnabled(enabled: boolean): void {
-    if (enabled && !isPlusUnlocked()) {
-      return;
-    }
     this.enabled = enabled;
     if (enabled) {
       this.start();

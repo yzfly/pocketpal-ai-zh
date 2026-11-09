@@ -1,6 +1,6 @@
 // Deep-link protocol surface for the E2E benchmark runner. Owns the URL
 // prefix, the prefix matcher, and the autostart query parser — i.e. every
-// shape-bound piece of the `pocketpal://e2e/benchmark[...]` contract.
+// shape-bound piece of the `pocketwisdom://e2e/benchmark[...]` contract.
 //
 // Lives under src/__automation__/ so the automation protocol stays inside
 // the same boundary as the runner screen and the dispatch helpers. The two
@@ -15,7 +15,7 @@
 // Canonical deep-link URL that routes to the benchmark runner screen.
 // Used by both the useDeepLinking warm/cold-launch Linking effect (raw-URL
 // match) and the dispatchAutomationDeepLink router (DeepLinkParams match).
-export const BENCHMARK_RUNNER_URL_PREFIX = 'pocketpal://e2e/benchmark';
+export const BENCHMARK_RUNNER_URL_PREFIX = 'pocketwisdom://e2e/benchmark';
 
 export function isBenchmarkRunnerUrl(url: string | null | undefined): boolean {
   return typeof url === 'string' && url.startsWith(BENCHMARK_RUNNER_URL_PREFIX);

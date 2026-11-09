@@ -118,10 +118,11 @@ export const buildTheme = ({
       // createBaseColors + createSemanticColors output.
       ...tokens.colors,
     },
+    // 口袋AI：Vercel 风格的较小圆角。
     borders: {
-      inputBorderRadius: 16,
-      messageBorderRadius: 15,
-      default: 12,
+      inputBorderRadius: 10,
+      messageBorderRadius: 12,
+      default: 8,
     },
     // Legacy fonts surface — preserved VERBATIM.
     // Components that read `theme.fonts.bodyMedium`, `theme.fonts.titleSmall`,

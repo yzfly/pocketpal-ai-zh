@@ -115,10 +115,10 @@
     "useHfTokenDescription": "启用后使用令牌进行 API 请求。若令牌导致身份验证问题，请将其禁用。",
     "cacheStorageTitle": "缓存与存储",
     "clearPalCaches": "清除快捷指令缓存",
-    "clearPalCachesDescription": "清除用于加速快捷指令的缓存数据。这不会影响您的 Pal 或聊天历史记录。",
+    "clearPalCachesDescription": "清除用于加速快捷指令的缓存数据。这不会影响您的助手或聊天历史记录。",
     "clearCachesButton": "清除缓存",
     "clearCachesConfirmTitle": "清除快捷指令缓存？",
-    "clearCachesConfirmMessage": "这将清除所有缓存的会话数据（{{fileCount}} 个文件，{{size}}）。清除后，快捷指令首次使用时可能会变慢。这不会影响您的 Pal 或聊天历史记录。",
+    "clearCachesConfirmMessage": "这将清除所有缓存的会话数据（{{fileCount}} 个文件，{{size}}）。清除后，快捷指令首次使用时可能会变慢。这不会影响您的助手或聊天历史记录。",
     "clearCachesSuccess": "成功清除{{count}}个缓存文件。",
     "clearCachesError": "清除缓存失败，请重试。",
     "noCachesToClear": "没有可清除的缓存。",
@@ -167,7 +167,7 @@
     "serverTypeHelp": "已自动检测；如有误请手动更改。",
     "internetSearch": {
       "title": "联网搜索",
-      "description": "让 Pal 用自己的工具搜索网络。需自备 API 密钥——口袋AI 绝不保存您的密钥，也不会转发您的查询。",
+      "description": "让助手用自己的工具搜索网络。需自备 API 密钥——口袋AI绝不保存您的密钥，也不会转发您的查询。",
       "providerLabel": "搜索服务供应商",
       "providerGated": "即将推出",
       "keyLabel": "API 密钥",
@@ -183,7 +183,7 @@
       "resultCountLabel": "每次搜索的结果数",
       "resultCountDescription": "结果越少，模型的上下文就能保留更多空间。",
       "consentTitle": "搜索会离开您的设备",
-      "consentDescription": "当 Pal 搜索网络时，您的查询会通过互联网发送给所选服务商。当 Pal 读取网页时，如果所选服务商没有自带的阅读器，网址和网页内容可能会改为发送给默认阅读服务（r.jina.ai）。密钥和查询绝不会发送给 口袋AI。",
+      "consentDescription": "当助手搜索网络时，您的查询会通过互联网发送给所选服务商。当助手读取网页时，如果所选服务商没有自带的阅读器，网址和网页内容可能会改为发送给默认阅读服务（r.jina.ai）。密钥和查询绝不会发送给口袋AI。",
       "consentAccept": "我已了解",
       "consentRequired": "同意以上声明后，可设置密钥并启用搜索。",
       "consentGivenTitle": "联网搜索已启用",
@@ -237,15 +237,31 @@
       "unloadBoundConfirm": "卸载"
     },
     "account": {
-      "title": "账户",
-      "deleteAccount": "删除账户",
-      "confirmTitle": "删除账户？",
-      "confirmMessage": "此操作将永久删除您的 PalsHub 账户及其资料库。通过 App Store 或 Google Play 购买的 Pal 仍可用您的商店账户在本设备上恢复。出于法律原因，购买记录将匿名保留。",
-      "confirmWithoutApple": "无法通过 Apple 验证身份，仍要删除您的账户吗？",
-      "deleted": "您的账户已删除。",
-      "signInAgain": "请重新登录",
-      "creatorSupport": "创作者账户需由我们的客服团队删除：{{contact}}",
-      "failed": "删除失败，请重试"
+      "title": "账号",
+      "subtitle": "可选。不登录也能完整离线使用。",
+      "signedInAs": "已登录：{{email}}",
+      "signIn": "登录",
+      "signUp": "注册",
+      "signOut": "退出登录",
+      "signOutConfirm": "确定退出当前账号？",
+      "email": "邮箱",
+      "password": "密码",
+      "passwordHint": "至少 8 位，包含字母和数字",
+      "code": "邮箱验证码",
+      "sendCode": "发送验证码",
+      "resendCode": "重新发送（{{seconds}} 秒）",
+      "codeSent": "验证码已发送到 {{email}}",
+      "captcha": "图形验证码",
+      "captchaHint": "输入图中的字符",
+      "captchaRefresh": "换一张",
+      "captchaConfirm": "确认",
+      "toSignUp": "还没有账号？去注册",
+      "toSignIn": "已有账号？去登录",
+      "invalidEmail": "请输入正确的邮箱地址",
+      "weakPassword": "密码至少 8 位，需包含字母和数字",
+      "notConfigured": "当前版本暂未开通账号功能。",
+      "signedIn": "登录成功",
+      "signedUp": "注册成功"
     },
     "useHfMirror": "HF 镜像加速",
     "useHfMirrorDescription": "通过 hf-mirror.com 镜像下载模型（适用于无法直连 huggingface.co 的网络）。开启期间 HF 令牌不会发给镜像；如需用令牌下载受限模型，请先关闭镜像。"
@@ -548,7 +564,7 @@
     "screenTitle": "关于",
     "description": "一款将大语言模型直接部署到您手机上的 App，基于 llama.cpp 与 llama.rn 构建。",
     "supportProject": "支持项目",
-    "supportProjectDescription": "如果您喜欢使用 PocketPal AI，请考虑通过以下方式支持项目：",
+    "supportProjectDescription": "如果您喜欢使用口袋AI，请考虑通过以下方式支持项目：",
     "githubButton": "在 GitHub 上点个 Star",
     "orBy": "或通过",
     "versionCopiedTitle": "版本已复制",
@@ -641,7 +657,7 @@
       "activateModelButton": "选择模型",
       "loading": "加载中...",
       "gettingReadyTitle": "{{name}} 正在准备中",
-      "gettingReadyDescription": "我们会在您的 Pal 可以开始聊天时通知您，点击顶部的横幅可以查看进度。"
+      "gettingReadyDescription": "我们会在您的助手可以开始聊天时通知您，点击顶部的横幅可以查看进度。"
     },
     "chatInput": {
       "inputPlaceholder": "消息",
@@ -727,7 +743,7 @@
         "title": "成功",
         "message": "这些设置将应用于所有未来的会话"
       },
-      "palSettings": "Pal设置",
+      "palSettings": "助手设置",
       "settingsSource": "设置来源"
     },
     "palGenerationSettingsSheet": {
@@ -737,10 +753,10 @@
       "pleaseCorrect": "请纠正以下内容：",
       "ok": "确定",
       "error": "错误",
-      "failedToSave": "保存 Pal 设置失败",
+      "failedToSave": "保存助手设置失败",
       "resetToGlobal": "重置为全局默认值",
       "resetToSystem": "重置为系统默认值",
-      "clearPalSettings": "清除 Pal 设置",
+      "clearPalSettings": "清除助手设置",
       "customSettingsFor": "{{palName}} 的自定义设置",
       "inheritedSettingsFor": "{{palName}} 的继承设置"
     },
@@ -752,15 +768,15 @@
     },
     "chatPalModelPickerSheet": {
       "modelsTab": "模型",
-      "palsTab": "Pal",
-      "noPal": "没有 Pal",
-      "disablePal": "禁用当前 Pal",
+      "palsTab": "助手",
+      "noPal": "没有助手",
+      "disablePal": "禁用当前助手",
       "noDescription": "没有描述",
-      "assistantType": "Pal",
+      "assistantType": "助手",
       "roleplayType": "角色扮演",
       "videoType": "视频",
       "confirmationTitle": "确认",
-      "modelSwitchMessage": "此 Pal 具有不同的默认模型 ({{modelName}})，要切换到 Pal 的默认模型吗？",
+      "modelSwitchMessage": "此助手具有不同的默认模型 ({{modelName}})，要切换到助手的默认模型吗？",
       "keepButton": "保持",
       "switchButton": "切换"
     },
@@ -862,12 +878,12 @@
     },
     "palSheet": {
       "title": {
-        "edit": "编辑Pal",
-        "newPal": "新建Pal",
-        "newVideoPal": "新建视频Pal"
+        "edit": "编辑助手",
+        "newPal": "新建助手",
+        "newVideoPal": "新建视频助手"
       },
       "description": "描述",
-      "descriptionPlaceholder": "输入 Pal 的简要描述",
+      "descriptionPlaceholder": "输入助手的简要描述",
       "parameters": "参数",
       "generationSettings": "生成设置",
       "configureGenerationSettings": "配置生成设置",
@@ -894,7 +910,7 @@
       "greeting": {
         "sectionLabel": "问候语",
         "textLabel": "问候消息",
-        "textPlaceholder": "聊天为空时，这个 Pal 该说些什么？",
+        "textPlaceholder": "聊天为空时，这个助手该说些什么？",
         "suggestedPromptsLabel": "建议提示词",
         "addPromptButton": "添加提示词",
         "promptPlaceholder": "用于快捷标签的简短提示词",
@@ -903,10 +919,10 @@
     },
     "assistantPalSheet": {
       "title": {
-        "create": "创建助手Pal",
-        "edit": "编辑助手Pal"
+        "create": "创建助手",
+        "edit": "编辑助手"
       },
-      "palName": "Pal名",
+      "palName": "助手名",
       "palNamePlaceholder": "名称",
       "defaultModel": "默认模型",
       "defaultModelPlaceholder": "选择模型",
@@ -919,7 +935,7 @@
     "modelNotAvailable": {
       "noModelsDownloaded": "您还没有下载任何模型，请先下载一个模型。",
       "downloadAModel": "下载模型",
-      "defaultModelNotDownloaded": "此 Pal 推荐一个需要下载的特定模型，或者您可以选择其他模型。",
+      "defaultModelNotDownloaded": "此助手推荐一个需要下载的特定模型，或者您可以选择其他模型。",
       "modelNotDownloadedShort": "模型未下载",
       "recommendedModel": "推荐模型",
       "cancelDownload": "取消下载",
@@ -927,10 +943,10 @@
     },
     "roleplayPalSheet": {
       "title": {
-        "create": "创建角色扮演Pal",
-        "edit": "编辑角色扮演Pal"
+        "create": "创建角色扮演助手",
+        "edit": "编辑角色扮演助手"
       },
-      "palName": "Pal名",
+      "palName": "助手名",
       "palNamePlaceholder": "名称",
       "defaultModel": "默认模型",
       "defaultModelPlaceholder": "选择模型",
@@ -957,11 +973,11 @@
     },
     "lookiePalSheet": {
       "title": {
-        "create": "创建Lookie Pal",
-        "edit": "编辑Lookie Pal"
+        "create": "创建看图助手",
+        "edit": "编辑看图助手"
       },
-      "palName": "Pal名",
-      "palNamePlaceholder": "输入您的 Lookie Pal 名称",
+      "palName": "助手名",
+      "palNamePlaceholder": "输入您的 看图助手名称",
       "visionModel": "视觉模型",
       "visionModelPlaceholder": "选择视觉模型",
       "requiredModelsSection": "必需模型",
@@ -982,7 +998,7 @@
       },
       "generatingPrompt": {
         "label": "目的与背景",
-        "placeholder": "描述此 Pal 的角色、目的或场景..."
+        "placeholder": "描述此助手的角色、目的或场景..."
       },
       "buttons": {
         "loadingModel": "加载模型中...",
@@ -1005,7 +1021,7 @@
       "menuItems": {
         "chat": "聊天",
         "models": "模型",
-        "pals": "Pals",
+        "pals": "助手",
         "benchmark": "基准测试",
         "settings": "设置",
         "appInfo": "关于",
@@ -1063,10 +1079,10 @@
       }
     },
     "palHeaderRight": {
-      "exportAllPals": "导出所有 Pal",
-      "importPals": "导入 Pal",
-      "importSuccess": "成功导入 {{count}} 个 Pal。",
-      "importError": "导入 Pal 失败，请检查文件格式。"
+      "exportAllPals": "导出所有助手",
+      "importPals": "导入助手",
+      "importSuccess": "成功导入 {{count}} 个助手。",
+      "importError": "导入助手失败，请检查文件格式。"
     },
     "bubble": {
       "msPerToken": "{{value}}毫秒/token",
@@ -1098,11 +1114,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "我的 Pal (本地)",
-      "myLibrary": "我的库 (palshub.ai)",
-      "discoverPals": "发现 Pal (palshub.ai)"
-    },
     "systemPrompt": "系统提示词",
     "videoAnalysis": "视频分析",
     "videoAnalysisDescription": "这是一个基于视频的 AI 助手，可以对来自设备摄像头的视频流提供实时评论。",
@@ -1116,26 +1127,22 @@
     "assistant": "助手",
     "roleplay": "角色扮演",
     "video": "视频",
-    "deletePal": "删除Pal",
-    "deletePalMessage": "您确定要删除此 Pal 吗？",
+    "deletePal": "删除助手",
+    "deletePalMessage": "您确定要删除此助手吗？",
     "missingModel": "缺少模型",
-    "missingModelMessage": "此 Pal 的默认模型\"{{modelName}}\"不可用，请在编辑表中下载它或选择其他模型。",
+    "missingModelMessage": "此助手的默认模型\"{{modelName}}\"不可用，请在编辑表中下载它或选择其他模型。",
     "search": "搜索",
     "profile": "个人资料",
     "signIn": "登录",
-    "addPal": "添加Pal",
-    "signInToAccessLibrary": "登录以访问您在 palshub.ai 的资料库",
+    "addPal": "添加助手",
     "signOut": "退出登录",
     "signOutConfirmation": "您确定要退出登录吗？",
     "signOutError": "退出登录失败，请重试。",
     "account": "账户",
-    "signInToPalsHub": "登录PalsHub",
-    "signInDescription": "访问您的资料库，创建私人 Pal，并在设备间同步",
-    "searchAllPals": "搜索所有 Pal...",
     "deletePalConfirmation": "您确定要删除\"{{palName}}\"吗？",
     "filters": {
       "all": "全部",
-      "myPals": "我的Pal",
+      "myPals": "我的助手",
       "local": "本地",
       "video": "视频",
       "free": "免费",
@@ -1154,66 +1161,7 @@
       "rating": "评分最高",
       "popular": "最受欢迎"
     },
-    "palDetailSheet": {
-      "by": "by",
-      "unknown": "未知",
-      "rating": "评分",
-      "reviews": "评论",
-      "created": "创建时间",
-      "description": "描述",
-      "noDescriptionAvailable": "暂无描述。",
-      "categories": "分类",
-      "tags": "标签",
-      "systemPrompt": "系统提示词",
-      "downloaded": "已下载",
-      "success": "成功",
-      "palAddedToCollection": "Pal已添加到您的收藏！",
-      "error": "错误",
-      "failedToLoadDetails": "加载 Pal 详情失败",
-      "failedToDownload": "下载 Pal 失败",
-      "notAvailable": "N/A"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "打开",
-      "install": "安装",
-      "pending": "待处理",
-      "unlocking": "解锁中",
-      "retry": "重试",
-      "supportCode": "客服代码：{{code}}",
-      "noLongerAvailable": "此 Pal 已不再提供，您可以{{refundLink}}。",
-      "refundLink": "向 Apple 申请退款",
-      "notCompleted": "此次购买未能完成，Google 将为您退款。",
-      "withdrawnRefunding": "此 Pal 已下架，请联系客服申请退款。",
-      "invalid": "我们无法验证此次购买。",
-      "heldInvalid": "我们无法解锁此次购买，请凭此代码联系客服。",
-      "recommendedModel": "推荐模型",
-      "sampleExchange": "对话示例",
-      "signInLine": "已经拥有？登录",
-      "licenseNotice": "您购买的是此 Pal 的使用许可。",
-      "termsOfSale": "销售条款",
-      "appleMediaTerms": "Apple 媒体服务条款",
-      "linkPrompt": "登录后也可在您的其他设备上使用",
-      "linkSignIn": "登录",
-      "dismiss": "以后再说",
-      "linkConflict": "这些购买项目已关联到另一个账户。",
-      "restorePurchases": "恢复购买",
-      "badgePending": "待处理",
-      "badgeUnlocking": "解锁中",
-      "badgeUpdate": "有可用更新",
-      "updatePrompt": "创作者发布了新版本。",
-      "updatePromptWithNote": "创作者发布了新版本：{{note}}。",
-      "updateButton": "更新",
-      "updateConfirmText": "这会覆盖您对创作者改动部分所做的修改。",
-      "updateConfirm": "更新",
-      "updateCancel": "取消",
-      "modelStep": {
-        "download": "下载 · {{size}}",
-        "startChat": "开始聊天",
-        "needsMemory": "此 Pal 的最小模型需要设备至少有 {{size}} 内存。",
-        "noModelFits": "此设备的内存不足以运行此 Pal。"
-      }
-    }
+    "emptyState": "还没有助手。\n点下方 + 新建一个。"
   },
   "validation": {
     "nameRequired": "需要填写名称",
@@ -1255,7 +1203,7 @@
     "captureIntervalUnit": "毫秒",
     "liveCommentary": "实时解说",
     "emptyPlaceholder": {
-      "title": "欢迎使用 Lookie",
+      "title": "欢迎使用看图助手",
       "subtitle": "私密设备端实时视频分析",
       "experimentalNotice": "这是一个实验性功能，准确性取决于所选模型，速度取决于您的设备性能；并且某些模型可能无法正常运行。",
       "howToUse": "使用方法：",
@@ -1268,7 +1216,7 @@
   "screenTitles": {
     "chat": "聊天",
     "models": "模型",
-    "pals": "Pals（实验性）",
+    "pals": "助手（实验性）",
     "benchmark": "基准测试",
     "settings": "设置",
     "appInfo": "关于",
@@ -1322,7 +1270,7 @@
     "increaseContextReloading": "正在以更大的上下文重新加载模型…",
     "increaseContextSuccess": "上下文已增大至 {{target}} token。",
     "increaseContextFailure": "无法增大上下文长度，已恢复您之前的设置。",
-    "palLoadHint": "此 Pal 通常需要的空间超出当前上下文长度的限制。",
+    "palLoadHint": "此助手通常需要的空间超出当前上下文长度的限制。",
     "generatingPreview": "正在生成预览…（{{tokens}} token）",
     "generatingPreviewPending": "正在生成预览…",
     "toolUsedChip": "已使用 {{name}}",
@@ -1597,15 +1545,15 @@
       "brand": "口袋AI"
     },
     "screen1": {
-      "title": "认识您的 Pal。",
-      "titleAccent": "Pal。",
+      "title": "认识您的助手。",
+      "titleAccent": "助手。",
       "body": "住在您手机里的聪明小伙伴。\n来花一分钟把它们设置好吧。",
       "cta": "带我去看看",
       "eyebrow": "欢迎使用口袋AI"
     },
     "screen2": {
       "title": "随时，\n随地。",
-      "body": "您的 Pal 就住在您的手机里。\n不用联网、没有信号也能用——在飞机上、断网时、偏远村庄里都能正常工作。",
+      "body": "您的助手就住在您的手机里。\n不用联网、没有信号也能用——在飞机上、断网时、偏远村庄里都能正常工作。",
       "highlight": "不用联网、没有信号",
       "cta": "下一步",
       "eyebrow": "理念",
@@ -1614,7 +1562,7 @@
     "screen3": {
       "title": "更小巧，\n但完全属于您。",
       "titleAccent": "更小巧，",
-      "body": "手机上的Pal快速又私密——但比云端AI更轻量。把它当成口袋里的小伙伴，而不是无所不知的神谕。",
+      "body": "手机上的助手快速又私密——但比云端AI更轻量。把它当成口袋里的小伙伴，而不是无所不知的神谕。",
       "highlight": "快速又私密",
       "cta": "知道了",
       "eyebrow": "温馨提示"
@@ -1622,14 +1570,14 @@
     "screen4": {
       "title": "任何内容都不会离开您的手机。",
       "titleAccent": "离开",
-      "body": "无需账户。没有云端。不做追踪。您的对话始终属于您自己。",
-      "highlight": "无需账户。没有云端。不做追踪。",
+      "body": "登录可选。对话不上云。不做追踪。您的对话始终属于您自己。",
+      "highlight": "登录可选。对话不上云。不做追踪。",
       "cta": "开始使用",
       "eyebrow": "隐私承诺"
     },
     "screen5": {
-      "title": "您想让 Pal 帮您做什么？",
-      "body": "选一个您想聊的话题 — 我们会为您匹配适合您手机的 Pal。",
+      "title": "您想让助手帮您做什么？",
+      "body": "选一个您想聊的话题 — 我们会为您匹配适合您手机的助手。",
       "topic": {
         "smartchat": "智能聊天",
         "coding": "编程",
@@ -1644,7 +1592,7 @@
         "education": "学习、讲解、测验",
         "roleplay": "角色、情景",
         "creative_writing": "故事、灵感、草稿",
-        "else": "稍后在应用内浏览所有 Pal"
+        "else": "稍后在应用内浏览所有助手"
       }
     },
     "screen6": {
@@ -1663,19 +1611,19 @@
       "subtitleTemplate": "{{name}} 靠手机上的小型 AI 模型来思考——挑一个适合的吧。",
       "pal": {
         "pip": {
-          "body": "我们为您找到了一个完美的 Pal — 贴心的日常小伙伴。够聪明，能应付大多数事情；够轻量，适配任何手机。"
+          "body": "为您准备了聊天助手 —— 贴心的日常小伙伴。够聪明，能应付大多数事情；够轻量，适配大多数手机。"
         },
         "codie": {
-          "body": "认识一下 Codie — 您本地的结对编程伙伴。读代码、写代码、讲解难点，全程都不会离开您的手机。"
+          "body": "认识一下编程助手 —— 您本地的结对编程伙伴。读代码、写代码、讲解难点，全程不离开您的手机。"
         },
         "sage": {
-          "body": "Sage 耐心又好奇，会一步步带您理清思路。一个揣在口袋里的学习搭档。"
+          "body": "学习助手耐心又好奇，会一步步带您理清思路，是揣在口袋里的学习搭档。"
         },
         "echo": {
-          "body": "Echo 是个多才多艺的角色扮演伙伴 — 始终入戏、描绘场景，无论您的故事走向何方都紧紧跟随。"
+          "body": "角色扮演助手多才多艺 —— 始终入戏、描绘场景，跟着您的故事走。"
         },
         "muse": {
-          "body": "Muse 帮您写作。提供措辞建议、找准节奏，并保持您独有的语气。"
+          "body": "写作助手帮您写作：提供措辞建议、找准节奏，并保持您独有的语气。"
         }
       }
     }
@@ -1733,54 +1681,6 @@
     "memoryAlertBody": "除了当前聊天模型，语音输入还需要额外内存。可能会很慢，App 也可能闪退。",
     "memoryAlertTryAnyway": "仍要试试"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "让本地 AI 更进一步。",
-    "subline": "Plus 让 PocketPal 保持免费和开源，额外功能是我们的谢意。",
-    "unsupportedSubline": "Plus 功能暂时无法在这部手机上运行。您仍然可以支持 PocketPal。",
-    "thanksHeadline": "感谢您让 口袋AI 持续走下去。",
-    "thanksSubline": "Plus 已在本设备解锁。",
-    "features": {
-      "handsFreeVoice": "免提语音",
-      "localApiServer": "本地 API 服务器"
-    },
-    "ready": "可用",
-    "needsRam": "需要 {{gb}} GB 内存",
-    "comingSoon": "即将推出",
-    "speedLine": "速度取决于您的手机和模型。",
-    "inDevelopment": "开发中的功能可能会有变动，也可能不会上线。",
-    "priceCaption": "随心付费，任何价格都享有相同功能。",
-    "buyError": "此次购买未能完成，请重试。",
-    "getPlus": "获取 Plus · {{price}}",
-    "getPlusAnyway": "仍要获取 Plus · {{price}}",
-    "loading": "加载中",
-    "pending": "待处理",
-    "pendingTitle": "正在等待商店确认您的付款。",
-    "pendingBody": "付款通过后，Plus 会自动解锁。您可以关闭此页面。",
-    "unavailableTitle": "暂时无法购买。",
-    "unavailableBody": "无法连接商店，请稍后重试，或恢复此前的购买。",
-    "done": "完成",
-    "oneTimePurchase": "一次性购买",
-    "restore": "恢复购买",
-    "openSource": "开源 ↗",
-    "licence": "您一次性购买的是 Plus 的使用许可。",
-    "terms": "条款",
-    "appleMediaTerms": "Apple 媒体服务条款",
-    "noPurchaseFound": "未找到 Plus 的购买记录。",
-    "restoreFailed": "无法连接商店，请重试。",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "已解锁",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}、{{second}}",
-      "subtitleMore": "{{first}}、{{second}}等"
-    },
-    "optIn": "关闭",
-    "optInNote": "在这部手机上已关闭。如果您够大胆，可以在设置中打开。",
-    "offInSettingsNote": "已在设置中关闭。",
-    "chatStaysFree": "Plus 是可选的，聊天始终免费。",
-    "chooseAmount": "选择金额"
-  },
   "voiceMode": {
     "settingTitle": "免提语音",
     "settingDescription": "在聊天中与模型对话，并听它朗读回复。",
@@ -1832,11 +1732,11 @@
     "continueAnywayCta": "仍要继续",
     "chooseSmallerModelCta": "选择更小的模型",
     "startLabel": "启动语音模式",
-    "startLockedLabel": "免提语音，PocketPal Plus",
+    "startLockedLabel": "免提语音",
     "startLockedHint": "打开简短预览。打字和语音输入始终免费。",
-    "teaserTitle": "语音对话是 Plus 功能",
+    "teaserTitle": "语音对话",
     "teaserBody": "免提对话，它会朗读回答。",
-    "teaserGetPlus": "获取 Plus",
+    "teaserGetPlus": "开启",
     "teaserKeepTyping": "继续打字，免费",
     "voiceRowFileMissing": "{{voice}} 还没有下载，点击“继续”即可下载。",
     "voiceRowFileFailed": "无法下载 {{voice}}，请连接网络后重试。",

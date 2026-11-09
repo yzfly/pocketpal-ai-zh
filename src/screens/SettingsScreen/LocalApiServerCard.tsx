@@ -11,12 +11,10 @@ import {
   Text,
 } from 'react-native-paper';
 
-import {SparkleFilledIcon} from '../../assets/icons';
 import {Divider, Sheet, TextInput} from '../../components';
 import {useTheme} from '../../hooks';
 import {t} from '../../locales';
 import type {Translations} from '../../locales/types';
-import {isPlusUnlocked, openPlus} from '../../services/plus/gate';
 import {
   isValidLocalApiPort,
   LocalApiServerError,
@@ -48,7 +46,6 @@ export const LocalApiServerCard: React.FC = observer(() => {
   const [portInvalid, setPortInvalid] = useState(false);
   const [keySheetVisible, setKeySheetVisible] = useState(false);
   const [keyDraft, setKeyDraft] = useState('');
-  const [teaserVisible, setTeaserVisible] = useState(false);
 
   useEffect(() => {
     setPortDraft(String(store.port));
@@ -58,7 +55,6 @@ export const LocalApiServerCard: React.FC = observer(() => {
   }, [store.status, store.port]);
 
   const editable = store.status === 'stopped';
-  const locked = !isPlusUnlocked();
   const servedModel = store.servedModelId ? modelStore.activeModel : undefined;
 
   const commitPort = (): boolean => {
@@ -87,18 +83,7 @@ export const LocalApiServerCard: React.FC = observer(() => {
     if (enabled && portDraft !== String(store.port) && !commitPort()) {
       return;
     }
-    if (enabled && locked) {
-      setTeaserVisible(true);
-      return;
-    }
     store.setEnabled(enabled);
-  };
-
-  const closeTeaser = () => setTeaserVisible(false);
-
-  const getPlus = () => {
-    setTeaserVisible(false);
-    openPlus({onUnlocked: () => store.setEnabled(true)});
   };
 
   const saveKey = async () => {
@@ -127,23 +112,6 @@ export const LocalApiServerCard: React.FC = observer(() => {
                   <Text variant="titleMedium" style={styles.textLabel}>
                     {copy.enable}
                   </Text>
-                  {locked && (
-                    <View
-                      testID="local-api-server-lock"
-                      style={[
-                        styles.plusBadge,
-                        {
-                          backgroundColor: theme.colors.accent.peach,
-                          borderColor: theme.colors.surface,
-                        },
-                      ]}>
-                      <SparkleFilledIcon
-                        width={10}
-                        height={10}
-                        fill={theme.colors.onSurface}
-                      />
-                    </View>
-                  )}
                 </View>
                 <Text variant="labelSmall" style={styles.textDescription}>
                   {copy.enableDescription}
@@ -153,7 +121,6 @@ export const LocalApiServerCard: React.FC = observer(() => {
                 testID="local-api-server-switch"
                 value={store.enabled}
                 onValueChange={onSwitchChange}
-                accessibilityHint={locked ? copy.lockedHint : undefined}
               />
             </View>
 
@@ -305,35 +272,6 @@ export const LocalApiServerCard: React.FC = observer(() => {
             </Button>
           </View>
         </Sheet.Actions>
-      </Sheet>
-
-      <Sheet
-        isVisible={teaserVisible}
-        onClose={closeTeaser}
-        title={copy.teaserTitle}>
-        <Sheet.View
-          testID="local-api-server-teaser"
-          style={styles.teaserSheetContent}>
-          <Text variant="bodyMedium" style={styles.teaserBody}>
-            {copy.teaserBody}
-          </Text>
-          <Sheet.Actions>
-            <View style={styles.keySheetActions}>
-              <Button
-                testID="local-api-server-teaser-not-now"
-                mode="text"
-                onPress={closeTeaser}>
-                {copy.teaserNotNow}
-              </Button>
-              <Button
-                testID="local-api-server-teaser-get-plus"
-                mode="contained"
-                onPress={getPlus}>
-                {copy.teaserGetPlus}
-              </Button>
-            </View>
-          </Sheet.Actions>
-        </Sheet.View>
       </Sheet>
     </>
   );

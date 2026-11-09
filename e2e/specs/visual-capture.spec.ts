@@ -73,7 +73,7 @@ const model = models[0] || QUICK_TEST_MODEL;
 const VISUAL_DIR = path.join(SCREENSHOT_DIR, 'visual-captures');
 
 const getAppBundleId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
+  (driver as any).isAndroid ? 'com.pocketwisdom.e2e' : 'ai.pocketpal';
 
 describe('Visual Capture', () => {
   let chatPage: ChatPage;

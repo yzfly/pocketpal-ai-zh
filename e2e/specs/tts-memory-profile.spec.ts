@@ -54,7 +54,7 @@ const RELEASE_TIMEOUT_MS = 60 * 1000;
 const SETTLE_MS = Number(process.env.TTS_PROFILE_SETTLE_MS) || 8000;
 
 const appId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
+  (driver as any).isAndroid ? 'com.pocketwisdom.e2e' : 'ai.pocketpal';
 
 const MEMINFO_DIR = path.join(OUTPUT_DIR, 'tts-meminfo');
 

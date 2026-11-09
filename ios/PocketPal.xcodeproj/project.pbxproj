@@ -647,10 +647,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.pocketpal;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom;
 				PRODUCT_NAME = PocketPal;
-				PROVISIONING_PROFILE_SPECIFIER = "match Development ai.pocketpal";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match Development ai.pocketpal";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.pocketwisdom";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match Development com.pocketwisdom";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -685,10 +685,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.pocketpal;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom;
 				PRODUCT_NAME = PocketPal;
-				PROVISIONING_PROFILE_SPECIFIER = "match AppStore ai.pocketpal";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ai.pocketpal";
+				PROVISIONING_PROFILE_SPECIFIER = "match AppStore com.pocketwisdom";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore com.pocketwisdom";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -945,7 +945,7 @@
 				MARKETING_VERSION = 1.22.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.PocketPalTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -978,7 +978,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.22.1;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.PocketPalTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -1119,10 +1119,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.pocketpal;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom;
 				PRODUCT_NAME = PocketPal;
-				PROVISIONING_PROFILE_SPECIFIER = "match Development ai.pocketpal";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ai.pocketpal";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.pocketwisdom";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore com.pocketwisdom";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -1156,7 +1156,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.22.1;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.PocketPalTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pocketwisdom.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;

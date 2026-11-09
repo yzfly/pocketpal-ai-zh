@@ -1,15 +1,13 @@
-// PalsHub Services
+// 账号（腾讯云开发 CloudBase 邮箱 + 密码）
 export {
-  authService,
-  palsHubService,
-  syncService,
-  PalsHubErrorHandler,
-  RetryHandler,
-  isAuthenticated,
-  getCurrentUser,
-} from './palshub';
+  accountService,
+  AccountService,
+  CloudBaseError,
+  describeAccountError,
+  isCloudBaseConfigured,
+} from './account';
+export type {CloudBaseUser, CaptchaChallenge} from './account';
 
-// Types
-export type {AuthState, Profile} from './palshub/AuthService';
-export type {ErrorInfo} from './palshub/ErrorHandler';
-export type {SyncProgress} from './palshub/SyncService';
+// 应用内更新（Android）
+export {updateService} from './update';
+export type {UpdateManifest, UpdateStatus} from './update';

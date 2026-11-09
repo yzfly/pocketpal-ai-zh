@@ -18,7 +18,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "rgba(51, 51, 51, 0.02)",
+          "backgroundColor": "#F5F5F5",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -33,7 +33,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#333333",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -65,7 +65,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "rgba(51, 51, 51, 0.02)",
+          "backgroundColor": "#F5F5F5",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -80,7 +80,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#333333",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -112,7 +112,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "rgba(51, 51, 51, 0.02)",
+          "backgroundColor": "#F5F5F5",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -127,7 +127,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#333333",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -159,7 +159,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "rgba(51, 51, 51, 0.02)",
+          "backgroundColor": "#F5F5F5",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -174,7 +174,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#333333",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -206,7 +206,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E6ACA9",
+          "backgroundColor": "#FFEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -221,7 +221,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#330B09",
+          "color": "#8F1F22",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -253,7 +253,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E6ACA9",
+          "backgroundColor": "#FFEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -268,7 +268,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#330B09",
+          "color": "#8F1F22",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -300,7 +300,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E6ACA9",
+          "backgroundColor": "#FFEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -315,7 +315,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#330B09",
+          "color": "#8F1F22",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -347,7 +347,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E6ACA9",
+          "backgroundColor": "#FFEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -362,7 +362,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#330B09",
+          "color": "#8F1F22",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -394,7 +394,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#DEE0E6",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -409,7 +409,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#2D2F33",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -441,7 +441,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#DEE0E6",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -456,7 +456,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#2D2F33",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -488,7 +488,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#DEE0E6",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -503,7 +503,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#2D2F33",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -535,7 +535,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#DEE0E6",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -550,7 +550,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#2D2F33",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -582,7 +582,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E0E0E0",
+          "backgroundColor": "#EBEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -597,7 +597,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#424242",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -629,7 +629,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E0E0E0",
+          "backgroundColor": "#EBEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -644,7 +644,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#424242",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -676,7 +676,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E0E0E0",
+          "backgroundColor": "#EBEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -691,7 +691,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#424242",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -723,7 +723,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E0E0E0",
+          "backgroundColor": "#EBEBEB",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -738,7 +738,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#424242",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -770,7 +770,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E4F3F1",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -785,7 +785,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#013332",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -817,7 +817,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E4F3F1",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -832,7 +832,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#013332",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 12,
           "fontWeight": "400",
@@ -864,7 +864,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E4F3F1",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -879,7 +879,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#013332",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -911,7 +911,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "#E4F3F1",
+          "backgroundColor": "#F2F2F2",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -926,7 +926,7 @@ exports[`Label — snapshot matrix baseline (variant x size x {default,disabled}
     <Text
       style={
         {
-          "color": "#013332",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",
@@ -958,7 +958,7 @@ exports[`Label — snapshot matrix non-Latin font-fallback canary (canaryVariant
         {
           "alignItems": "center",
           "alignSelf": "flex-start",
-          "backgroundColor": "rgba(51, 51, 51, 0.02)",
+          "backgroundColor": "#F5F5F5",
           "borderRadius": 4,
           "flexDirection": "row",
           "gap": 2,
@@ -973,7 +973,7 @@ exports[`Label — snapshot matrix non-Latin font-fallback canary (canaryVariant
     <Text
       style={
         {
-          "color": "#333333",
+          "color": "#171717",
           "fontFamily": "Inter-Regular",
           "fontSize": 11,
           "fontWeight": "400",

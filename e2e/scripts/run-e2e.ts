@@ -556,7 +556,7 @@ function buildApps(
     }
   }
   if (platform === 'android' || platform === 'both') {
-    // E2E runs must target the e2e flavor (com.pocketpalai.e2e) so the
+    // E2E runs must target the e2e flavor (com.pocketwisdom.e2e) so the
     // automation bridge is present. The prod flavor's APK has the
     // bridge DCE-stripped and specs would silently fail.
     const cmd = `cd android && ${onboardingPrefix}E2E_BUILD=true ./gradlew assembleE2eReleaseE2e`;

@@ -144,22 +144,6 @@ export const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: 8,
     },
-    plusBadge: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      borderWidth: 2,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    teaserSheetContent: {
-      paddingTop: 44,
-    },
-    teaserBody: {
-      color: theme.colors.onSurfaceVariant,
-      paddingHorizontal: 16,
-      paddingBottom: 8,
-    },
     keySheetActions: {
       width: '100%',
       flexDirection: 'row',

@@ -13,13 +13,12 @@ export const ROUTES = {
 
   // E2E-only deep-link-driven matrix runner. Hidden from drawer sidebar via
   // drawerItemStyle:{display:'none'}; reachable only by the deep link
-  // pocketpal://e2e/benchmark in the e2e flavor build. The URL prefix,
+  // pocketwisdom://e2e/benchmark in the e2e flavor build. The URL prefix,
   // matcher, and autostart parser live in src/__automation__/benchmarkRoute
   // so the automation protocol stays inside the __automation__ boundary.
   BENCHMARK_RUNNER: 'BenchmarkRunner',
 
-  // E2E-only screen behind Plus, reached by pocketpal://e2e/plus-feature.
-  PLUS_TEST_FEATURE: 'PlusTestFeature',
+  // E2E-only screen behind Plus, reached by pocketwisdom://e2e/plus-feature.
 
   // Onboarding stack routes (mounted via OnboardingStack when
   // uiStore.hasCompletedOnboarding is false; see App.tsx SwitchPoint).

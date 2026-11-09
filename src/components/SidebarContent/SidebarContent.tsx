@@ -8,7 +8,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
-import {PlusDrawerItem} from './PlusDrawerItem/PlusDrawerItem';
 import {chatSessionStore, SessionMetaData} from '../../store';
 import {Menu, RenameModal, Checkbox} from '..';
 import {
@@ -27,7 +26,6 @@ import {L10nContext} from '../../utils';
 import {t} from '../../locales';
 import {ROUTES} from '../../utils/navigationConstants';
 import {exportChatSession} from '../../utils/exportUtils';
-import {openPlus} from '../../services/plus/gate';
 
 // Check if app is in debug mode
 const isDebugMode = __DEV__;
@@ -589,12 +587,6 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
               style={styles.menuDrawerItem}
               testID="drawer-item-settings"
             />
-            <PlusDrawerItem
-              onPress={() => {
-                props.navigation.closeDrawer();
-                openPlus();
-              }}
-            />
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.appInfo}
               icon={() => (
@@ -626,7 +618,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
           <Divider style={styles.divider} />
         </View>
       ),
-      [l10n, theme, styles, navigateTo, props.navigation],
+      [l10n, theme, styles, navigateTo],
     );
 
     return (

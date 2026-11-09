@@ -1,28 +1,19 @@
 declare const __E2E__: boolean;
 declare const __E2E_SKIP_ONBOARDING__: boolean;
-declare const __PLUS_STORE_GATE__: boolean;
 
 declare module '@env' {
   export const FIREBASE_FUNCTIONS_URL: string;
   export const APPCHECK_DEBUG_TOKEN_ANDROID: string;
   export const APPCHECK_DEBUG_TOKEN_IOS: string;
 
-  // PalsHub/Supabase Configuration
-  export const SUPABASE_URL: string;
-  export const SUPABASE_ANON_KEY: string;
+  // 腾讯云开发 CloudBase（账号）
+  export const CLOUDBASE_ENV_ID: string;
+  export const CLOUDBASE_REGION: string;
+  export const CLOUDBASE_PUBLISHABLE_KEY: string;
 
-  // PalsHub API Configuration
-  export const PALSHUB_API_BASE_URL: string;
+  // 应用内更新清单 update.json 的地址（国内可直连）
+  export const UPDATE_MANIFEST_URL: string;
 
   // App Configuration
   export const APP_URL: string;
-
-  // Feature Flags
-  export const ENABLE_PALSHUB_INTEGRATION: string;
-  export const ENABLE_AUTHENTICATION: string;
-  export const ENABLE_OFFLINE_MODE: string;
-
-  // Google Sign-In Configuration
-  export const GOOGLE_IOS_CLIENT_ID: string;
-  export const GOOGLE_WEB_CLIENT_ID: string;
 }

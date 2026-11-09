@@ -42,7 +42,7 @@ export interface ResponseChannel extends ResponseSink {
 
 const NO_MODEL: WireError = {
   status: 503,
-  message: 'No local model is loaded in PocketPal',
+  message: 'No local model is loaded in PocketWisdom',
   type: 'server_error',
   code: 'no_model',
 };

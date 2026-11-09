@@ -45,7 +45,7 @@ jest.mock('../../services/DeepLinkService', () => ({
 }));
 
 const VALID_URL =
-  'pocketpal://hub/run?repo_id=author/model&filename=model.Q4_K_M.gguf&source=hf';
+  'pocketwisdom://hub/run?repo_id=author/model&filename=model.Q4_K_M.gguf&source=hf';
 
 describe('useDeepLinking — hub/run dispatch', () => {
   let getInitialURLSpy: jest.SpyInstance;
@@ -98,7 +98,7 @@ describe('useDeepLinking — hub/run dispatch', () => {
 
     await registeredHandler!({
       host: 'hub',
-      url: 'pocketpal://hub/run?filename=x.gguf', // missing repo_id
+      url: 'pocketwisdom://hub/run?filename=x.gguf', // missing repo_id
     });
 
     expect(alertSpy).toHaveBeenCalled();
@@ -112,7 +112,7 @@ describe('useDeepLinking — hub/run dispatch', () => {
 
     await registeredHandler!({
       host: 'hub',
-      url: 'pocketpal://hub/run?repo_id=author/model&source=hf',
+      url: 'pocketwisdom://hub/run?repo_id=author/model&source=hf',
     });
 
     expect(deepLinkStore.setPendingHubRun).toHaveBeenCalledWith({
@@ -159,7 +159,7 @@ describe('useDeepLinking — hub/run dispatch', () => {
   });
 
   it('ignores a non-hub link on the prod Linking path without alerting', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://chat?palId=foo');
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://chat?palId=foo');
 
     renderHook(() => useDeepLinking());
     await Promise.resolve();
@@ -181,14 +181,14 @@ describe('useDeepLinking — hub/run dispatch', () => {
     renderHook(() => useDeepLinking());
     await Promise.resolve();
 
-    handlers.forEach(h => h({url: 'pocketpal://chat?palId=foo'}));
+    handlers.forEach(h => h({url: 'pocketwisdom://chat?palId=foo'}));
 
     expect(deepLinkStore.setPendingHubRun).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
   });
 
   it('ignores an unknown hub path on the prod Linking path without alerting', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://hub/foo');
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://hub/foo');
 
     renderHook(() => useDeepLinking());
     await Promise.resolve();
@@ -199,7 +199,7 @@ describe('useDeepLinking — hub/run dispatch', () => {
   });
 
   it('alerts on a malformed hub/run link via the prod Linking path', async () => {
-    getInitialURLSpy.mockResolvedValue('pocketpal://hub/run'); // no repo_id
+    getInitialURLSpy.mockResolvedValue('pocketwisdom://hub/run'); // no repo_id
 
     renderHook(() => useDeepLinking());
     await Promise.resolve();

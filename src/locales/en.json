@@ -129,7 +129,7 @@
     "importError": "Failed to import chat sessions. Please check the file format.",
     "internetSearch": {
       "title": "Internet Search",
-      "description": "Let Pals search the web with their own tools. Bring your own API key — PocketPal never holds your keys or routes your queries.",
+      "description": "Let Pals search the web with their own tools. Bring your own API key — PocketWisdom never holds your keys or routes your queries.",
       "providerLabel": "Search provider",
       "providerGated": "Coming soon",
       "keyLabel": "API key",
@@ -146,7 +146,7 @@
       "resultCountLabel": "Results per search",
       "resultCountDescription": "Fewer results keep more room in the model's context.",
       "consentTitle": "Searches leave your device",
-      "consentDescription": "When a Pal searches the web, your query is sent to the selected provider over the internet. When a Pal reads a page, the URL and page content may instead be sent to a default reader service (r.jina.ai) if the selected provider has no native reader. Keys and queries are never sent to PocketPal.",
+      "consentDescription": "When a Pal searches the web, your query is sent to the selected provider over the internet. When a Pal reads a page, the URL and page content may instead be sent to a default reader service (r.jina.ai) if the selected provider has no native reader. Keys and queries are never sent to PocketWisdom.",
       "consentAccept": "I understand",
       "consentRequired": "Accept the disclosure above to set a key and enable search.",
       "consentGivenTitle": "Searching the web is enabled",
@@ -238,14 +238,30 @@
     },
     "account": {
       "title": "Account",
-      "deleteAccount": "Delete account",
-      "confirmTitle": "Delete account?",
-      "confirmMessage": "This permanently deletes your PalsHub account and its library. Pals bought through the App Store or Google Play stay restorable on this device with your store account. Purchase records are kept anonymised for legal reasons.",
-      "confirmWithoutApple": "Couldn't confirm with Apple. Delete your account anyway?",
-      "deleted": "Your account has been deleted.",
-      "signInAgain": "Please sign in again",
-      "creatorSupport": "Creator accounts are deleted by our support team: {{contact}}",
-      "failed": "Could not delete, try again"
+      "subtitle": "Optional. The app works fully offline without signing in.",
+      "signedInAs": "Signed in as {{email}}",
+      "signIn": "Sign in",
+      "signUp": "Create account",
+      "signOut": "Sign out",
+      "signOutConfirm": "Sign out of this account?",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 8 characters, with letters and numbers",
+      "code": "Email code",
+      "sendCode": "Send code",
+      "resendCode": "Resend ({{seconds}}s)",
+      "codeSent": "A code was sent to {{email}}",
+      "captcha": "Picture code",
+      "captchaHint": "Enter the characters in the picture",
+      "captchaRefresh": "Refresh",
+      "captchaConfirm": "Confirm",
+      "toSignUp": "No account yet? Create one",
+      "toSignIn": "Already have an account? Sign in",
+      "invalidEmail": "Enter a valid email address",
+      "weakPassword": "Password needs at least 8 characters, with letters and numbers",
+      "notConfigured": "Sign-in is not available in this build yet.",
+      "signedIn": "Signed in",
+      "signedUp": "Account created"
     },
     "localApiServer": {
       "title": "Local API server",
@@ -268,11 +284,6 @@
       "clearApiKey": "Clear key",
       "apiKeyPlaceholder": "Enter an API key",
       "stopToEdit": "Turn the server off to change these settings.",
-      "lockedHint": "Plus feature. Opens details.",
-      "teaserTitle": "Local API server is a Plus feature",
-      "teaserBody": "Let other apps use the model loaded on this phone.",
-      "teaserGetPlus": "Get Plus",
-      "teaserNotNow": "Not now",
       "errors": {
         "portInUse": "Port {{port}} is already in use. Turn the server off and choose another port.",
         "listenFailed": "The server could not start. Turn it off and on again, or choose another port.",
@@ -587,13 +598,13 @@
     "screenTitle": "App Info",
     "description": "An app that brings language models directly to your phone. Sits on the shoulders of llama.cpp and llama.rn.",
     "supportProject": "Support the Project",
-    "supportProjectDescription": "If you enjoy using PocketPal AI, please consider supporting the project by:",
+    "supportProjectDescription": "If you enjoy using PocketWisdom, please consider supporting the project by:",
     "githubButton": "Star on GitHub",
     "orBy": "or by",
     "versionCopiedTitle": "Version copied",
     "versionCopiedDescription": "Version information has been copied to clipboard",
     "tour": "Tour",
-    "tourDescription": "Replay the welcome screens to see what PocketPal AI offers.",
+    "tourDescription": "Replay the welcome screens to see what PocketWisdom offers.",
     "showIntroButton": "Show intro again",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
@@ -608,10 +619,10 @@
   },
   "feedback": {
     "title": "Send Feedback",
-    "description": "Your voice matters! Tell us how PocketPal AI is helping you and what we can do to make it even more useful.",
+    "description": "Your voice matters! Tell us how PocketWisdom is helping you and what we can do to make it even more useful.",
     "shareThoughtsButton": "Sharing your thoughts",
     "useCase": {
-      "label": "What are you using PocketPal AI for?",
+      "label": "What are you using PocketWisdom for?",
       "placeholder": "e.g., summarization, roleplay, etc."
     },
     "featureRequests": {
@@ -623,7 +634,7 @@
       "placeholder": "Share any other thoughts you may have."
     },
     "usageFrequency": {
-      "label": "How often do you use PocketPal AI? (Optional)",
+      "label": "How often do you use PocketWisdom? (Optional)",
       "options": {
         "daily": "Daily",
         "weekly": "Weekly",
@@ -694,7 +705,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "No Models Available",
-      "noModelsDescription": "Download a model to start chatting with PocketPal",
+      "noModelsDescription": "Download a model to start chatting with PocketWisdom",
       "noModelsButton": "Download Model",
       "activateModelTitle": "Activate Model To Get Started",
       "activateModelDescription": "Select the model and download it. After downloading, tap Load next to the model and start chatting.",
@@ -747,7 +758,7 @@
     },
     "modelErrorReportSheet": {
       "title": "Report Model Loading Issue",
-      "privacyNote": "Help us improve PocketPal by sharing details about this error. Review below what will be shared - you can deselect any items you prefer not to include.",
+      "privacyNote": "Help us improve PocketWisdom by sharing details about this error. Review below what will be shared - you can deselect any items you prefer not to include.",
       "errorMessage": "Error message",
       "modelInfo": "Model Information",
       "modelName": "Name",
@@ -765,7 +776,7 @@
       "submit": "Submit Report",
       "success": {
         "title": "Report Submitted",
-        "message": "Thank you for helping us improve PocketPal. Your report will help us fix this issue."
+        "message": "Thank you for helping us improve PocketWisdom. Your report will help us fix this issue."
       },
       "error": {
         "title": "Report Failed",
@@ -1137,11 +1148,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "My Pals (local)",
-      "myLibrary": "My Library (palshub.ai)",
-      "discoverPals": "Discover Pals (palshub.ai)"
-    },
     "systemPrompt": "System Prompt",
     "videoAnalysis": "Video Analysis",
     "videoAnalysisDescription": "This is a video-based AI assistant that provides real-time commentary on video streams from your device's camera.",
@@ -1163,14 +1169,10 @@
     "profile": "Profile",
     "signIn": "Sign In",
     "addPal": "Add Pal",
-    "signInToAccessLibrary": "Sign in to access your library from palshub.ai",
     "signOut": "Sign Out",
     "signOutConfirmation": "Are you sure you want to sign out?",
     "signOutError": "Failed to sign out. Please try again.",
     "account": "Account",
-    "signInToPalsHub": "Sign In to PalsHub",
-    "signInDescription": "Access your library, create private Pals, and sync across devices",
-    "searchAllPals": "Search all Pals...",
     "deletePalConfirmation": "Are you sure you want to delete \"{{palName}}\"?",
     "filters": {
       "all": "All",
@@ -1193,66 +1195,7 @@
       "rating": "Highest Rated",
       "popular": "Most Popular"
     },
-    "palDetailSheet": {
-      "by": "by",
-      "unknown": "Unknown",
-      "rating": "Rating",
-      "reviews": "Reviews",
-      "created": "Created",
-      "description": "Description",
-      "noDescriptionAvailable": "No description available.",
-      "categories": "Categories",
-      "tags": "Tags",
-      "systemPrompt": "System Prompt",
-      "downloaded": "Downloaded",
-      "success": "Success",
-      "palAddedToCollection": "Pal has been added to your collection!",
-      "error": "Error",
-      "failedToLoadDetails": "Failed to load pal details",
-      "failedToDownload": "Failed to download pal",
-      "notAvailable": "N/A"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "Open",
-      "install": "Install",
-      "pending": "Pending",
-      "unlocking": "Unlocking",
-      "retry": "Retry",
-      "supportCode": "Support code: {{code}}",
-      "noLongerAvailable": "This Pal is no longer available. You can {{refundLink}}.",
-      "refundLink": "ask Apple for a refund",
-      "notCompleted": "This purchase couldn't be completed. Google will refund you.",
-      "withdrawnRefunding": "This Pal was withdrawn. Contact support for a refund.",
-      "invalid": "We couldn't verify this purchase.",
-      "heldInvalid": "We couldn't unlock this purchase. Contact support with this code.",
-      "recommendedModel": "Recommended model",
-      "sampleExchange": "Sample conversation",
-      "signInLine": "Already own it? Sign in",
-      "licenseNotice": "You're buying a license to use this Pal.",
-      "termsOfSale": "Terms of Sale",
-      "appleMediaTerms": "Apple Media Services Terms",
-      "linkPrompt": "Sign in to use it on your other devices too",
-      "linkSignIn": "Sign in",
-      "dismiss": "Not now",
-      "linkConflict": "These purchases are linked to another account.",
-      "restorePurchases": "Restore purchases",
-      "badgePending": "Pending",
-      "badgeUnlocking": "Unlocking",
-      "badgeUpdate": "Update available",
-      "updatePrompt": "A new version from the creator is available.",
-      "updatePromptWithNote": "A new version from the creator is available: {{note}}.",
-      "updateButton": "Update",
-      "updateConfirmText": "This replaces your edits to the parts the creator changed.",
-      "updateConfirm": "Update",
-      "updateCancel": "Cancel",
-      "modelStep": {
-        "download": "Download · {{size}}",
-        "startChat": "Start chat",
-        "needsMemory": "This Pal needs a device with at least {{size}} of memory for its smallest model.",
-        "noModelFits": "This device doesn't have enough memory for this Pal."
-      }
-    }
+    "emptyState": "No assistants yet.\nTap + to create one."
   },
   "validation": {
     "nameRequired": "Name is required",
@@ -1266,7 +1209,7 @@
   },
   "camera": {
     "permissionTitle": "Camera Permission Required",
-    "permissionMessage": "PocketPal needs camera access to analyze images",
+    "permissionMessage": "PocketWisdom needs camera access to analyze images",
     "requestingPermission": "Requesting camera permission...",
     "noDevice": "No camera device found",
     "errorTitle": "Camera Error",
@@ -1280,7 +1223,7 @@
   },
   "video": {
     "permissionTitle": "Camera Permission Required",
-    "permissionMessage": "PocketPal needs camera access for video analysis",
+    "permissionMessage": "PocketWisdom needs camera access for video analysis",
     "requestingPermission": "Requesting camera permission...",
     "noDevice": "No camera device found",
     "errorTitle": "Camera Error",
@@ -1728,11 +1671,11 @@
     "continueAnywayCta": "Continue anyway",
     "chooseSmallerModelCta": "Choose a smaller model",
     "startLabel": "Start voice mode",
-    "startLockedLabel": "Hands-free voice, PocketPal Plus",
+    "startLockedLabel": "Hands-free voice",
     "startLockedHint": "Opens a short preview. Typing and dictation stay free.",
-    "teaserTitle": "Voice conversation is a Plus feature",
+    "teaserTitle": "Voice conversation",
     "teaserBody": "Talk hands-free. It answers aloud.",
-    "teaserGetPlus": "Get Plus",
+    "teaserGetPlus": "Turn on",
     "teaserKeepTyping": "Keep typing, free"
   },
   "onboarding": {
@@ -1740,14 +1683,14 @@
     "skip": "Skip",
     "skipForNow": "Skip for now",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "Meet your pals.",
       "titleAccent": "pals.",
       "body": "Smart little friends that live inside your phone.\nLet’s get you set up - it’ll take a minute.",
       "cta": "Show me Around",
-      "eyebrow": "Welcome to PocketPal"
+      "eyebrow": "Welcome to PocketWisdom"
     },
     "screen2": {
       "title": "Anytime,\nAnywhere.",
@@ -1768,8 +1711,8 @@
     "screen4": {
       "title": "Nothing leaves your phone.",
       "titleAccent": "leaves",
-      "body": "No accounts. No cloud. No tracking. Your conversations stay yours.",
-      "highlight": "No accounts. No cloud. No tracking.",
+      "body": "Sign-in optional. Chats stay off the cloud. No tracking. Your conversations stay yours.",
+      "highlight": "Sign-in optional. Chats stay off the cloud. No tracking.",
       "cta": "Get Started",
       "eyebrow": "Privacy promised"
     },
@@ -1832,53 +1775,5 @@
     "extraInProgress": "+{{count}} more in progress",
     "failedTitle": "Download didn't finish",
     "retry": "Retry"
-  },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "Push local AI further.",
-    "subline": "Plus keeps PocketPal free and open source. The extra features are our thanks.",
-    "unsupportedSubline": "Plus features don't run on this phone yet. You can still support PocketPal.",
-    "thanksHeadline": "Thank you for keeping PocketPal going.",
-    "thanksSubline": "Plus is unlocked on this device.",
-    "features": {
-      "handsFreeVoice": "Hands-free voice",
-      "localApiServer": "Local API server"
-    },
-    "ready": "Ready",
-    "needsRam": "Needs {{gb}} GB RAM",
-    "comingSoon": "Coming soon",
-    "optIn": "Off",
-    "optInNote": "Off on this phone. Turn it on in Settings if you're brave.",
-    "offInSettingsNote": "Turned off in Settings.",
-    "speedLine": "Speed depends on your phone and model.",
-    "inDevelopment": "Features in development may change or not ship.",
-    "chatStaysFree": "Plus is optional. Chatting stays free.",
-    "priceCaption": "Pay what feels right. Every amount unlocks the same features.",
-    "buyError": "The purchase didn't go through. Try again.",
-    "getPlus": "Get Plus · {{price}}",
-    "getPlusAnyway": "Get Plus anyway · {{price}}",
-    "chooseAmount": "Choose an amount",
-    "loading": "Loading",
-    "pending": "Pending",
-    "pendingTitle": "Waiting for the store to confirm your payment.",
-    "pendingBody": "Plus unlocks on its own once it goes through. You can close this screen.",
-    "unavailableTitle": "Purchases aren't available right now.",
-    "unavailableBody": "The store could not be reached. Try again later, or restore a past purchase.",
-    "done": "Done",
-    "oneTimePurchase": "One-time purchase",
-    "restore": "Restore",
-    "openSource": "Open source ↗",
-    "licence": "One-time purchase of a licence to use Plus.",
-    "terms": "Terms",
-    "appleMediaTerms": "Apple Media Services Terms",
-    "noPurchaseFound": "No Plus purchase found.",
-    "restoreFailed": "Couldn't reach the store. Try again.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "Unlocked",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}, {{second}}",
-      "subtitleMore": "{{first}}, {{second}} & more"
-    }
   }
 }

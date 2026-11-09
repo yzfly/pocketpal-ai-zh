@@ -15,7 +15,7 @@ exports[`Surface — snapshot matrix baseline (variant x size x {default,disable
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
         },
         {
           "elevation": 1,
@@ -47,7 +47,7 @@ exports[`Surface — snapshot matrix baseline (variant x size x {default,disable
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
         },
         {
           "elevation": 1,
@@ -79,7 +79,7 @@ exports[`Surface — snapshot matrix baseline (variant x size x {default,disable
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
         },
         {
           "elevation": 1,
@@ -113,7 +113,7 @@ exports[`Surface — snapshot matrix baseline (variant x size x {default,disable
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
         },
         {
           "elevation": 1,
@@ -147,7 +147,7 @@ exports[`Surface — snapshot matrix non-Latin font-fallback canary (canaryVaria
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
         },
         {
           "elevation": 1,

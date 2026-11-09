@@ -167,7 +167,7 @@
     "serverTypeHelp": "به‌صورت خودکار تشخیص داده می‌شود؛ اگر درست نیست تغییرش بدهید.",
     "internetSearch": {
       "title": "جستجوی اینترنتی",
-      "description": "بگذارید پَل‌ها با ابزارهای خودشان در وب جستجو کنند. کلید API خودتان را بیاورید — PocketPal هرگز کلیدهای شما را نگه نمی‌دارد و درخواست‌هایتان را هدایت نمی‌کند.",
+      "description": "بگذارید پَل‌ها با ابزارهای خودشان در وب جستجو کنند. کلید API خودتان را بیاورید — PocketWisdom هرگز کلیدهای شما را نگه نمی‌دارد و درخواست‌هایتان را هدایت نمی‌کند.",
       "providerLabel": "ارائه‌دهنده جستجو",
       "providerGated": "به‌زودی",
       "keyLabel": "کلید API",
@@ -183,7 +183,7 @@
       "resultCountLabel": "تعداد نتایج در هر جستجو",
       "resultCountDescription": "نتایج کمتر فضای بیشتری در context مدل باقی می‌گذارد.",
       "consentTitle": "جستجوها از دستگاه شما خارج می‌شوند",
-      "consentDescription": "وقتی یک پَل در وب جستجو می‌کند، درخواست شما از طریق اینترنت به ارائه‌دهنده انتخاب‌شده ارسال می‌شود. وقتی یک پَل صفحه‌ای را می‌خواند، اگر ارائه‌دهنده انتخاب‌شده خواننده اختصاصی نداشته باشد، ممکن است به‌جای آن آدرس و محتوای صفحه به یک سرویس خواننده پیش‌فرض (r.jina.ai) ارسال شود. کلیدها و درخواست‌ها هرگز به PocketPal ارسال نمی‌شوند.",
+      "consentDescription": "وقتی یک پَل در وب جستجو می‌کند، درخواست شما از طریق اینترنت به ارائه‌دهنده انتخاب‌شده ارسال می‌شود. وقتی یک پَل صفحه‌ای را می‌خواند، اگر ارائه‌دهنده انتخاب‌شده خواننده اختصاصی نداشته باشد، ممکن است به‌جای آن آدرس و محتوای صفحه به یک سرویس خواننده پیش‌فرض (r.jina.ai) ارسال شود. کلیدها و درخواست‌ها هرگز به PocketWisdom ارسال نمی‌شوند.",
       "consentAccept": "متوجه شدم",
       "consentRequired": "برای تنظیم کلید و فعال‌سازی جستجو، توضیحات بالا را بپذیرید.",
       "consentGivenTitle": "جستجوی وب فعال است",
@@ -235,17 +235,6 @@
       "unloadBoundTitle": "این مدل تخلیه شود؟",
       "unloadBoundBody": "این چت از آن استفاده می‌کند. با ارسال پیام بعدی دوباره بارگذاری می‌شود.",
       "unloadBoundConfirm": "تخلیه"
-    },
-    "account": {
-      "title": "حساب کاربری",
-      "deleteAccount": "حذف حساب کاربری",
-      "confirmTitle": "حساب کاربری حذف شود؟",
-      "confirmMessage": "این کار حساب PalsHub شما و کتابخانه‌اش را برای همیشه حذف می‌کند. پَل‌هایی که از App Store یا Google Play خریده‌اید، با حساب فروشگاهتان روی این دستگاه قابل بازیابی می‌مانند. سوابق خرید به دلایل قانونی به‌صورت ناشناس نگه داشته می‌شوند.",
-      "confirmWithoutApple": "تأیید با Apple ممکن نشد. باز هم حساب کاربری شما حذف شود؟",
-      "deleted": "حساب کاربری شما حذف شد.",
-      "signInAgain": "لطفاً دوباره وارد شوید",
-      "creatorSupport": "حساب‌های سازنده را تیم پشتیبانی ما حذف می‌کند: {{contact}}",
-      "failed": "حذف ممکن نشد، دوباره تلاش کنید"
     }
   },
   "memory": {
@@ -546,7 +535,7 @@
     "screenTitle": "درباره برنامه",
     "description": "برنامه‌ای که مدل‌های زبانی را مستقیماً به گوشی شما می‌آورد. بر پایه llama.cpp و llama.rn ساخته شده.",
     "supportProject": "حمایت از پروژه",
-    "supportProjectDescription": "اگر از استفاده PocketPal AI لذت می‌برید، لطفاً حمایت از پروژه را در نظر بگیرید:",
+    "supportProjectDescription": "اگر از استفاده PocketWisdom لذت می‌برید، لطفاً حمایت از پروژه را در نظر بگیرید:",
     "githubButton": "ستاره در GitHub",
     "orBy": "یا با",
     "versionCopiedTitle": "نسخه کپی شد",
@@ -554,17 +543,17 @@
     "privacyPolicy": "سیاست حریم خصوصی",
     "termsOfService": "شرایط استفاده از خدمات",
     "tour": "تور معرفی",
-    "tourDescription": "صفحه‌های خوش‌آمدگویی را دوباره ببینید تا با امکانات PocketPal AI آشنا شوید.",
+    "tourDescription": "صفحه‌های خوش‌آمدگویی را دوباره ببینید تا با امکانات PocketWisdom آشنا شوید.",
     "showIntroButton": "نمایش دوباره معرفی",
     "openSourceNotices": "مجوزهای متن‌باز",
     "phononNoticesCredit": "مدل صوتی و صداهای Phonon از Gradium، با مجوز Apache-2.0. بر پایه Pocket TTS و کدک Mimi از Kyutai ساخته شده."
   },
   "feedback": {
     "title": "ارسال بازخورد",
-    "description": "نظر شما مهم است! به ما بگویید PocketPal AI چطور به شما کمک می‌کند و چه کاری می‌توانیم انجام دهیم تا مفیدتر شود.",
+    "description": "نظر شما مهم است! به ما بگویید PocketWisdom چطور به شما کمک می‌کند و چه کاری می‌توانیم انجام دهیم تا مفیدتر شود.",
     "shareThoughtsButton": "نظرات خود را به اشتراک بگذارید",
     "useCase": {
-      "label": "PocketPal AI را برای چه کاری استفاده می‌کنید؟",
+      "label": "PocketWisdom را برای چه کاری استفاده می‌کنید؟",
       "placeholder": "مثلاً خلاصه‌سازی، ایفای نقش و غیره"
     },
     "featureRequests": {
@@ -576,7 +565,7 @@
       "placeholder": "هر نظر دیگری دارید با ما به اشتراک بگذارید."
     },
     "usageFrequency": {
-      "label": "چقدر از PocketPal AI استفاده می‌کنید؟ (اختیاری)",
+      "label": "چقدر از PocketWisdom استفاده می‌کنید؟ (اختیاری)",
       "options": {
         "daily": "روزانه",
         "weekly": "هفتگی",
@@ -626,7 +615,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "مدلی موجود نیست",
-      "noModelsDescription": "یک مدل دانلود کنید تا گفتگو با PocketPal را شروع کنید",
+      "noModelsDescription": "یک مدل دانلود کنید تا گفتگو با PocketWisdom را شروع کنید",
       "noModelsButton": "دانلود مدل",
       "activateModelTitle": "برای شروع یک مدل را فعال کنید",
       "activateModelDescription": "مدل را انتخاب و دانلود کنید. بعد از دانلود، روی بارگذاری کنار مدل بزنید و گفتگو را شروع کنید.",
@@ -679,7 +668,7 @@
     },
     "modelErrorReportSheet": {
       "title": "گزارش مشکل بارگذاری مدل",
-      "privacyNote": "با اشتراک‌گذاری جزئیات این خطا به بهبود PocketPal کمک کنید. موارد زیر را بررسی کنید — می‌توانید هر موردی که نمی‌خواهید ارسال شود را غیرفعال کنید.",
+      "privacyNote": "با اشتراک‌گذاری جزئیات این خطا به بهبود PocketWisdom کمک کنید. موارد زیر را بررسی کنید — می‌توانید هر موردی که نمی‌خواهید ارسال شود را غیرفعال کنید.",
       "errorMessage": "پیام خطا",
       "modelInfo": "اطلاعات مدل",
       "modelName": "نام",
@@ -697,7 +686,7 @@
       "submit": "ارسال گزارش",
       "success": {
         "title": "گزارش ارسال شد",
-        "message": "ممنون که به بهبود PocketPal کمک می‌کنید. گزارش شما به رفع این مشکل کمک خواهد کرد."
+        "message": "ممنون که به بهبود PocketWisdom کمک می‌کنید. گزارش شما به رفع این مشکل کمک خواهد کرد."
       },
       "error": {
         "title": "ارسال گزارش ناموفق بود",
@@ -1090,11 +1079,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "پَل‌های من (محلی)",
-      "myLibrary": "کتابخانه من (palshub.ai)",
-      "discoverPals": "کشف پَل‌ها (palshub.ai)"
-    },
     "systemPrompt": "پرامپت سیستم",
     "videoAnalysis": "تحلیل ویدیو",
     "videoAnalysisDescription": "این یک دستیار هوش مصنوعی مبتنی بر ویدیو است که تحلیل لحظه‌ای از استریم ویدیویی دوربین دستگاه شما ارائه می‌دهد.",
@@ -1116,14 +1100,10 @@
     "profile": "پروفایل",
     "signIn": "ورود",
     "addPal": "افزودن پَل",
-    "signInToAccessLibrary": "برای دسترسی به کتابخانه‌تان از palshub.ai وارد شوید",
     "signOut": "خروج",
     "signOutConfirmation": "آیا مطمئنید می‌خواهید خارج شوید؟",
     "signOutError": "خروج با مشکل مواجه شد. لطفاً دوباره تلاش کنید.",
     "account": "حساب کاربری",
-    "signInToPalsHub": "ورود به PalsHub",
-    "signInDescription": "به کتابخانه‌تان دسترسی پیدا کنید، پَل‌های خصوصی بسازید و بین دستگاه‌ها همگام‌سازی کنید",
-    "searchAllPals": "جستجو در همه پَل‌ها...",
     "deletePalConfirmation": "آیا مطمئنید می‌خواهید «{{palName}}» را حذف کنید؟",
     "filters": {
       "all": "همه",
@@ -1145,66 +1125,6 @@
       "oldest": "قدیمی‌ترین",
       "rating": "پرامتیازترین",
       "popular": "محبوب‌ترین"
-    },
-    "palDetailSheet": {
-      "by": "توسط",
-      "unknown": "ناشناس",
-      "rating": "امتیاز",
-      "reviews": "نظرات",
-      "created": "تاریخ ایجاد",
-      "description": "توضیحات",
-      "noDescriptionAvailable": "توضیحاتی موجود نیست.",
-      "categories": "دسته‌بندی‌ها",
-      "tags": "برچسب‌ها",
-      "systemPrompt": "پرامپت سیستم",
-      "downloaded": "دانلود شد",
-      "success": "موفق",
-      "palAddedToCollection": "پَل به مجموعه شما اضافه شد!",
-      "error": "خطا",
-      "failedToLoadDetails": "بارگذاری جزئیات پَل با مشکل مواجه شد",
-      "failedToDownload": "دانلود پَل با مشکل مواجه شد",
-      "notAvailable": "ندارد"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "باز کردن",
-      "install": "نصب",
-      "pending": "در انتظار",
-      "unlocking": "در حال فعال‌سازی",
-      "retry": "تلاش مجدد",
-      "supportCode": "کد پشتیبانی: {{code}}",
-      "noLongerAvailable": "این پَل دیگر در دسترس نیست. می‌توانید {{refundLink}}.",
-      "refundLink": "از Apple بازگشت وجه بخواهید",
-      "notCompleted": "این خرید کامل نشد. Google مبلغ را به شما بازمی‌گرداند.",
-      "withdrawnRefunding": "این پَل از عرضه خارج شد. برای بازگشت وجه با پشتیبانی تماس بگیرید.",
-      "invalid": "تأیید این خرید ممکن نشد.",
-      "heldInvalid": "فعال‌سازی این خرید ممکن نشد. با همین کد با پشتیبانی تماس بگیرید.",
-      "recommendedModel": "مدل پیشنهادی",
-      "sampleExchange": "نمونه گفتگو",
-      "signInLine": "قبلاً خریده‌اید؟ وارد شوید",
-      "licenseNotice": "در حال خرید مجوز استفاده از این پَل هستید.",
-      "termsOfSale": "شرایط فروش",
-      "appleMediaTerms": "شرایط خدمات رسانه‌ای Apple",
-      "linkPrompt": "وارد شوید تا در دستگاه‌های دیگرتان هم از آن استفاده کنید",
-      "linkSignIn": "ورود",
-      "dismiss": "فعلاً نه",
-      "linkConflict": "این خریدها به حساب کاربری دیگری متصل‌اند.",
-      "restorePurchases": "بازیابی خریدها",
-      "badgePending": "در انتظار",
-      "badgeUnlocking": "در حال فعال‌سازی",
-      "badgeUpdate": "به‌روزرسانی در دسترس",
-      "updatePrompt": "نسخه جدیدی از سازنده در دسترس است.",
-      "updatePromptWithNote": "نسخه جدیدی از سازنده در دسترس است: {{note}}.",
-      "updateButton": "به‌روزرسانی",
-      "updateConfirmText": "این کار ویرایش‌های شما را در بخش‌هایی که سازنده تغییر داده جایگزین می‌کند.",
-      "updateConfirm": "به‌روزرسانی",
-      "updateCancel": "لغو",
-      "modelStep": {
-        "download": "دانلود · {{size}}",
-        "startChat": "شروع چت",
-        "needsMemory": "این پَل برای کوچک‌ترین مدلش به دستگاهی با حداقل {{size}} حافظه نیاز دارد.",
-        "noModelFits": "این دستگاه حافظه کافی برای این پَل ندارد."
-      }
     }
   },
   "validation": {
@@ -1219,7 +1139,7 @@
   },
   "camera": {
     "permissionTitle": "دسترسی به دوربین لازم است",
-    "permissionMessage": "PocketPal برای تحلیل تصاویر به دسترسی دوربین نیاز دارد",
+    "permissionMessage": "PocketWisdom برای تحلیل تصاویر به دسترسی دوربین نیاز دارد",
     "requestingPermission": "درخواست دسترسی به دوربین...",
     "noDevice": "دوربینی یافت نشد",
     "errorTitle": "خطای دوربین",
@@ -1233,7 +1153,7 @@
   },
   "video": {
     "permissionTitle": "دسترسی به دوربین لازم است",
-    "permissionMessage": "PocketPal برای تحلیل ویدیو به دسترسی دوربین نیاز دارد",
+    "permissionMessage": "PocketWisdom برای تحلیل ویدیو به دسترسی دوربین نیاز دارد",
     "requestingPermission": "درخواست دسترسی به دوربین...",
     "noDevice": "دوربینی یافت نشد",
     "errorTitle": "خطای دوربین",
@@ -1586,14 +1506,14 @@
     "skip": "رد کردن",
     "skipForNow": "فعلاً رد کن",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "با پَل‌هایت آشنا شو.",
       "titleAccent": "پَل‌هایت.",
       "body": "دوستان کوچک و باهوشی که داخل گوشی تو زندگی می‌کنند.\nبیا با هم آماده‌ات کنیم - فقط یک دقیقه طول می‌کشد.",
       "cta": "بگرد و نشانم بده",
-      "eyebrow": "به PocketPal خوش آمدی"
+      "eyebrow": "به PocketWisdom خوش آمدی"
     },
     "screen2": {
       "title": "هر زمان،\nهر جا.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "ورودی صوتی در کنار این مدل چت به حافظه بیشتری نیاز دارد. ممکن است خیلی کند شود یا برنامه بسته شود.",
     "memoryAlertTryAnyway": "باز هم تلاش کنید"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "هوش مصنوعی محلی را یک قدم جلوتر ببرید.",
-    "subline": "Plus، PocketPal را رایگان و متن‌باز نگه می‌دارد. قابلیت‌های اضافه، تشکر ما از شماست.",
-    "unsupportedSubline": "قابلیت‌های Plus هنوز روی این گوشی اجرا نمی‌شوند. باز هم می‌توانید از PocketPal حمایت کنید.",
-    "thanksHeadline": "ممنون که PocketPal را زنده نگه می‌دارید.",
-    "thanksSubline": "Plus روی این دستگاه فعال است.",
-    "features": {
-      "handsFreeVoice": "گفتگوی صوتی هندزفری",
-      "localApiServer": "سرور API محلی"
-    },
-    "ready": "آماده",
-    "needsRam": "نیاز به {{gb}} GB RAM",
-    "comingSoon": "به‌زودی",
-    "speedLine": "سرعت به گوشی و مدل شما بستگی دارد.",
-    "inDevelopment": "قابلیت‌های در حال توسعه ممکن است تغییر کنند یا هرگز منتشر نشوند.",
-    "priceCaption": "هر چقدر دوست دارید بپردازید. قابلیت‌ها در همه قیمت‌ها یکسان است.",
-    "buyError": "خرید انجام نشد. دوباره تلاش کنید.",
-    "getPlus": "تهیه Plus · {{price}}",
-    "getPlusAnyway": "باز هم تهیه Plus · {{price}}",
-    "loading": "در حال بارگذاری",
-    "pending": "در انتظار",
-    "pendingTitle": "در انتظار تأیید پرداخت شما از سوی فروشگاه.",
-    "pendingBody": "به‌محض تأیید، Plus خودش فعال می‌شود. می‌توانید این صفحه را ببندید.",
-    "unavailableTitle": "خرید در حال حاضر در دسترس نیست.",
-    "unavailableBody": "دسترسی به فروشگاه ممکن نشد. بعداً دوباره تلاش کنید یا خرید قبلی‌تان را بازیابی کنید.",
-    "done": "تمام",
-    "oneTimePurchase": "خرید یک‌باره",
-    "restore": "بازیابی",
-    "openSource": "متن‌باز ↗",
-    "licence": "خرید یک‌باره مجوز استفاده از Plus.",
-    "terms": "شرایط",
-    "appleMediaTerms": "شرایط خدمات رسانه‌ای Apple",
-    "noPurchaseFound": "خریدی برای Plus پیدا نشد.",
-    "restoreFailed": "دسترسی به فروشگاه ممکن نشد. دوباره تلاش کنید.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "فعال‌شده",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}، {{second}}",
-      "subtitleMore": "{{first}}، {{second}} و موارد دیگر"
-    },
-    "optIn": "خاموش",
-    "optInNote": "روی این گوشی خاموش است. اگر جرئتش را دارید، در تنظیمات روشنش کنید.",
-    "offInSettingsNote": "در تنظیمات خاموش شده.",
-    "chatStaysFree": "Plus اختیاری است. چت کردن رایگان می‌ماند.",
-    "chooseAmount": "انتخاب مبلغ"
-  },
   "voiceMode": {
     "settingTitle": "گفتگوی صوتی هندزفری",
     "settingDescription": "در چت با مدل حرف بزنید و پاسخ‌هایش را بشنوید.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "باز هم ادامه",
     "chooseSmallerModelCta": "انتخاب مدل کوچک‌تر",
     "startLabel": "شروع حالت صوتی",
-    "startLockedLabel": "گفتگوی صوتی هندزفری، PocketPal Plus",
+    "startLockedLabel": "گفتگوی صوتی هندزفری، PocketWisdom Plus",
     "startLockedHint": "یک پیش‌نمایش کوتاه باز می‌کند. تایپ و دیکته رایگان می‌مانند.",
     "teaserTitle": "گفتگوی صوتی یک قابلیت Plus است",
     "teaserBody": "بدون نیاز به دست حرف بزنید. با صدای بلند پاسخ می‌دهد.",

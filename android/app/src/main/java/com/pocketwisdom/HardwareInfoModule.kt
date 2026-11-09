@@ -1,0 +1,384 @@
+package com.pocketwisdom
+
+import com.facebook.react.bridge.*
+import com.facebook.react.module.annotations.ReactModule
+import com.pocketwisdom.specs.NativeHardwareInfoSpec
+import android.os.Build
+import android.os.Debug
+import java.io.File
+import java.util.regex.Pattern
+import android.opengl.GLES20
+import javax.microedition.khronos.egl.EGL10
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.egl.EGLContext
+import javax.microedition.khronos.egl.EGLDisplay
+import android.app.ActivityManager
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import java.net.Inet4Address
+import org.json.JSONArray
+import org.json.JSONObject
+
+@ReactModule(name = NativeHardwareInfoSpec.NAME)
+class HardwareInfoModule(reactContext: ReactApplicationContext) :
+    NativeHardwareInfoSpec(reactContext) {
+
+  // The JNI implementation lives in jni/src/hardware_info.cpp; our
+  // CMakeLists.txt links it into libappmodules.so, which SoLoader has
+  // already mapped by the time this is called. No System.loadLibrary
+  // needed.
+  private external fun nativePurgeAll(): Boolean
+
+  override fun getName(): String = NativeHardwareInfoSpec.NAME
+
+  override fun getChipset(promise: Promise) {
+    try {
+      // Prefer SOC_MODEL (Android S+) for more specific chipset info
+      val chipset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        Build.SOC_MODEL.takeUnless { it.isNullOrEmpty() }
+          ?: Build.HARDWARE.takeUnless { it.isNullOrEmpty() }
+          ?: Build.BOARD
+      } else {
+        Build.HARDWARE.takeUnless { it.isNullOrEmpty() } ?: Build.BOARD
+      }
+      promise.resolve(chipset)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  override fun getGPUInfo(promise: Promise) {
+    try {
+      val gpuInfo = Arguments.createMap()
+
+      // Get GPU renderer info
+      var renderer = ""
+      var vendor = ""
+      var version = ""
+
+      try {
+        val egl = EGLContext.getEGL() as EGL10
+        val display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY)
+
+        if (display != EGL10.EGL_NO_DISPLAY) {
+          val version_array = IntArray(2)
+          egl.eglInitialize(display, version_array)
+
+          val configsCount = IntArray(1)
+          val configs = arrayOfNulls<EGLConfig>(1)
+          val configSpec = intArrayOf(
+            EGL10.EGL_RENDERABLE_TYPE, 4,
+            EGL10.EGL_NONE
+          )
+
+          egl.eglChooseConfig(display, configSpec, configs, 1, configsCount)
+
+          if (configsCount[0] > 0) {
+            val context = egl.eglCreateContext(
+              display,
+              configs[0],
+              EGL10.EGL_NO_CONTEXT,
+              intArrayOf(0x3098, 2, EGL10.EGL_NONE)
+            )
+
+            if (context != null && context != EGL10.EGL_NO_CONTEXT) {
+              val surfaceAttribs = intArrayOf(
+                EGL10.EGL_WIDTH, 1,
+                EGL10.EGL_HEIGHT, 1,
+                EGL10.EGL_NONE
+              )
+              val surface = egl.eglCreatePbufferSurface(display, configs[0], surfaceAttribs)
+
+              if (surface != null && surface != EGL10.EGL_NO_SURFACE) {
+                egl.eglMakeCurrent(display, surface, surface, context)
+
+                renderer = GLES20.glGetString(GLES20.GL_RENDERER) ?: ""
+                vendor = GLES20.glGetString(GLES20.GL_VENDOR) ?: ""
+                version = GLES20.glGetString(GLES20.GL_VERSION) ?: ""
+
+                egl.eglMakeCurrent(display, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT)
+                egl.eglDestroySurface(display, surface)
+              }
+              egl.eglDestroyContext(display, context)
+            }
+          }
+          egl.eglTerminate(display)
+        }
+      } catch (e: Exception) {
+        // Fallback: GPU info not available
+      }
+
+      gpuInfo.putString("renderer", renderer)
+      gpuInfo.putString("vendor", vendor)
+      gpuInfo.putString("version", version)
+
+      // Detect GPU type based on renderer string
+      val rendererLower = renderer.lowercase()
+      val hasAdreno = Pattern.compile("(adreno|qcom|qualcomm)").matcher(rendererLower).find()
+      val hasMali = Pattern.compile("mali").matcher(rendererLower).find()
+      val hasPowerVR = Pattern.compile("powervr").matcher(rendererLower).find()
+
+      gpuInfo.putBoolean("hasAdreno", hasAdreno)
+      gpuInfo.putBoolean("hasMali", hasMali)
+      gpuInfo.putBoolean("hasPowerVR", hasPowerVR)
+
+      // Note: OpenCL support requires Adreno GPU AND both i8mm and dotprod CPU features
+      // This is a requirement from llama.rn builds
+      // The actual check is done in JavaScript by combining GPU info with CPU info
+      gpuInfo.putBoolean("supportsOpenCL", hasAdreno) // Partial check - CPU features checked separately
+
+      // Determine GPU type string
+      val gpuType = when {
+        hasAdreno -> "Adreno (Qualcomm)"
+        hasMali -> "Mali (ARM)"
+        hasPowerVR -> "PowerVR (Imagination)"
+        renderer.isNotEmpty() -> renderer
+        else -> "Unknown"
+      }
+      gpuInfo.putString("gpuType", gpuType)
+
+      promise.resolve(gpuInfo)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  override fun getCPUInfo(promise: Promise) {
+    try {
+      val cpuInfo = Arguments.createMap()
+      cpuInfo.putInt("cores", Runtime.getRuntime().availableProcessors())
+
+      val processors = Arguments.createArray()
+      val features = mutableSetOf<String>()
+      val cpuInfoFile = File("/proc/cpuinfo")
+
+      if (cpuInfoFile.exists()) {
+        val cpuInfoLines = cpuInfoFile.readLines()
+        var currentProcessor = Arguments.createMap()
+        var hasData = false
+
+        for (line in cpuInfoLines) {
+          if (line.isEmpty() && hasData) {
+            processors.pushMap(currentProcessor)
+            currentProcessor = Arguments.createMap()
+            hasData = false
+            continue
+          }
+
+          val parts = line.split(":")
+          if (parts.size >= 2) {
+            val key = parts[0].trim()
+            val value = parts[1].trim()
+            when (key) {
+              "processor", "model name", "cpu MHz", "vendor_id" -> {
+                currentProcessor.putString(key, value)
+                hasData = true
+              }
+              "flags", "Features" -> {  // "flags" for x86, "Features" for ARM
+                features.addAll(value.split(" ").filter { it.isNotEmpty() })
+              }
+            }
+          }
+        }
+
+        if (hasData) {
+          processors.pushMap(currentProcessor)
+        }
+
+        cpuInfo.putArray("processors", processors)
+
+        // Convert features set to array
+        val featuresArray = Arguments.createArray()
+        features.forEach { featuresArray.pushString(it) }
+        cpuInfo.putArray("features", featuresArray)
+
+        // ML-related CPU features detection
+        cpuInfo.putBoolean("hasFp16", features.any { it in setOf("fphp", "fp16") })
+        cpuInfo.putBoolean("hasDotProd", features.any { it in setOf("dotprod", "asimddp") })
+        cpuInfo.putBoolean("hasSve", features.any { it == "sve" })
+        cpuInfo.putBoolean("hasI8mm", features.any { it == "i8mm" })
+      }
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        cpuInfo.putString("socModel", Build.SOC_MODEL)
+      }
+
+      // HARDWARE is a distinct classifier signal from SOC_MODEL; do not
+      // coalesce them (getChipset hides one behind the other).
+      Build.HARDWARE.takeUnless { it.isNullOrEmpty() }?.let {
+        cpuInfo.putString("hardware", it)
+      }
+
+      readMaxCpuFreqMhz()?.let { cpuInfo.putInt("maxFreqMhz", it) }
+      readPerfCoreCount()?.let { cpuInfo.putInt("perfCoreCount", it) }
+
+      promise.resolve(cpuInfo)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  override fun getAvailableMemory(promise: Promise) {
+    try {
+      val activityManager = reactApplicationContext
+        .getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+      val memInfo = ActivityManager.MemoryInfo()
+      activityManager.getMemoryInfo(memInfo)
+
+      // availMem is already in bytes
+      promise.resolve(memInfo.availMem.toDouble())
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  // Best-effort: a failing JNI/symbol-resolution path still resolves
+  // with purged=false rather than rejecting, so callers don't have to
+  // handle platform-availability cases themselves.
+  override fun purgeNativeAllocator(promise: Promise) {
+    try {
+      val rssBefore = readVmRssKb()
+      val purged = try {
+        nativePurgeAll()
+      } catch (_: Throwable) {
+        // UnsatisfiedLinkError on a build where libappmodules lacks
+        // the symbol; report purged=false and let the caller continue.
+        false
+      }
+      val rssAfter = readVmRssKb()
+      promise.resolve(Arguments.createMap().apply {
+        putBoolean("purged", purged)
+        // RN bridge has no long; doubles round-trip cleanly to JS number.
+        putDouble("rss_kb_before", rssBefore.toDouble())
+        putDouble("rss_kb_after", rssAfter.toDouble())
+      })
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  // Big-core max frequency in MHz, read across all cores' cpufreq nodes.
+  // Some cores can be offline (missing cpufreq node) without being the last
+  // core, so we scan a bounded range and skip gaps rather than stop on the
+  // first absent node. Returns null when no core exposes a readable value.
+  private fun readMaxCpuFreqMhz(): Int? {
+    return try {
+      var maxKhz = 0L
+      val coreCount = Runtime.getRuntime().availableProcessors().coerceIn(1, 16)
+      for (core in 0 until coreCount) {
+        val node = File("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_max_freq")
+        if (!node.exists()) {
+          continue
+        }
+        node.readText().trim().toLongOrNull()?.let {
+          if (it > maxKhz) {
+            maxKhz = it
+          }
+        }
+      }
+      if (maxKhz > 0L) (maxKhz / 1000).toInt() else null
+    } catch (e: Throwable) {
+      null
+    }
+  }
+
+  // 中文版：统计“性能核”数量，供默认推理线程数使用。最高频率低于全机最高
+  // 频率 75% 的核心视为小核（如骁龙 865 的 A55 1.8GHz vs 2.84GHz）；没有
+  // 明显小核簇的芯片（如骁龙 8 Elite）会返回全部核心数。读不到时返回 null。
+  private fun readPerfCoreCount(): Int? {
+    return try {
+      val coreCount = Runtime.getRuntime().availableProcessors().coerceIn(1, 16)
+      val freqs = (0 until coreCount).mapNotNull { core ->
+        val node = File("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_max_freq")
+        if (node.exists()) node.readText().trim().toLongOrNull() else null
+      }.filter { it > 0L }
+      if (freqs.size < coreCount) return null
+      val maxKhz = freqs.maxOrNull() ?: return null
+      freqs.count { it * 4 >= maxKhz * 3 }
+    } catch (e: Throwable) {
+      null
+    }
+  }
+
+  private fun readVmRssKb(): Long {
+    return try {
+      File("/proc/self/status").bufferedReader().useLines { lines ->
+        for (line in lines) {
+          if (line.startsWith("VmRSS:")) {
+            // Format: "VmRSS:  <whitespace>  12345 kB"
+            return line.substringAfter("VmRSS:").trim().substringBefore(" ").toLong()
+          }
+        }
+        0L
+      }
+    } catch (e: Throwable) {
+      0L
+    }
+  }
+
+  override fun getWifiIPv4(promise: Promise) {
+    try {
+      val connectivity = reactApplicationContext
+        .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      @Suppress("DEPRECATION")
+      val networks = connectivity.allNetworks
+      val address = networks
+        .filter { network ->
+          val capabilities = connectivity.getNetworkCapabilities(network)
+          capabilities != null &&
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+            !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+        }
+        .flatMap { connectivity.getLinkProperties(it)?.linkAddresses.orEmpty() }
+        .map { it.address }
+        .firstOrNull {
+          it is Inet4Address && !it.isLoopbackAddress && !it.isLinkLocalAddress
+        }
+      promise.resolve(address?.hostAddress)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  override fun writeMemorySnapshot(label: String, promise: Promise) {
+    try {
+      // Collect memory metrics
+      val pssKb = Debug.getPss()
+      val nativeHeap = Debug.getNativeHeapAllocatedSize()
+      val activityManager = reactApplicationContext
+          .getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+      val memInfo = ActivityManager.MemoryInfo()
+      activityManager.getMemoryInfo(memInfo)
+
+      val snapshot = JSONObject().apply {
+        put("label", label)
+        put("timestamp", java.time.Instant.now().toString())
+        put("native", JSONObject().apply {
+          put("pss_total", pssKb * 1024.0)
+          put("native_heap_allocated", nativeHeap.toDouble())
+          put("available_memory", memInfo.availMem.toDouble())
+        })
+      }
+
+      // Write to external files dir so adb pull works without root on real devices
+      val dir = reactApplicationContext.getExternalFilesDir(null) ?: reactApplicationContext.filesDir
+      val file = File(dir, "memory-snapshots.json")
+      val snapshots = if (file.exists()) {
+        JSONArray(file.readText())
+      } else {
+        JSONArray()
+      }
+      snapshots.put(snapshot)
+      file.writeText(snapshots.toString(2))
+
+      promise.resolve(Arguments.createMap().apply {
+        putString("label", label)
+        putString("status", "written")
+      })
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+}
+

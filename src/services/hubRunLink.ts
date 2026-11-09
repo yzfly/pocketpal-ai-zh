@@ -1,5 +1,5 @@
 /**
- * Parser for the `pocketpal://hub/run` deep link.
+ * Parser for the `pocketwisdom://hub/run` deep link.
  *
  * This is the single parse/validate site for the hub/run route. Both delivery
  * paths (iOS native emitter, Android prod Linking) call it on a raw URL string.
@@ -31,7 +31,7 @@ const isValidRepoId = (value: string): boolean => {
 };
 
 /**
- * True only for the exact `pocketpal://hub/run` route (host=hub, path=run),
+ * True only for the exact `pocketwisdom://hub/run` route (host=hub, path=run),
  * regardless of query payload. Gates the delivery paths so non-hub URLs and
  * unknown hub paths are ignored silently; a malformed `hub/run` payload still
  * reaches the handler (and alerts). Never throws.
@@ -48,7 +48,7 @@ export const isHubLink = (url: string): boolean => {
 };
 
 /**
- * Parses and validates a `pocketpal://hub/run?repo_id=…&filename=…&source=…`
+ * Parses and validates a `pocketwisdom://hub/run?repo_id=…&filename=…&source=…`
  * URL. Returns a HubRunRequest on success, or null on any failure (unknown
  * host/path, missing or malformed `repo_id`). A missing or non-`.gguf`
  * `filename` is a normal success — it is trimmed and stored if present, else

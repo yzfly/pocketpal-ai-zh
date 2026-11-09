@@ -43,7 +43,7 @@ const TOOL_USE_MODEL = {
 
 const PAL_NAME = 'E2E Code Companion';
 const getAppBundleId = (): string =>
-  (driver as any).isAndroid ? 'com.pocketpalai.e2e' : 'ai.pocketpal';
+  (driver as any).isAndroid ? 'com.pocketwisdom.e2e' : 'ai.pocketpal';
 
 const SYSTEM_PROMPT =
   'You are a code companion assistant. When the user asks you to create a webpage, ' +

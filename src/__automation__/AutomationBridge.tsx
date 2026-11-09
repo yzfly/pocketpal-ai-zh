@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {IapAdapter} from './adapters/IapAdapter';
 import {MemoryAdapter} from './adapters/MemoryAdapter';
 import {OnboardingBypass} from './adapters/OnboardingBypass';
 import {TTSAdapter} from './adapters/TTSAdapter';
@@ -27,7 +26,6 @@ export const AutomationBridge: React.FC = () => {
     <>
       <MemoryAdapter />
       <TTSAdapter />
-      <IapAdapter />
       <VoiceAdapter />
       <OnboardingBypass />
     </>

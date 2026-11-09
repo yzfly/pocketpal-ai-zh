@@ -1,7 +1,7 @@
 /**
  * Hub Run Deep Link E2E
  *
- * Drives the `pocketpal://hub/run` deep link end-to-end: fire the link (as the
+ * Drives the `pocketwisdom://hub/run` deep link end-to-end: fire the link (as the
  * Hugging Face "Use this model" button would), land on the full repo file list,
  * download a small model, load it, and send a first chat message.
  *
@@ -28,7 +28,7 @@ declare const driver: WebdriverIO.Browser;
 declare const browser: WebdriverIO.Browser;
 
 // The e2e flavor uses the .e2e applicationId suffix; iOS keeps the prod bundle.
-const ANDROID_PACKAGE = 'com.pocketpalai.e2e';
+const ANDROID_PACKAGE = 'com.pocketwisdom.e2e';
 const IOS_BUNDLE_ID = 'ai.pocketpal';
 
 // QUICK_TEST_MODEL is SmolLM2-135M (bartowski/SmolLM2-135M-Instruct-GGUF). The
@@ -36,7 +36,7 @@ const IOS_BUNDLE_ID = 'ai.pocketpal';
 const REPO_ID = 'bartowski/SmolLM2-135M-Instruct-GGUF';
 
 /**
- * Fire a pocketpal:// deep link via Appium's mobile: deepLink, targeting the
+ * Fire a pocketwisdom:// deep link via Appium's mobile: deepLink, targeting the
  * e2e build on Android and the prod bundle on iOS.
  */
 async function fireDeepLink(url: string): Promise<void> {
@@ -91,7 +91,7 @@ describe('Hub Run Deep Link', () => {
   });
 
   it('rejects a deep link missing repo_id and opens no sheet', async () => {
-    await fireDeepLink('pocketpal://hub/run?filename=x.gguf');
+    await fireDeepLink('pocketwisdom://hub/run?filename=x.gguf');
 
     // The landing sheet must not appear for an invalid link.
     const ready = browser.$(byTestId('hub-run-ready'));
@@ -113,7 +113,7 @@ describe('Hub Run Deep Link', () => {
 
   it(`downloads ${model.id} via hub/run deep link, loads, and chats`, async () => {
     // Fire the link with NO filename - the sheet must list the full repo.
-    await fireDeepLink(`pocketpal://hub/run?repo_id=${REPO_ID}&source=hf`);
+    await fireDeepLink(`pocketwisdom://hub/run?repo_id=${REPO_ID}&source=hf`);
 
     // Wait for the repo to resolve and the DetailsView list to render.
     const ready = browser.$(byTestId('hub-run-ready'));

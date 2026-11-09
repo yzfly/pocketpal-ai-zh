@@ -1,5 +1,5 @@
 {
-  "name": "PocketPal",
+  "name": "PocketWisdom",
   "version": "1.22.1",
   "private": true,
   "scripts": {
@@ -36,7 +36,6 @@
     "@fugood/react-native-audio-pcm-stream": "1.1.4",
     "@gorhom/bottom-sheet": "5.2.14",
     "@hookform/resolvers": "^5.2.2",
-    "@invertase/react-native-apple-authentication": "2.5.1",
     "@nozbe/watermelondb": "^0.28.0",
     "@pocketpalai/react-native-speech": "2.8.2",
     "@pocketpalai/react-native-speech-phonon": "0.1.3",
@@ -46,13 +45,11 @@
     "@react-native-documents/picker": "^11.0.4",
     "@react-native-firebase/app": "^23.5.0",
     "@react-native-firebase/app-check": "^23.5.0",
-    "@react-native-google-signin/google-signin": "^16.0.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/drawer": "^7.14.4",
     "@react-navigation/native": "^7.5.1",
     "@react-navigation/stack": "^7.12.1",
-    "@supabase/supabase-js": "^2.75.0",
     "axios": "^1.12.2",
     "buffer": "^5.5.0",
     "chat-formatter": "^0.3.4",
@@ -76,13 +73,11 @@
     "react-native-gesture-handler": "^2.33.1",
     "react-native-get-random-values": "^1.11.0",
     "react-native-haptic-feedback": "^2.3.3",
-    "react-native-iap": "16.6.2",
     "react-native-image-picker": "^8.2.1",
     "react-native-image-viewing": "^0.2.2",
     "react-native-keyboard-controller": "1.22.7",
     "react-native-keychain": "^10.0.0",
     "react-native-linear-gradient": "^2.8.3",
-    "react-native-nitro-modules": "0.37.1",
     "react-native-paper": "5.15.3",
     "react-native-parsed-text": "^0.0.22",
     "react-native-permissions": "5.6.0",
@@ -151,11 +146,11 @@
   },
   "packageManager": "yarn@1.22.22",
   "codegenConfig": {
-    "name": "PocketPalSpecs",
+    "name": "PocketWisdomSpecs",
     "type": "all",
     "jsSrcsDir": "src/specs",
     "android": {
-      "javaPackageName": "com.pocketpal.specs"
+      "javaPackageName": "com.pocketwisdom.specs"
     }
   }
 }

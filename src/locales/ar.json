@@ -129,7 +129,7 @@
     "importError": "تعذّر استيراد جلسات المحادثات. يُرجى التحقق من تنسيق الملف.",
     "internetSearch": {
       "title": "البحث على الإنترنت",
-      "description": "اسمح لـ Pals بالبحث على الإنترنت باستخدام أدواتها الخاصة. استخدم مفتاح API الخاص بك — لا يحتفظ PocketPal بمفاتيحك ولا يمرّر استعلاماتك عبر خوادمه.",
+      "description": "اسمح لـ Pals بالبحث على الإنترنت باستخدام أدواتها الخاصة. استخدم مفتاح API الخاص بك — لا يحتفظ PocketWisdom بمفاتيحك ولا يمرّر استعلاماتك عبر خوادمه.",
       "providerLabel": "موفّر البحث",
       "providerGated": "قريبًا",
       "keyLabel": "مفتاح API",
@@ -145,7 +145,7 @@
       "resultCountLabel": "عدد النتائج لكل بحث",
       "resultCountDescription": "تقليل عدد النتائج يوفّر مساحة أكبر في سياق النموذج.",
       "consentTitle": "تغادر عمليات البحث جهازك",
-      "consentDescription": "عندما يبحث أحد Pals على الإنترنت، يُرسل استعلام البحث إلى الموفّر المحدد عبر الإنترنت. وعند قراءة صفحة، قد يُرسل عنوان URL ومحتوى الصفحة إلى خدمة القراءة الافتراضية (r.jina.ai) إذا لم يكن لدى الموفّر المحدد قارئ خاص به. لا تُرسل مفاتيح API أو استعلامات البحث إلى PocketPal.",
+      "consentDescription": "عندما يبحث أحد Pals على الإنترنت، يُرسل استعلام البحث إلى الموفّر المحدد عبر الإنترنت. وعند قراءة صفحة، قد يُرسل عنوان URL ومحتوى الصفحة إلى خدمة القراءة الافتراضية (r.jina.ai) إذا لم يكن لدى الموفّر المحدد قارئ خاص به. لا تُرسل مفاتيح API أو استعلامات البحث إلى PocketWisdom.",
       "consentAccept": "أفهم ذلك",
       "consentRequired": "وافق على الإفصاح أعلاه لتعيين مفتاح الـ API و تفعيل البحث.",
       "consentGivenTitle": "تم تفعيل البحث على الإنترنت",
@@ -235,17 +235,6 @@
       "unloadBoundTitle": "هل تريد إلغاء تحميل هذا النموذج؟",
       "unloadBoundBody": "تستخدم هذه المحادثة هذا النموذج. وسيُحمَّل مجددًا عند إرسال رسالتك التالية.",
       "unloadBoundConfirm": "إلغاء التحميل"
-    },
-    "account": {
-      "title": "الحساب",
-      "deleteAccount": "حذف الحساب",
-      "confirmTitle": "هل تريد حذف الحساب؟",
-      "confirmMessage": "سيؤدي هذا إلى حذف حسابك في PalsHub ومكتبته نهائيًا. ستظل مشترياتك عبر App Store أو Google Play قابلة للاستعادة على هذا الجهاز باستخدام حساب المتجر. و سيُحتفظ بسجلات المشتريات بعد إخفاء هويتك لأسباب قانونية.",
-      "confirmWithoutApple": "تعذّر التأكيد من Apple. هل تريد حذف حسابك على أي حال؟",
-      "deleted": "تم حذف حسابك بنجاح.",
-      "signInAgain": "يُرجى تسجيل الدخول مجددًا",
-      "creatorSupport": "‎لحذف حسابات صنّاع المحتوى، يُرجى التواصل مع فريق الدعم: {{contact}}",
-      "failed": "تعذّر الحذف، حاول مجددًا"
     }
   },
   "memory": {
@@ -546,13 +535,13 @@
     "screenTitle": "معلومات التطبيق",
     "description": "تطبيق يتيح لك تشغيل نماذج اللغة مباشرة على هاتفك. يعتمد على llama.cpp وllama.rn.",
     "supportProject": "دعم المشروع",
-    "supportProjectDescription": "إذا أعجبك استخدام PocketPal AI، يُرجى دعم المشروع من خلال:",
+    "supportProjectDescription": "إذا أعجبك استخدام PocketWisdom، يُرجى دعم المشروع من خلال:",
     "githubButton": "وضع نجمة على GitHub",
     "orBy": "أو من خلال",
     "versionCopiedTitle": "تم نسخ الإصدار",
     "versionCopiedDescription": "تم نسخ معلومات الإصدار إلى الحافظة",
     "tour": "جولة",
-    "tourDescription": "إعادة عرض شاشات الترحيب للتعرّف على ما يقدمه PocketPal AI.",
+    "tourDescription": "إعادة عرض شاشات الترحيب للتعرّف على ما يقدمه PocketWisdom.",
     "showIntroButton": "عرض المقدمة مرة أخرى",
     "privacyPolicy": "سياسة الخصوصية",
     "termsOfService": "شروط الخدمة",
@@ -561,10 +550,10 @@
   },
   "feedback": {
     "title": "إرسال ملاحظات",
-    "description": "رأيك يهمنا! أخبرنا كيف يساعدك PocketPal AI وما الذي يمكننا تحسينه ليصبح أكثر فائدة لك.",
+    "description": "رأيك يهمنا! أخبرنا كيف يساعدك PocketWisdom وما الذي يمكننا تحسينه ليصبح أكثر فائدة لك.",
     "shareThoughtsButton": "مشاركة أفكارك",
     "useCase": {
-      "label": "فيما تستخدم PocketPal AI؟",
+      "label": "فيما تستخدم PocketWisdom؟",
       "placeholder": "مثل التلخيص، وتمثيل الأدوار، وغيرها."
     },
     "featureRequests": {
@@ -576,7 +565,7 @@
       "placeholder": "شاركنا أي أفكار أخرى لديك."
     },
     "usageFrequency": {
-      "label": "كم مرة تستخدم PocketPal AI؟ (اختياري)",
+      "label": "كم مرة تستخدم PocketWisdom؟ (اختياري)",
       "options": {
         "daily": "يومياً",
         "weekly": "أسبوعياً",
@@ -647,7 +636,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "لا توجد نماذج متاحة",
-      "noModelsDescription": "نزّل نموذجًا لبدء الدردشة مع PocketPal",
+      "noModelsDescription": "نزّل نموذجًا لبدء الدردشة مع PocketWisdom",
       "noModelsButton": "تنزيل النموذج",
       "activateModelTitle": "فعّل النموذج للبدء",
       "activateModelDescription": "اختر النموذج ونزّله. بعد التنزيل، اضغط على \"تحميل\" بجانب النموذج وابدأ الدردشة.",
@@ -700,7 +689,7 @@
     },
     "modelErrorReportSheet": {
       "title": "الإبلاغ عن مشكلة في تحميل النموذج",
-      "privacyNote": "ساعدنا في تحسين PocketPal من خلال مشاركة تفاصيل حول هذا الخطأ. راجع أدناه ما سيتم مشاركته - يمكنك إلغاء تحديد أي عناصر لا تفضّل تضمينها.",
+      "privacyNote": "ساعدنا في تحسين PocketWisdom من خلال مشاركة تفاصيل حول هذا الخطأ. راجع أدناه ما سيتم مشاركته - يمكنك إلغاء تحديد أي عناصر لا تفضّل تضمينها.",
       "errorMessage": "رسالة الخطأ",
       "modelInfo": "‎معلومات النموذج",
       "modelName": "الاسم",
@@ -718,7 +707,7 @@
       "submit": "إرسال الإبلاغ",
       "success": {
         "title": "تم إرسال الإبلاغ",
-        "message": "شكرًا لمساعدتك في تحسين PocketPal. سيساعدنا إبلاغك في إصلاح هذه المشكلة."
+        "message": "شكرًا لمساعدتك في تحسين PocketWisdom. سيساعدنا إبلاغك في إصلاح هذه المشكلة."
       },
       "error": {
         "title": "فشل الإبلاغ",
@@ -1090,11 +1079,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "رفاقي (محلي)",
-      "myLibrary": "مكتبتي (palshub.ai)",
-      "discoverPals": "استكشف الرفاق (palshub.ai)"
-    },
     "videoAnalysis": "تحليل الفيديو",
     "videoAnalysisDescription": "هذا مساعد ذكاء اصطناعي قائم على الفيديو يقدم تعليقًا فوريًا على تدفقات الفيديو من كاميرا جهازك.",
     "captureInterval": "فترة الالتقاط",
@@ -1114,14 +1098,10 @@
     "profile": "الملف الشخصي",
     "signIn": "تسجيل الدخول",
     "addPal": "إضافة رفيق",
-    "signInToAccessLibrary": "سجّل الدخول للوصول إلى مكتبتك من palshub.ai",
     "signOut": "تسجيل الخروج",
     "signOutConfirmation": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
     "signOutError": "تعذّر تسجيل الخروج. يرجى المحاولة مرة أخرى.",
     "account": "الحساب",
-    "signInToPalsHub": "تسجيل الدخول إلى PalsHub",
-    "signInDescription": "يمكنك الوصول إلى مكتبتك، وإنشاء رفاق خاصين، والمزامنة عبر الأجهزة",
-    "searchAllPals": "ابحث في جميع الرفاق...",
     "deletePalConfirmation": "هل أنت متأكد أنك تريد حذف \"{{palName}}\"؟",
     "filters": {
       "all": "الكل",
@@ -1144,68 +1124,8 @@
       "rating": "الأعلى تقييمًا",
       "popular": "الأكثر شعبية"
     },
-    "palDetailSheet": {
-      "by": "بواسطة",
-      "unknown": "غير معروف",
-      "rating": "التقييم",
-      "reviews": "المراجعات",
-      "created": "تم الإنشاء",
-      "description": "الوصف",
-      "noDescriptionAvailable": "‎لا يوجد وصف متاح.",
-      "categories": "الفئات",
-      "tags": "‎الوسوم",
-      "downloaded": "تم التنزيل",
-      "success": "نجاح",
-      "palAddedToCollection": "تمت إضافة الرفيق إلى مجموعتك!",
-      "error": "خطأ",
-      "failedToLoadDetails": "تعذّر تحميل تفاصيل الرفيق",
-      "failedToDownload": "تعذّر تنزيل الرفيق",
-      "notAvailable": "غير متاح",
-      "systemPrompt": "Prompt النظام"
-    },
     "systemPrompt": "Prompt النظام",
-    "prompt": "Prompt",
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "مفتوح",
-      "install": "تثبيت",
-      "pending": "قيد الانتظار",
-      "unlocking": "جارٍ الفتح",
-      "retry": "‏إعادة المحاولة",
-      "supportCode": "رمز الدعم: {{code}}",
-      "noLongerAvailable": "‪لم يعد هذا الرفيق متاحًا. يمكنك {{refundLink}}.",
-      "refundLink": "اسأل Apple حول عملية استرداد",
-      "notCompleted": "تعذّر إتمام عملية الشراء هذه. ستقوم Google برد المبلغ إليك.",
-      "withdrawnRefunding": "تم سحب هذا الرفيق. تواصل مع الدعم لاسترداد المبلغ.",
-      "invalid": "تعذّر التحقق من عملية الشراء هذه.",
-      "heldInvalid": "تعذّر فتح عملية الشراء هذه. تواصل مع الدعم مع هذا الرمز.",
-      "recommendedModel": "النموذج الموصى به",
-      "sampleExchange": "محادثة نموذجية",
-      "signInLine": "هل تملكه بالفعل؟ سجّل الدخول",
-      "licenseNotice": "أنت تشتري ترخيصًا لاستخدام هذا الرفيق.",
-      "termsOfSale": "شروط البيع",
-      "appleMediaTerms": "شروط خدمات وسائط Apple",
-      "linkPrompt": "سجّل الدخول لاستخدامه على أجهزتك الأخرى أيضًا",
-      "linkSignIn": "تسجيل الدخول",
-      "dismiss": "‎ليس الآن",
-      "linkConflict": "عمليات الشراء هذه مرتبطة بحساب آخر.",
-      "restorePurchases": "استعادة المشتريات",
-      "badgePending": "قيد الانتظار",
-      "badgeUnlocking": "جارٍ الفتح",
-      "badgeUpdate": "يتوفر تحديث",
-      "updatePrompt": "يتوفر إصدار جديد من المنشئ.",
-      "updatePromptWithNote": "يتوفر إصدار جديد من المنشئ: {{note}}.",
-      "updateButton": "تحديث",
-      "updateConfirmText": "‎سيؤدي هذا إلى استبدال تعديلاتك للأجزاء التي غيّرها المنشئ.",
-      "updateConfirm": "تحديث",
-      "updateCancel": "إلغاء",
-      "modelStep": {
-        "download": "تنزيل · {{size}}",
-        "startChat": "ابدء الدردشة",
-        "needsMemory": "يحتاج هذا الرفيق إلى جهاز بذاكرة لا تقل عن {{size}} لأصغر نموذج لديه.",
-        "noModelFits": "لا يمتلك هذا الجهاز ذاكرة كافية لهذا الرفيق."
-      }
-    }
+    "prompt": "Prompt"
   },
   "validation": {
     "nameRequired": "الاسم مطلوب",
@@ -1219,7 +1139,7 @@
   },
   "camera": {
     "permissionTitle": "إذن الكاميرا مطلوب",
-    "permissionMessage": "يحتاج PocketPal إلى الوصول إلى الكاميرا لتحليل الصور",
+    "permissionMessage": "يحتاج PocketWisdom إلى الوصول إلى الكاميرا لتحليل الصور",
     "requestingPermission": "جارٍ طلب إذن الكاميرا...",
     "noDevice": "لم يتم العثور على كاميرا",
     "errorTitle": "خطأ في الكاميرا",
@@ -1233,7 +1153,7 @@
   },
   "video": {
     "permissionTitle": "إذن الكاميرا مطلوب",
-    "permissionMessage": "يحتاج PocketPal إلى الوصول إلى الكاميرا لتحليل الفيديو",
+    "permissionMessage": "يحتاج PocketWisdom إلى الوصول إلى الكاميرا لتحليل الفيديو",
     "requestingPermission": "جارٍ طلب إذن الكاميرا...",
     "noDevice": "لم يتم العثور على كاميرا",
     "errorTitle": "خطأ في الكاميرا",
@@ -1586,14 +1506,14 @@
     "skip": "تخطى",
     "skipForNow": "تخطٍى الآن",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "تعرّف على رفاقك.",
       "titleAccent": "الرفاق.",
       "body": "أصدقاء أذكياء صغار يعيشون داخل هاتفك.\nلنُجهّزك — سيستغرق الأمر دقيقة.",
       "cta": "أرِني الجولة",
-      "eyebrow": "مرحبًا بك في PocketPal"
+      "eyebrow": "مرحبًا بك في PocketWisdom"
     },
     "screen2": {
       "title": "في أي وقت،\nوفي أي مكان.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "يتطلب الإدخال الصوتي ذاكرة إضافية إلي جانب نموذج الدردشة هذا. وقد يصبح التطبيق بطيئًا جدًا، أو قد يُغلق.",
     "memoryAlertTryAnyway": "حاول على أي حال"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "اذهب بالذكاء الاصطناعي المحلي إلى مدى أبعد.",
-    "subline": "Plus يُبقي PocketPal مجانيًا ومفتوح المصدر. والميزات الإضافية هي شكرنا لك.",
-    "unsupportedSubline": "ميزات Plus لا تعمل على هذا الهاتف بعد. ما زال بإمكانك دعم PocketPal.",
-    "thanksHeadline": "شكرًا لأنك تُبقي PocketPal مستمرًا.",
-    "thanksSubline": "تم فتح Plus على هذا الجهاز.",
-    "features": {
-      "handsFreeVoice": "صوت بدون استخدام اليدين",
-      "localApiServer": "خادم API محلي"
-    },
-    "ready": "جاهز",
-    "needsRam": "يحتاج {{gb}} GB من ذاكرة RAM",
-    "comingSoon": "قريبًا",
-    "speedLine": "تعتمد السرعة على هاتفك والنموذج المستخدم.",
-    "inDevelopment": "قد تتغيّر الميزات قيد التطوير أو لا تُطلق.",
-    "priceCaption": "ادفع ما تشاء. الميزات نفسها عند أي سعر.",
-    "buyError": "لم تكتمل عملية الشراء. حاول مرة أخرى.",
-    "getPlus": "احصل على Plus · {{price}}",
-    "getPlusAnyway": "احصل على Plus رغم ذلك · {{price}}",
-    "loading": "جارٍ التحميل",
-    "pending": "قيد الانتظار",
-    "pendingTitle": "في انتظار تأكيد المتجر لعملية الدفع.",
-    "pendingBody": "سيُفتح Plus تلقائيًا بعد اكتمال العملية. يمكنك إغلاق هذه الشاشة.",
-    "unavailableTitle": "المشتريات غير متاحة حاليًا.",
-    "unavailableBody": "تعذّر الاتصال بالمتجر. حاول مرة أخرى لاحقًا، أو استعد عملية شراء سابقة.",
-    "done": "تم",
-    "oneTimePurchase": "شراء لمرة واحدة",
-    "restore": "استعادة",
-    "openSource": "مفتوح المصدر ↗",
-    "licence": "شراء لمرة واحدة لترخيص استخدام Plus.",
-    "terms": "الشروط",
-    "appleMediaTerms": "شروط خدمات وسائط Apple",
-    "noPurchaseFound": "لم نجد أي عملية شراء لـ Plus.",
-    "restoreFailed": "تعذّر الاتصال بالمتجر. حاول مرة أخرى.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "تم الفتح",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}، {{second}}",
-      "subtitleMore": "{{first}}، {{second}} والمزيد"
-    },
-    "optIn": "متوقف",
-    "optInNote": "متوقف على هذا الهاتف. فعّله من الإعدادات إن كنت جسورًا.",
-    "offInSettingsNote": "تم إيقافه من الإعدادات.",
-    "chatStaysFree": "Plus اختياري. الدردشة تبقى مجانية.",
-    "chooseAmount": "اختر مبلغًا"
-  },
   "voiceMode": {
     "settingTitle": "صوت بدون استخدام اليدين",
     "settingDescription": "تحدّث مع النموذج في الدردشة واسمع ردوده.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "متابعة رغم ذلك",
     "chooseSmallerModelCta": "اختيار نموذج أصغر",
     "startLabel": "بدء الوضع الصوتي",
-    "startLockedLabel": "صوت بدون استخدام اليدين، PocketPal Plus",
+    "startLockedLabel": "صوت بدون استخدام اليدين، PocketWisdom Plus",
     "startLockedHint": "يفتح معاينة قصيرة. الكتابة والإملاء يبقيان مجانيين.",
     "teaserTitle": "المحادثة الصوتية من ميزات Plus",
     "teaserBody": "تحدّث بدون استخدام يديك، وسيرد عليك بصوت عالٍ.",

@@ -7,67 +7,27 @@ import {useTheme} from '../../../../hooks';
 import {createStyles} from './styles';
 import {PAL_FILTER_LABELS} from '../../../../utils/palshub-display';
 
-export type FilterType =
-  | 'all'
-  | 'my-pals'
-  | 'local'
-  | 'video'
-  | 'free'
-  | 'premium'; // Changed from 'paid' to 'premium'
+export type FilterType = 'all' | 'video';
 
 interface FilterChipsProps {
   activeFilter: FilterType;
   onFilterChange: (filter: FilterType) => void;
-  isAuthenticated: boolean;
 }
 
 interface FilterOption {
   key: FilterType;
   label: string;
-  showWhenUnauthenticated?: boolean;
 }
 
 export const FilterChips: React.FC<FilterChipsProps> = observer(
-  ({activeFilter, onFilterChange, isAuthenticated}) => {
+  ({activeFilter, onFilterChange}) => {
     const theme = useTheme();
     const styles = createStyles(theme);
 
-    const filterOptions: FilterOption[] = [
-      {
-        key: 'all',
-        label: PAL_FILTER_LABELS.all,
-        showWhenUnauthenticated: true,
-      },
-      {
-        key: 'my-pals',
-        label: PAL_FILTER_LABELS['my-pals'],
-        showWhenUnauthenticated: false,
-      },
-      {
-        key: 'local',
-        label: PAL_FILTER_LABELS.local,
-        showWhenUnauthenticated: true,
-      },
-      {
-        key: 'video',
-        label: PAL_FILTER_LABELS.video,
-        showWhenUnauthenticated: true,
-      },
-      {
-        key: 'free',
-        label: PAL_FILTER_LABELS.free,
-        showWhenUnauthenticated: true,
-      },
-      {
-        key: 'premium',
-        label: PAL_FILTER_LABELS.premium,
-        showWhenUnauthenticated: true,
-      },
+    const visibleFilters: FilterOption[] = [
+      {key: 'all', label: PAL_FILTER_LABELS.all},
+      {key: 'video', label: PAL_FILTER_LABELS.video},
     ];
-
-    const visibleFilters = filterOptions.filter(
-      option => isAuthenticated || option.showWhenUnauthenticated,
-    );
 
     return (
       <View style={styles.container}>

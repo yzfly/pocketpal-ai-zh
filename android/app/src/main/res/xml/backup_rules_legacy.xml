@@ -4,9 +4,9 @@
     <include domain="database" path="." requireFlags="clientSideEncryption"/>
     <include domain="file" path="profileInstalled" requireFlags="clientSideEncryption"/>
     <include domain="file" path="db-migration-complete.flag" requireFlags="clientSideEncryption"/>
-    <include domain="root" path="pocketpalai.db" requireFlags="clientSideEncryption"/>
-    <include domain="root" path="pocketpalai.db-wal" requireFlags="clientSideEncryption"/>
-    <include domain="root" path="pocketpalai.db-shm" requireFlags="clientSideEncryption"/>
+    <include domain="root" path="pocketwisdom.db" requireFlags="clientSideEncryption"/>
+    <include domain="root" path="pocketwisdom.db-wal" requireFlags="clientSideEncryption"/>
+    <include domain="root" path="pocketwisdom.db-shm" requireFlags="clientSideEncryption"/>
     <!-- Neural TTS files (tts/) are not included in legacy backup by default
          (legacy scheme is include-only), so no exclude is needed here. -->
 </full-backup-content>

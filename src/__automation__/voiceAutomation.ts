@@ -26,8 +26,8 @@ import {clearVoiceTrace, dumpVoiceTrace} from '../utils/voiceTrace';
  *
  * Marker string for the CI prod-bundle grep: VOICE_AUTOMATION_STATE.
  *
- * Commands (`pocketpal://voice?cmd=...`):
- *   unlock::on|off|plus the dev entitlement override; plus clears it so Plus decides
+ * Commands (`pocketwisdom://voice?cmd=...`):
+ *   unlock::on|off|plus the dev entitlement override; plus clears it (default unlocked)
  *   gate::on|off        device tier inside or below the voice-mode gate
  *   state::listening|muted|thinking|speaking|error|bar|closed
  *   setup::incomplete|complete   in-use whisper tier not installed / installed

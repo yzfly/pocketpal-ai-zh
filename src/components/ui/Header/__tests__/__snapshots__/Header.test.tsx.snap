@@ -16,7 +16,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -40,7 +40,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -53,7 +53,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -85,7 +85,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -109,7 +109,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -122,7 +122,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -154,7 +154,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -180,7 +180,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -193,7 +193,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -225,7 +225,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -251,7 +251,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -264,7 +264,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -296,7 +296,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -317,7 +317,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -330,7 +330,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -362,7 +362,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -383,7 +383,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -396,7 +396,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -428,7 +428,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -451,7 +451,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -464,7 +464,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -496,7 +496,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -519,7 +519,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -532,7 +532,7 @@ exports[`Header — snapshot matrix baseline (variant x size x {default,disabled
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -564,7 +564,7 @@ exports[`Header — snapshot matrix non-Latin font-fallback canary (canaryVarian
       [
         {
           "alignItems": "center",
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "flexDirection": "row",
           "paddingHorizontal": 16,
           "paddingVertical": 8,
@@ -585,7 +585,7 @@ exports[`Header — snapshot matrix non-Latin font-fallback canary (canaryVarian
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#171717",
             "fontFamily": "Inter-Medium",
             "fontSize": 18,
             "fontWeight": "500",
@@ -598,7 +598,7 @@ exports[`Header — snapshot matrix non-Latin font-fallback canary (canaryVarian
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",

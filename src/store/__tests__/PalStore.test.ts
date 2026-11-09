@@ -1,10 +1,8 @@
 import {runInAction} from 'mobx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {palStore} from '../PalStore';
-import {palsHubService} from '../../services';
 import {palRepository} from '../../repositories/PalRepository';
 import type {Pal} from '../../types/pal';
-import type {PalsHubPal} from '../../types/palshub';
 import * as imageUtils from '../../utils/imageUtils';
 import {resolveHFModelForDownload} from '../../utils/hfResolve';
 import {LOOKIE_DEFAULT_MODEL} from '../builtinPalModels';
@@ -43,18 +41,6 @@ jest.mock('../../utils/imageUtils', () => ({
   deletePalThumbnail: jest.fn(),
 }));
 
-jest.mock('../../services', () => ({
-  palsHubService: {
-    getPals: jest.fn(),
-    getPal: jest.fn(),
-    getLibrary: jest.fn(),
-    getMyPals: jest.fn(),
-    getCategories: jest.fn(),
-    getTags: jest.fn(),
-    checkPalOwnership: jest.fn(),
-  },
-}));
-
 // Mock MobX persist
 jest.mock('mobx-persist-store', () => ({
   makePersistable: jest.fn(),
@@ -77,22 +63,6 @@ describe('PalStore', () => {
     updated_at: '2023-01-01T00:00:00Z',
   };
 
-  const mockPalsHubPal: PalsHubPal = {
-    id: 'ph-pal-1',
-    title: 'PalsHub Test Pal',
-    description: 'A test pal from PalsHub',
-    creator_id: 'creator-1',
-    protection_level: 'public',
-    price_cents: 0,
-    system_prompt: 'You are a {{role}} assistant.',
-    thumbnail_url: 'https://example.com/thumb.jpg',
-    type: 'palshub',
-    model_settings: {},
-    allow_fork: true,
-    created_at: '2023-01-01T00:00:00Z',
-    updated_at: '2023-01-01T00:00:00Z',
-  };
-
   beforeEach(async () => {
     jest.clearAllMocks();
     await AsyncStorage.clear();
@@ -100,11 +70,6 @@ describe('PalStore', () => {
     // Reset store state
     runInAction(() => {
       palStore.pals = [];
-      palStore.cachedPalsHubPals = [];
-      palStore.userLibrary = [];
-      palStore.userCreatedPals = [];
-      palStore.isLoadingPalsHub = false;
-      palStore.syncState = {status: 'idle'};
       palStore.isMigrating = false;
       palStore.migrationComplete = false;
     });
@@ -169,7 +134,7 @@ describe('PalStore', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const lookieCall = (palRepository.createPal as jest.Mock).mock.calls.find(
-        call => call[0]?.name === 'Lookie',
+        call => call[0]?.name === '看图助手',
       );
 
       expect(lookieCall).toBeDefined();
@@ -182,7 +147,7 @@ describe('PalStore', () => {
       const existingLookie: Pal = {
         ...mockPal,
         id: 'existing-lookie',
-        name: 'Lookie',
+        name: '看图助手',
         capabilities: {video: true},
       } as Pal;
       (palRepository.getAllPals as jest.Mock).mockResolvedValue([
@@ -195,7 +160,7 @@ describe('PalStore', () => {
 
       const lookieCreate = (
         palRepository.createPal as jest.Mock
-      ).mock.calls.find(call => call[0]?.name === 'Lookie');
+      ).mock.calls.find(call => call[0]?.name === '看图助手');
       expect(lookieCreate).toBeUndefined();
       expect(resolveHFModelForDownload).not.toHaveBeenCalled();
     });
@@ -222,7 +187,7 @@ describe('PalStore', () => {
     it('seeds Pip when absent', async () => {
       await callInitializePipPal();
       const pip = palStore.pals.find(
-        p => p.name === 'Pip' && p.source === 'local',
+        p => p.name === '聊天助手' && p.source === 'local',
       );
       expect(pip).toBeDefined();
       expect(pip?.type).toBe('local');
@@ -235,7 +200,7 @@ describe('PalStore', () => {
       (palRepository.createPal as jest.Mock).mockClear();
       await callInitializePipPal();
       const pipCount = palStore.pals.filter(
-        p => p.name === 'Pip' && p.source === 'local',
+        p => p.name === '聊天助手' && p.source === 'local',
       ).length;
       expect(pipCount).toBe(1);
       expect(palRepository.createPal).not.toHaveBeenCalled();
@@ -249,7 +214,7 @@ describe('PalStore', () => {
       const existingPip: Pal = {
         ...mockPal,
         id: 'pip-existing',
-        name: 'Pip',
+        name: '聊天助手',
         source: 'local',
         type: 'local',
         defaultModel: boundModel,
@@ -261,7 +226,7 @@ describe('PalStore', () => {
       await callInitializePipPal();
 
       const pip = palStore.pals.find(
-        p => p.name === 'Pip' && p.source === 'local',
+        p => p.name === '聊天助手' && p.source === 'local',
       );
       expect(pip).toBeDefined();
       expect(pip?.id).toBe('pip-existing');
@@ -276,7 +241,7 @@ describe('PalStore', () => {
       const lookie: Pal = {
         ...mockPal,
         id: 'lookie-1',
-        name: 'Lookie',
+        name: '看图助手',
         source: 'local',
         type: 'local',
         capabilities: {video: true},
@@ -289,13 +254,13 @@ describe('PalStore', () => {
       await callInitializePipPal();
 
       const names = palStore.pals.map(p => p.name).sort();
-      expect(names).toEqual(['Lookie', 'Pip']);
+      expect(names).toEqual(['看图助手', '聊天助手']);
     });
   });
 
   describe.each([
-    ['Lookie', 'initializeLookiePal'],
-    ['Pip', 'initializePipPal'],
+    ['看图助手', 'initializeLookiePal'],
+    ['聊天助手', 'initializePipPal'],
   ])('%s seed persistence', (name, initializer) => {
     const seed = () => (palStore as any)[initializer]();
 
@@ -494,700 +459,6 @@ describe('PalStore', () => {
     });
   });
 
-  describe('PalsHub Integration', () => {
-    describe('searchPalsHubPals', () => {
-      it('should search pals and update state', async () => {
-        const mockResponse = {
-          pals: [mockPalsHubPal],
-          total_count: 1,
-          page: 1,
-          limit: 20,
-          has_more: false,
-        };
-
-        (palsHubService.getPals as jest.Mock).mockResolvedValue(mockResponse);
-
-        expect(palStore.isLoadingPalsHub).toBe(false);
-        expect(palStore.syncState.status).toBe('idle');
-
-        const result = await palStore.searchPalsHubPals({query: 'test'});
-
-        expect(palsHubService.getPals).toHaveBeenCalledWith({query: 'test'});
-        expect(result).toEqual(mockResponse);
-        expect(palStore.cachedPalsHubPals).toEqual(mockResponse.pals);
-        expect(palStore.isLoadingPalsHub).toBe(false);
-        expect(palStore.syncState.status).toBe('success');
-      });
-
-      it('should handle search errors gracefully', async () => {
-        const error = new Error('Search failed');
-        (palsHubService.getPals as jest.Mock).mockRejectedValue(error);
-
-        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-        // Should not throw, but return empty results
-        const result = await palStore.searchPalsHubPals();
-
-        expect(result).toEqual({
-          pals: [],
-          total_count: 0,
-          page: 1,
-          limit: 20,
-          has_more: false,
-        });
-        expect(palStore.cachedPalsHubPals).toEqual([]);
-        expect(palStore.isLoadingPalsHub).toBe(false);
-        expect(palStore.syncState.status).toBe('success'); // Changed to success for graceful handling
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'PalsHub search failed (this is expected if not configured):',
-          error,
-        );
-
-        consoleSpy.mockRestore();
-      });
-    });
-
-    describe('loadUserLibrary', () => {
-      it('should load user library and update state', async () => {
-        const mockResponse = {
-          pals: [
-            {
-              ...mockPalsHubPal,
-              is_owned: true,
-            },
-          ],
-          total_count: 1,
-          page: 1,
-          limit: 20,
-          has_more: false,
-        };
-
-        (palsHubService.getLibrary as jest.Mock).mockResolvedValue(
-          mockResponse,
-        );
-
-        const result = await palStore.loadUserLibrary();
-
-        expect(palsHubService.getLibrary).toHaveBeenCalled();
-        expect(result).toEqual(mockResponse);
-        expect(palStore.userLibrary).toEqual(mockResponse.pals);
-        expect(palStore.syncState.status).toBe('success');
-      });
-
-      it('should handle library loading errors gracefully', async () => {
-        const error = new Error('Library load failed');
-        (palsHubService.getLibrary as jest.Mock).mockRejectedValue(error);
-
-        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-        // Should not throw, but return empty results
-        const result = await palStore.loadUserLibrary();
-
-        expect(result).toEqual({
-          pals: [],
-          total_count: 0,
-          page: 1,
-          limit: 20,
-          has_more: false,
-        });
-        expect(palStore.userLibrary).toEqual([]);
-        expect(palStore.syncState.status).toBe('success'); // Changed to success for graceful handling
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'User library load failed (this is expected if not configured):',
-          error,
-        );
-
-        consoleSpy.mockRestore();
-      });
-    });
-
-    describe('clearAccountPals', () => {
-      it('empties the library and created lists and nothing else', () => {
-        runInAction(() => {
-          palStore.pals = [mockPal];
-          palStore.cachedPalsHubPals = [mockPalsHubPal];
-          palStore.userLibrary = [mockPalsHubPal];
-          palStore.userCreatedPals = [mockPalsHubPal];
-        });
-
-        palStore.clearAccountPals();
-
-        expect(palStore.userLibrary).toEqual([]);
-        expect(palStore.userCreatedPals).toEqual([]);
-        expect(palStore.pals).toEqual([mockPal]);
-        expect(palStore.cachedPalsHubPals).toEqual([mockPalsHubPal]);
-        Object.values(palRepository).forEach(method =>
-          expect(method).not.toHaveBeenCalled(),
-        );
-      });
-    });
-
-    describe('helper methods', () => {
-      it('should get categories', async () => {
-        const mockCategories = {
-          categories: [{id: '1', name: 'AI Assistant'}],
-        };
-
-        (palsHubService.getCategories as jest.Mock).mockResolvedValue(
-          mockCategories,
-        );
-
-        const result = await palStore.getCategories();
-
-        expect(result).toEqual(mockCategories);
-        expect(palsHubService.getCategories).toHaveBeenCalled();
-      });
-
-      it('should get tags', async () => {
-        const mockTags = {
-          tags: [{id: '1', name: 'helpful'}],
-        };
-
-        (palsHubService.getTags as jest.Mock).mockResolvedValue(mockTags);
-
-        const result = await palStore.getTags({query: 'help'});
-
-        expect(result).toEqual(mockTags);
-        expect(palsHubService.getTags).toHaveBeenCalledWith({query: 'help'});
-      });
-
-      it('should get specific pal', async () => {
-        const mockPalsHubPalResponse = {
-          ...mockPalsHubPal,
-          id: '1',
-          title: 'Test Pal',
-          creator_id: 'user1',
-        };
-
-        (palsHubService.getPal as jest.Mock).mockResolvedValue(
-          mockPalsHubPalResponse,
-        );
-
-        const result = await palStore.getPalsHubPal('1');
-
-        expect(result).toEqual(mockPalsHubPalResponse);
-        expect(palsHubService.getPal).toHaveBeenCalledWith('1');
-      });
-
-      it('should check pal ownership', async () => {
-        const mockOwnership = {owned: true, purchase_date: '2023-01-01'};
-
-        (palsHubService.checkPalOwnership as jest.Mock).mockResolvedValue(
-          mockOwnership,
-        );
-
-        const result = await palStore.checkPalOwnership('pal-id');
-
-        expect(result).toEqual(mockOwnership);
-        expect(palsHubService.checkPalOwnership).toHaveBeenCalledWith('pal-id');
-      });
-    });
-
-    describe('downloadPalsHubPal', () => {
-      it('should download pal with provided information', async () => {
-        const palToDownload: PalsHubPal = {
-          ...mockPalsHubPal,
-          id: 'pal-to-download',
-          title: 'Test Pal',
-          system_prompt:
-            'You are a {{role}} assistant with {{expertise}} knowledge.',
-          model_settings: {
-            parameter_schema: [
-              {
-                key: 'role',
-                type: 'text' as const,
-                label: 'Role',
-                required: true,
-                placeholder: 'e.g., helpful, creative',
-              },
-            ],
-            parameters: {
-              role: 'helpful',
-            },
-            temperature: 0.7,
-            max_tokens: 2048,
-          },
-        };
-
-        const expectedLocalPal = {
-          type: 'local',
-          id: expect.any(String),
-          name: 'Test Pal',
-          systemPrompt:
-            'You are a {{role}} assistant with {{expertise}} knowledge.',
-          source: 'palshub',
-          palshub_id: 'pal-to-download',
-          rawPalshubGenerationSettings: palToDownload.model_settings,
-        };
-
-        // Mock the service calls
-        (palRepository.createPal as jest.Mock).mockResolvedValue(
-          expectedLocalPal,
-        );
-        (imageUtils.downloadPalThumbnail as jest.Mock).mockResolvedValue(
-          '/path/to/thumbnail.jpg',
-        );
-
-        const result = await palStore.downloadPalsHubPal(palToDownload);
-
-        // Verify that the pal was created with the provided information
-        expect(palRepository.createPal).toHaveBeenCalledWith(
-          expect.objectContaining({
-            name: 'Test Pal',
-            systemPrompt:
-              'You are a {{role}} assistant with {{expertise}} knowledge.',
-            rawPalshubGenerationSettings: palToDownload.model_settings,
-            source: 'palshub',
-            palshub_id: 'pal-to-download',
-          }),
-        );
-
-        expect(result).toEqual(expectedLocalPal);
-        expect(palStore.pals).toContainEqual(expectedLocalPal);
-      });
-
-      it('should handle premium pal ownership check before downloading', async () => {
-        const premiumPal: PalsHubPal = {
-          ...mockPalsHubPal,
-          id: 'premium-pal-id',
-          price_cents: 500, // Premium pal
-        };
-
-        // Mock ownership check to return owned
-        (palsHubService.checkPalOwnership as jest.Mock).mockResolvedValue({
-          owned: true,
-        });
-        (palRepository.createPal as jest.Mock).mockResolvedValue({
-          ...premiumPal,
-          type: 'local',
-          id: 'local-id',
-        });
-
-        await palStore.downloadPalsHubPal(premiumPal);
-
-        // Verify ownership was checked
-        expect(palsHubService.checkPalOwnership).toHaveBeenCalledWith(
-          'premium-pal-id',
-        );
-      });
-
-      it('should reject download for unowned premium pal', async () => {
-        const premiumPal: PalsHubPal = {
-          ...mockPalsHubPal,
-          id: 'premium-pal-id',
-          price_cents: 500, // Premium pal
-        };
-
-        // Mock ownership check to return not owned
-        (palsHubService.checkPalOwnership as jest.Mock).mockResolvedValue({
-          owned: false,
-        });
-
-        await expect(palStore.downloadPalsHubPal(premiumPal)).rejects.toThrow(
-          'You must own this Pal to download it',
-        );
-
-        // Verify ownership was checked
-        expect(palsHubService.checkPalOwnership).toHaveBeenCalledWith(
-          'premium-pal-id',
-        );
-      });
-    });
-
-    describe('createLocalPalFromPalsHub (via downloadPalsHubPal)', () => {
-      // Drive the private conversion through the public download entry point
-      // and assert on the first argument of the palRepository.createPal mock.
-      const buildPalsHubPal = (overrides: Partial<PalsHubPal>): PalsHubPal => ({
-        ...mockPalsHubPal,
-        id: 'conversion-test',
-        ...overrides,
-      });
-
-      const getCreatePalArg = () =>
-        (palRepository.createPal as jest.Mock).mock.calls[0][0];
-
-      beforeEach(() => {
-        (palRepository.createPal as jest.Mock).mockImplementation(
-          async (data: any) => ({
-            ...data,
-            id: 'created-pal-id',
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z',
-          }),
-        );
-        (imageUtils.downloadPalThumbnail as jest.Mock).mockResolvedValue(
-          '/path/to/thumb.jpg',
-        );
-      });
-
-      it('happy path: maps pact + greeting with snake_case to camelCase rename', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [
-              {name: 'render_html', required: true},
-              {name: 'calculate', required: false},
-            ],
-          },
-          greeting: {
-            text: 'Hi! Want me to sketch something?',
-            suggested_prompts: ['Draw a sunset', 'Make a chart'],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toEqual({
-          talents: [
-            {name: 'render_html', necessity: 'required'},
-            {name: 'calculate', necessity: 'optional'},
-          ],
-        });
-        expect(arg.greeting).toEqual({
-          text: 'Hi! Want me to sketch something?',
-          suggestedPrompts: ['Draw a sunset', 'Make a chart'],
-        });
-      });
-
-      it('legacy / both absent: pact and greeting are undefined', async () => {
-        const palsHubPal = buildPalsHubPal({});
-        // mockPalsHubPal has no pact / greeting — older Palshub server shape.
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toBeUndefined();
-        expect(arg.greeting).toBeUndefined();
-      });
-
-      it('unknown talent name is preserved (no registry validation)', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [{name: 'web_search', required: true}],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toEqual({
-          talents: [{name: 'web_search', necessity: 'required'}],
-        });
-      });
-
-      it('strict-boolean coercion: only literal true maps to required', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [
-              {name: 'a', required: 'true' as any},
-              {name: 'b', required: 1 as any},
-              {name: 'c', required: true},
-              {name: 'd', required: false},
-              {name: 'e'},
-              {name: 'f', required: null as any},
-              {name: 'g', required: 0 as any},
-              {name: 'h', required: '' as any},
-              {name: 'i', required: 'false' as any},
-              {name: 'j', required: {} as any},
-            ],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toEqual({
-          talents: [
-            {name: 'a', necessity: 'optional'},
-            {name: 'b', necessity: 'optional'},
-            {name: 'c', necessity: 'required'},
-            {name: 'd', necessity: 'optional'},
-            {name: 'e', necessity: 'optional'},
-            {name: 'f', necessity: 'optional'},
-            {name: 'g', necessity: 'optional'},
-            {name: 'h', necessity: 'optional'},
-            {name: 'i', necessity: 'optional'},
-            {name: 'j', necessity: 'optional'},
-          ],
-        });
-      });
-
-      it('drops pact.version at the conversion boundary', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [{name: 'calculate'}],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).not.toHaveProperty('version');
-        expect(arg.pact).toEqual({
-          talents: [{name: 'calculate', necessity: 'optional'}],
-        });
-      });
-
-      it('empty talents array collapses to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {version: 1, talents: []},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().pact).toBeUndefined();
-      });
-
-      it('pact with no talents key collapses to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {version: 1} as any,
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().pact).toBeUndefined();
-      });
-
-      it('pact: null collapses to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: null as any,
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().pact).toBeUndefined();
-      });
-
-      it('greeting with only text: no suggestedPrompts key', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: 'Hi'},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: 'Hi'});
-        expect(arg.greeting).not.toHaveProperty('suggestedPrompts');
-      });
-
-      it('greeting with only prompts: text defaults to empty string', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {suggested_prompts: ['a']},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: '', suggestedPrompts: ['a']});
-      });
-
-      it('greeting with text + empty prompts array: prompts key omitted', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: 'Hi', suggested_prompts: []},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: 'Hi'});
-        expect(arg.greeting).not.toHaveProperty('suggestedPrompts');
-      });
-
-      it('greeting all empty (text: "" + empty prompts): collapses to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: '', suggested_prompts: []},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().greeting).toBeUndefined();
-      });
-
-      it('greeting: null collapses to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: null as any,
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().greeting).toBeUndefined();
-      });
-
-      it('whitespace-only text passes through verbatim (no trim)', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: '   '},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: '   '});
-      });
-
-      it('drops talent entries with missing or non-string name', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [
-              {name: 'render_html', required: true},
-              {required: true} as any,
-              {name: '', required: true} as any,
-              {name: 42, required: true} as any,
-              {name: null, required: true} as any,
-            ],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toEqual({
-          talents: [{name: 'render_html', necessity: 'required'}],
-        });
-      });
-
-      it('drops non-object talent entries (null, string)', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [
-              {name: 'calculate', required: true},
-              null as any,
-              'render_html' as any,
-              undefined as any,
-            ],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.pact).toEqual({
-          talents: [{name: 'calculate', necessity: 'required'}],
-        });
-      });
-
-      it('pact collapses to undefined when all talent entries are invalid', async () => {
-        const palsHubPal = buildPalsHubPal({
-          pact: {
-            version: 1,
-            talents: [null as any, {required: true} as any, {name: ''} as any],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().pact).toBeUndefined();
-      });
-
-      it('drops non-array suggested_prompts (defends against payload drift)', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: 'Hi', suggested_prompts: 'render_html' as any},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: 'Hi'});
-        expect(arg.greeting).not.toHaveProperty('suggestedPrompts');
-      });
-
-      it('non-string text becomes empty string when prompts are present', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {text: 42 as any, suggested_prompts: ['a']},
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({text: '', suggestedPrompts: ['a']});
-      });
-
-      it('non-array suggested_prompts + non-string text together collapse greeting to undefined', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {
-            text: 42 as any,
-            suggested_prompts: 'render_html' as any,
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().greeting).toBeUndefined();
-      });
-
-      it('drops non-string and empty-string entries from suggested_prompts', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {
-            text: 'Hi',
-            suggested_prompts: [
-              'Draw a sunset',
-              42 as any,
-              null as any,
-              '',
-              'Make a chart',
-            ],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.greeting).toEqual({
-          text: 'Hi',
-          suggestedPrompts: ['Draw a sunset', 'Make a chart'],
-        });
-      });
-
-      it('collapses greeting when all suggested_prompts entries are invalid', async () => {
-        const palsHubPal = buildPalsHubPal({
-          greeting: {
-            suggested_prompts: ['', null as any, 7 as any],
-          },
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        expect(getCreatePalArg().greeting).toBeUndefined();
-      });
-
-      it('does not re-derive thumbnail_url or defaultModel from new server arrays', async () => {
-        // Local conversion keeps reading the server-derived legacy singular
-        // fields; the new arrays are not consumed.
-        const palsHubPal = buildPalsHubPal({
-          thumbnail_url: 'https://example.com/thumb.jpg',
-          images: [
-            {url: 'https://example.com/other.jpg', is_primary: true},
-          ] as any,
-          models: [
-            {
-              reference: {
-                repo_id: 'other/repo',
-                filename: 'other.gguf',
-                author: 'other',
-                downloadUrl: 'https://example.com/other.gguf',
-                size: 1,
-              },
-              is_recommended: true,
-            },
-          ] as any,
-        });
-
-        await palStore.downloadPalsHubPal(palsHubPal);
-
-        const arg = getCreatePalArg();
-        expect(arg.thumbnail_url).toBe('/path/to/thumb.jpg');
-        expect(arg.defaultModel).toBeUndefined();
-        expect(arg).not.toHaveProperty('images');
-        expect(arg).not.toHaveProperty('models');
-      });
-    });
-  });
-
   describe('Utility Methods', () => {
     beforeEach(() => {
       runInAction(() => {
@@ -1219,11 +490,6 @@ describe('PalStore', () => {
     it('should get all pals', () => {
       const allPals = palStore.getAllPals();
       expect(allPals).toHaveLength(3);
-    });
-
-    it('should check if PalsHub pal is downloaded', () => {
-      expect(palStore.isPalsHubPalDownloaded('ph-123')).toBe(true);
-      expect(palStore.isPalsHubPalDownloaded('ph-456')).toBe(false);
     });
   });
 });

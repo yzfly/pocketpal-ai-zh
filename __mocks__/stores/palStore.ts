@@ -1,12 +1,8 @@
 import type {Pal, LegacyPalData} from '../../src/store/PalStore';
-import type {PalsHubPal} from '../../src/types/palshub';
 import {migrateLegacyPalToNew} from '../../src/utils/pal-migration';
 
 class MockPalStore {
   pals: Pal[] = [];
-  cachedPalsHubPals: PalsHubPal[] = [];
-  userLibrary: PalsHubPal[] = [];
-  userCreatedPals: PalsHubPal[] = [];
   ready: Promise<void> = Promise.resolve();
 
   constructor() {
@@ -64,38 +60,9 @@ class MockPalStore {
     this.pals.filter(p => p.capabilities?.video === true),
   );
 
-  getLocalPals = jest.fn(() =>
-    this.pals.filter(p => p.source === 'local' || !p.source),
-  );
-  getDownloadedPalsHubPals = jest.fn(() =>
-    this.pals.filter(p => p.source === 'palshub'),
-  );
-  searchPalsHubPals = jest.fn(async () => {});
-  loadUserLibrary = jest.fn(async () => {});
-  loadUserCreatedPals = jest.fn(async () => {});
-  clearAccountPals = jest.fn();
+  getLocalPals = jest.fn(() => this.pals);
 
   getPalById = jest.fn((id: string) => this.pals.find(p => p.id === id));
-
-  // PalsHub-related methods
-  isPalsHubPalDownloaded = jest.fn(() => false);
-  downloadPalsHubPal = jest.fn(async () => {});
-  installOwnedPal = jest.fn(async (pal: PalsHubPal) => ({
-    localPal: {
-      type: 'local',
-      id: `local-${pal.id}`,
-      name: pal.title,
-      systemPrompt: pal.system_prompt ?? '',
-      isSystemPromptChanged: false,
-      useAIPrompt: false,
-      parameters: {},
-      parameterSchema: [],
-      source: 'palshub',
-      palshub_id: pal.id,
-    } as Pal,
-    created: true,
-  }));
-  applyCreatorUpdate = jest.fn(async () => ({thumbnailFailed: false}));
 }
 
 export const mockPalStore = new MockPalStore();

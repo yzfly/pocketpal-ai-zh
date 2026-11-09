@@ -16,8 +16,8 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       [
         {
           "alignItems": "stretch",
-          "backgroundColor": "#F9FAFB",
-          "borderTopColor": "#a1a1a1",
+          "backgroundColor": "#FFFFFF",
+          "borderTopColor": "#C9C9C9",
           "borderTopWidth": 0.5,
           "flexDirection": "row",
           "paddingVertical": 4,
@@ -76,7 +76,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#000000",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -136,7 +136,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -196,7 +196,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -227,8 +227,8 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       [
         {
           "alignItems": "stretch",
-          "backgroundColor": "#F9FAFB",
-          "borderTopColor": "#a1a1a1",
+          "backgroundColor": "#FFFFFF",
+          "borderTopColor": "#C9C9C9",
           "borderTopWidth": 0.5,
           "flexDirection": "row",
           "paddingVertical": 4,
@@ -287,7 +287,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#000000",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -347,7 +347,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -407,7 +407,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -438,8 +438,8 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       [
         {
           "alignItems": "stretch",
-          "backgroundColor": "#F9FAFB",
-          "borderTopColor": "#a1a1a1",
+          "backgroundColor": "#FFFFFF",
+          "borderTopColor": "#C9C9C9",
           "borderTopWidth": 0.5,
           "flexDirection": "row",
           "paddingVertical": 4,
@@ -498,7 +498,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#000000",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -558,7 +558,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -618,7 +618,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -649,8 +649,8 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       [
         {
           "alignItems": "stretch",
-          "backgroundColor": "#F9FAFB",
-          "borderTopColor": "#a1a1a1",
+          "backgroundColor": "#FFFFFF",
+          "borderTopColor": "#C9C9C9",
           "borderTopWidth": 0.5,
           "flexDirection": "row",
           "paddingVertical": 4,
@@ -709,7 +709,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#000000",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -769,7 +769,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -829,7 +829,7 @@ exports[`BottomNavBar — snapshot matrix baseline (variant x size x {default,di
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -860,8 +860,8 @@ exports[`BottomNavBar — snapshot matrix non-Latin font-fallback canary (canary
       [
         {
           "alignItems": "stretch",
-          "backgroundColor": "#F9FAFB",
-          "borderTopColor": "#a1a1a1",
+          "backgroundColor": "#FFFFFF",
+          "borderTopColor": "#C9C9C9",
           "borderTopWidth": 0.5,
           "flexDirection": "row",
           "paddingVertical": 4,
@@ -920,7 +920,7 @@ exports[`BottomNavBar — snapshot matrix non-Latin font-fallback canary (canary
       <Text
         style={
           {
-            "color": "#333333",
+            "color": "#000000",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -980,7 +980,7 @@ exports[`BottomNavBar — snapshot matrix non-Latin font-fallback canary (canary
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",
@@ -1040,7 +1040,7 @@ exports[`BottomNavBar — snapshot matrix non-Latin font-fallback canary (canary
       <Text
         style={
           {
-            "color": "#646466",
+            "color": "#666666",
             "fontFamily": "Inter-Regular",
             "fontSize": 11,
             "fontWeight": "400",

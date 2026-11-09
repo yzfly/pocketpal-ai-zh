@@ -3,14 +3,14 @@
     "screenTitle": "앱 정보",
     "description": "대규모 언어 모델(LLM)을 모바일 기기에서 직접 구동하는 앱입니다. llama.cpp 및 llama.rn 라이브러리를 기반으로 구축되었습니다.",
     "supportProject": "프로젝트 지원하기",
-    "supportProjectDescription": "PocketPal AI가 마음에 드신다면, 다음 방법으로 프로젝트를 지원해 주세요:",
+    "supportProjectDescription": "PocketWisdom가 마음에 드신다면, 다음 방법으로 프로젝트를 지원해 주세요:",
     "githubButton": "GitHub Star 주기",
     "orBy": "또는",
     "versionCopiedDescription": "버전 정보가 클립보드에 복사되었습니다",
     "versionCopiedTitle": "버전 복사됨",
     "privacyPolicy": "개인정보 처리방침",
     "termsOfService": "서비스 약관",
-    "tourDescription": "온보딩 화면을 재생하여 PocketPal AI가 제공하는 기능을 확인하세요.",
+    "tourDescription": "온보딩 화면을 재생하여 PocketWisdom가 제공하는 기능을 확인하세요.",
     "showIntroButton": "인트로 다시 보기",
     "tour": "둘러보기",
     "openSourceNotices": "오픈소스 고지",
@@ -287,7 +287,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "사용 가능한 모델 없음",
-      "noModelsDescription": "PocketPal과 채팅을 시작하려면 모델을 다운로드해 주세요",
+      "noModelsDescription": "PocketWisdom과 채팅을 시작하려면 모델을 다운로드해 주세요",
       "noModelsButton": "모델 다운로드",
       "activateModelTitle": "시작하려면 모델을 활성화하세요",
       "loading": "로딩 중...",
@@ -580,7 +580,7 @@
     },
     "modelErrorReportSheet": {
       "title": "모델 로드 문제 신고",
-      "privacyNote": "오류 상세 내용을 공유하여 PocketPal의 성능 개선을 도와주세요. 공유되는 항목을 아래에서 확인하고, 포함하고 싶지 않은 항목은 선택 해제할 수 있습니다.",
+      "privacyNote": "오류 상세 내용을 공유하여 PocketWisdom의 성능 개선을 도와주세요. 공유되는 항목을 아래에서 확인하고, 포함하고 싶지 않은 항목은 선택 해제할 수 있습니다.",
       "errorMessage": "오류 메시지",
       "modelInfo": "모델 정보",
       "modelName": "이름",
@@ -598,7 +598,7 @@
       "submit": "리포트 제출",
       "success": {
         "title": "리포트 제출됨",
-        "message": "PocketPal의 개선을 도와주셔서 감사합니다. 보내주신 리포트는 문제를 해결하는 데 큰 도움이 됩니다."
+        "message": "PocketWisdom의 개선을 도와주셔서 감사합니다. 보내주신 리포트는 문제를 해결하는 데 큰 도움이 됩니다."
       },
       "error": {
         "title": "리포트 제출 실패",
@@ -775,10 +775,10 @@
   },
   "feedback": {
     "title": "피드백 보내기",
-    "description": "여러분의 소중한 의견을 들려주세요! PocketPal AI가 어떻게 도움이 되고 있는지, 그리고 더 유용한 앱이 되려면 무엇을 개선하면 좋을지 알려주세요.",
+    "description": "여러분의 소중한 의견을 들려주세요! PocketWisdom가 어떻게 도움이 되고 있는지, 그리고 더 유용한 앱이 되려면 무엇을 개선하면 좋을지 알려주세요.",
     "shareThoughtsButton": "의견 공유하기",
     "useCase": {
-      "label": "PocketPal AI를 어떤 용도로 사용하시나요?",
+      "label": "PocketWisdom를 어떤 용도로 사용하시나요?",
       "placeholder": "예: 요약, 역할극 등"
     },
     "featureRequests": {
@@ -790,7 +790,7 @@
       "label": "일반 피드백"
     },
     "usageFrequency": {
-      "label": "PocketPal AI를 얼마나 자주 사용하시나요? (선택 사항)",
+      "label": "PocketWisdom를 얼마나 자주 사용하시나요? (선택 사항)",
       "options": {
         "daily": "매일",
         "weekly": "매주",
@@ -1213,7 +1213,7 @@
     "serverTypeHelp": "자동으로 감지된 설정입니다. 틀린 부분이 있다면 변경해 주세요.",
     "internetSearch": {
       "title": "인터넷 검색",
-      "description": "Pal이 자체 도구로 웹을 검색할 수 있도록 해보세요. 본인의 API 키만 가져오시면 됩니다 — PocketPal은 사용자의 키를 저장하거나 쿼리를 라우팅하지 않습니다.",
+      "description": "Pal이 자체 도구로 웹을 검색할 수 있도록 해보세요. 본인의 API 키만 가져오시면 됩니다 — PocketWisdom은 사용자의 키를 저장하거나 쿼리를 라우팅하지 않습니다.",
       "providerLabel": "검색 제공자",
       "providerGated": "출시 예정",
       "keyLabel": "API 키",
@@ -1229,7 +1229,7 @@
       "resultCountLabel": "검색당 결과 수",
       "resultCountDescription": "결과가 적을수록 모델의 컨텍스트에 더 많은 공간이 유지됩니다.",
       "consentTitle": "검색어는 기기 외부로 전송됩니다",
-      "consentDescription": "Pal이 웹을 검색하면 여러분의 검색어가 인터넷을 통해 선택한 제공자로 전송돼요. Pal이 페이지를 읽을 때, 선택한 제공자에 자체 리더가 없으면 URL과 페이지 내용이 대신 기본 리더 서비스(r.jina.ai)로 전송될 수 있어요. 키와 검색어는 절대 PocketPal로 전송되지 않아요.",
+      "consentDescription": "Pal이 웹을 검색하면 여러분의 검색어가 인터넷을 통해 선택한 제공자로 전송돼요. Pal이 페이지를 읽을 때, 선택한 제공자에 자체 리더가 없으면 URL과 페이지 내용이 대신 기본 리더 서비스(r.jina.ai)로 전송될 수 있어요. 키와 검색어는 절대 PocketWisdom로 전송되지 않아요.",
       "consentAccept": "확인했습니다",
       "consentRequired": "키를 설정하고 검색을 활성화하려면 위 고지에 동의해 주세요.",
       "consentGivenTitle": "웹 검색이 활성화됨",
@@ -1281,17 +1281,6 @@
       "unloadBoundTitle": "이 모델을 언로드하시겠습니까?",
       "unloadBoundBody": "이 채팅에서 사용 중인 모델입니다. 다음 메시지를 보내면 다시 로드됩니다.",
       "unloadBoundConfirm": "언로드"
-    },
-    "account": {
-      "title": "계정",
-      "deleteAccount": "계정 삭제",
-      "confirmTitle": "계정을 삭제하시겠습니까?",
-      "confirmMessage": "PalsHub 계정과 라이브러리가 영구적으로 삭제됩니다. App Store 또는 Google Play에서 구매한 Pals는 스토어 계정으로 이 기기에서 계속 복원할 수 있습니다. 구매 기록은 법적 의무에 따라 익명 처리되어 보관됩니다.",
-      "confirmWithoutApple": "Apple 계정으로 확인하지 못했습니다. 그래도 계정을 삭제하시겠습니까?",
-      "deleted": "계정이 삭제되었습니다.",
-      "signInAgain": "다시 로그인해 주세요",
-      "creatorSupport": "크리에이터 계정은 고객지원팀에서 삭제해 드립니다: {{contact}}",
-      "failed": "삭제하지 못했습니다. 다시 시도해 주세요"
     }
   },
   "storage": {
@@ -1309,11 +1298,6 @@
     "toneStyleRequired": "말투 및 스타일을 입력해 주세요"
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "내 Pal (로컬)",
-      "myLibrary": "내 라이브러리 (palshub.ai)",
-      "discoverPals": "Pals 둘러보기 (palshub.ai)"
-    },
     "systemPrompt": "시스템 프롬프트",
     "videoAnalysis": "비디오 분석",
     "videoAnalysisDescription": "기기 카메라의 비디오 스트림을 실시간으로 분석하고 해설해 주는 비디오 기반 AI 어시스턴트입니다.",
@@ -1335,14 +1319,10 @@
     "profile": "프로필",
     "signIn": "로그인",
     "addPal": "Pal 만들기",
-    "signInToAccessLibrary": "로그인하여 palshub.ai에서 귀하의 라이브러리에 접근하세요",
     "signOut": "로그아웃",
     "signOutConfirmation": "로그아웃 하시겠습니까?",
     "signOutError": "로그아웃에 실패했습니다. 다시 시도해 주세요.",
     "account": "계정",
-    "signInToPalsHub": "PalsHub에 로그인하기",
-    "signInDescription": "라이브러리에 접근하고, 비공개 Pals를 생성하며, 기기 간에 동기화하세요",
-    "searchAllPals": "모든 Pals 검색...",
     "deletePalConfirmation": "\"{{palName}}\"을(를) 삭제하시겠습니까?",
     "filters": {
       "all": "전체",
@@ -1364,73 +1344,13 @@
       "oldest": "오래된순",
       "rating": "높은 평점순",
       "popular": "인기순"
-    },
-    "palDetailSheet": {
-      "by": "제작됨",
-      "unknown": "알 수 없음",
-      "rating": "평점",
-      "reviews": "리뷰",
-      "created": "제작됨",
-      "description": "설명",
-      "noDescriptionAvailable": "설명이 없습니다.",
-      "categories": "카테고리",
-      "tags": "태그",
-      "systemPrompt": "시스템 프롬프트",
-      "downloaded": "다운로드됨",
-      "success": "성공",
-      "palAddedToCollection": "Pal이 귀하의 컬렉션에 추가되었습니다!",
-      "error": "오류",
-      "failedToLoadDetails": "Pal 세부정보 로드에 실패함",
-      "failedToDownload": "Pal 다운로드 실패",
-      "notAvailable": "비어있음"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "열기",
-      "install": "설치",
-      "pending": "처리 중",
-      "unlocking": "잠금 해제 중",
-      "retry": "다시 시도",
-      "supportCode": "지원 코드: {{code}}",
-      "noLongerAvailable": "이 Pal은 더 이상 제공되지 않습니다. {{refundLink}}.",
-      "refundLink": "Apple에 환불을 요청할 수 있습니다",
-      "notCompleted": "구매를 완료하지 못했습니다. Google에서 환불해 드립니다.",
-      "withdrawnRefunding": "이 Pal은 제공이 중단되었습니다. 환불이 필요하시면 고객지원에 문의해 주세요.",
-      "invalid": "이 구매를 확인할 수 없습니다.",
-      "heldInvalid": "이 구매의 잠금을 해제할 수 없습니다. 이 코드와 함께 고객지원에 문의해 주세요.",
-      "recommendedModel": "추천 모델",
-      "sampleExchange": "예시 대화",
-      "signInLine": "이미 구매하셨나요? 로그인",
-      "licenseNotice": "이 Pal을 사용할 수 있는 라이선스를 구매합니다.",
-      "termsOfSale": "판매 약관",
-      "appleMediaTerms": "Apple 미디어 서비스 이용약관",
-      "linkPrompt": "다른 기기에서도 사용하려면 로그인하세요",
-      "linkSignIn": "로그인",
-      "dismiss": "나중에",
-      "linkConflict": "이 구매 항목은 다른 계정에 연결되어 있습니다.",
-      "restorePurchases": "구매 복원",
-      "badgePending": "처리 중",
-      "badgeUnlocking": "잠금 해제 중",
-      "badgeUpdate": "업데이트 있음",
-      "updatePrompt": "제작자가 올린 새 버전이 있습니다.",
-      "updatePromptWithNote": "제작자가 올린 새 버전이 있습니다: {{note}}.",
-      "updateButton": "업데이트",
-      "updateConfirmText": "제작자가 변경한 부분에 내가 수정한 내용은 덮어쓰기됩니다.",
-      "updateConfirm": "업데이트",
-      "updateCancel": "취소",
-      "modelStep": {
-        "download": "다운로드 · {{size}}",
-        "startChat": "채팅 시작",
-        "needsMemory": "이 Pal의 가장 작은 모델을 사용하려면 메모리가 {{size}} 이상인 기기가 필요합니다.",
-        "noModelFits": "이 기기는 이 Pal을 실행할 메모리가 부족합니다."
-      }
     }
   },
   "video": {
     "captureInterval": "촬영 간격",
     "captureIntervalUnit": "ms",
     "permissionTitle": "카메라 권한 필요",
-    "permissionMessage": "PocketPal은 비디오 분석을 위해 카메라 접근 권한이 필요합니다.",
+    "permissionMessage": "PocketWisdom은 비디오 분석을 위해 카메라 접근 권한이 필요합니다.",
     "requestingPermission": "카메라 권한 요청 중...",
     "noDevice": "카메라 기기를 찾을 수 없습니다",
     "errorTitle": "카메라 오류",
@@ -1454,7 +1374,7 @@
   },
   "camera": {
     "permissionTitle": "카메라 권한 필요",
-    "permissionMessage": "PocketPal은 이미지를 분석하기 위해 카메라 접근 권한이 필요합니다.",
+    "permissionMessage": "PocketWisdom은 이미지를 분석하기 위해 카메라 접근 권한이 필요합니다.",
     "requestingPermission": "카메라 권한 요청 중...",
     "noDevice": "카메라 기기를 찾을 수 없습니다",
     "errorTitle": "카메라 오류",
@@ -1586,14 +1506,14 @@
     "skip": "건너뛰기",
     "skipForNow": "나중에 다시 보기",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "당신의 Pal을 만나보세요.",
       "titleAccent": "Pal.",
       "body": "당신의 휴대폰 안에 사는 똑똑한 작은 친구들.\n설정을 시작해 보세요 - 시간이 잠시 걸립니다.",
       "cta": "둘러보기",
-      "eyebrow": "PocketPal에 오신 걸 환영합니다"
+      "eyebrow": "PocketWisdom에 오신 걸 환영합니다"
     },
     "screen2": {
       "title": "언제\n어디서나.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "음성 입력은 이 채팅 모델과 함께 메모리를 추가로 사용합니다. 매우 느려지거나 앱이 종료될 수 있습니다.",
     "memoryAlertTryAnyway": "그래도 시도하기"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "온디바이스 AI를 한 걸음 더.",
-    "subline": "Plus는 PocketPal을 무료 오픈소스로 유지해 줍니다. 추가 기능은 저희의 감사 표시입니다.",
-    "unsupportedSubline": "Plus 기능은 아직 이 기기에서 실행되지 않습니다. 그래도 PocketPal을 후원할 수 있습니다.",
-    "thanksHeadline": "PocketPal을 계속 이어갈 수 있게 해 주셔서 감사합니다.",
-    "thanksSubline": "이 기기에서 Plus 잠금이 해제되었습니다.",
-    "features": {
-      "handsFreeVoice": "핸즈프리 음성",
-      "localApiServer": "로컬 API 서버"
-    },
-    "ready": "사용 가능",
-    "needsRam": "RAM {{gb}} GB 필요",
-    "comingSoon": "출시 예정",
-    "speedLine": "속도는 기기와 모델에 따라 달라집니다.",
-    "inDevelopment": "개발 중인 기능은 변경되거나 출시되지 않을 수 있습니다.",
-    "priceCaption": "원하는 금액을 선택하세요. 어떤 금액이든 기능은 모두 같습니다.",
-    "buyError": "구매를 완료하지 못했습니다. 다시 시도해 주세요.",
-    "getPlus": "Plus 구매 · {{price}}",
-    "getPlusAnyway": "그래도 Plus 구매 · {{price}}",
-    "loading": "로딩 중",
-    "pending": "처리 중",
-    "pendingTitle": "스토어에서 결제를 확인하는 중입니다.",
-    "pendingBody": "결제가 완료되면 Plus 잠금이 자동으로 해제됩니다. 이 화면은 닫아도 됩니다.",
-    "unavailableTitle": "지금은 구매할 수 없습니다.",
-    "unavailableBody": "스토어에 연결할 수 없습니다. 나중에 다시 시도하거나 이전 구매를 복원해 주세요.",
-    "done": "완료",
-    "oneTimePurchase": "1회 구매",
-    "restore": "복원",
-    "openSource": "오픈소스 ↗",
-    "licence": "Plus를 사용할 수 있는 라이선스를 1회 구매합니다.",
-    "terms": "약관",
-    "appleMediaTerms": "Apple 미디어 서비스 이용약관",
-    "noPurchaseFound": "Plus 구매 내역을 찾을 수 없습니다.",
-    "restoreFailed": "스토어에 연결할 수 없습니다. 다시 시도해 주세요.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "잠금 해제됨",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}, {{second}}",
-      "subtitleMore": "{{first}}, {{second}} 등"
-    },
-    "optIn": "꺼짐",
-    "optInNote": "이 기기에서는 꺼져 있습니다. 용감하시다면 설정에서 켜 보세요.",
-    "offInSettingsNote": "설정에서 꺼져 있습니다.",
-    "chatStaysFree": "Plus는 선택 사항입니다. 채팅은 계속 무료입니다.",
-    "chooseAmount": "금액 선택"
-  },
   "voiceMode": {
     "settingTitle": "핸즈프리 음성",
     "settingDescription": "채팅에서 모델과 대화하고 답변을 음성으로 들을 수 있습니다.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "그래도 계속",
     "chooseSmallerModelCta": "더 작은 모델 선택",
     "startLabel": "음성 모드 시작",
-    "startLockedLabel": "핸즈프리 음성, PocketPal Plus",
+    "startLockedLabel": "핸즈프리 음성, PocketWisdom Plus",
     "startLockedHint": "짧은 미리보기가 열립니다. 텍스트 입력과 음성 입력은 계속 무료입니다.",
     "teaserTitle": "음성 대화는 Plus 기능입니다",
     "teaserBody": "핸즈프리로 대화하세요. 음성으로 답해 줍니다.",

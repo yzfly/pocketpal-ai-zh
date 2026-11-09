@@ -18,7 +18,7 @@ import {modelStore} from '../store/ModelStore';
  *
  * Marker string for the CI prod-bundle grep: ASR_AUTOMATION_STATE.
  *
- * Commands (`pocketpal://asr?cmd=...`):
+ * Commands (`pocketwisdom://asr?cmd=...`):
  *   state::ready          gate open + selected tier installed → mic at rest
  *   state::not-installed  gate open + no tier installed → setup affordance
  *   state::unsupported    device tier below the gate → toggle OFF + helper

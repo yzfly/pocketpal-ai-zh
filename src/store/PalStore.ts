@@ -1,130 +1,29 @@
 /**
- * PalStore - Dynamic Parameter Pal Store
+ * PalStore — 本地助手（Pal）的唯一数据源。
  *
- * This is the new pal store that replaces the legacy PalStore with a flexible,
- * schema-driven approach that supports dynamic parameters and custom pal types.
- *
- * KEY FEATURES:
- * - Dynamic parameter schemas: Create pals with any custom parameters
- * - Unified UI: Single PalSheet component works for all pal types
- * - PalsHub integration: Support for marketplace pals with custom parameters
- * - Extensible: Easy to add new parameter types (text, select, datetime_tag)
- * - Migration: Automatically migrates data from legacy PalStore on startup
- *
- * @see src/types/pal.ts for type definitions
- * @see src/utils/pal-migration.ts for migration utilities
- * @see src/components/PalsSheets/PalSheet.tsx for unified UI component
+ * 口袋AI 只保留本地助手：创建、编辑、删除与内置助手种子。上游的 PalsHub
+ * 市场、购买与同步已移除。
  */
-
-import {v4 as uuidv4} from 'uuid';
 import {makeAutoObservable, runInAction} from 'mobx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {HF_DOMAIN} from '../config/urls';
-
 import {palRepository} from '../repositories/PalRepository';
 
-import {hfAsModel} from '../utils';
-import {resolveHFModelForDownload} from '../utils/hfResolve';
-import {palsHubService} from '../services';
 import {registerDefaultTalents} from '../services/talents';
 import {LOOKIE_DEFAULT_MODEL} from './builtinPalModels';
-import {chatTemplates} from '../utils/chat';
-import {defaultCompletionParams} from '../utils/completionSettingsVersions';
-import {parsePalsHubTemplate} from '../utils/palshub-template-parser';
-import {getDisplayNameFromFilename} from '../utils/formatters';
+import {chinesePals} from './chinesePals';
 
-import type {Pal, PalUpdate, ParameterDefinition} from '../types/pal';
-import type {CreatorField} from '../services/iap/creatorContent';
-import type {
-  ModelReference,
-  PalsHubPal,
-  SearchFilters,
-  SyncState,
-} from '../types/palshub';
+import type {Pal, PalUpdate} from '../types/pal';
 
-import {ModelOrigin} from '../utils/types';
-import type {Model} from '../utils/types';
-import {downloadPalThumbnail, deletePalThumbnail} from '../utils/imageUtils';
+import {deletePalThumbnail} from '../utils/imageUtils';
 
 // Track each built-in separately so future defaults can still be introduced.
-// TODO: when adding another built-in pal, extract a shared seed-once helper
-// (check key, find existing, create, set key) instead of a third copy.
 const LOOKIE_SEEDED_KEY = 'PalStore.builtin.Lookie.seeded';
 const PIP_SEEDED_KEY = 'PalStore.builtin.Pip.seeded';
-
-interface CreatorUpdateContext {
-  fresh: Pal;
-  current: Pal;
-  palsHubPal: PalsHubPal;
-  localPalId: string;
-}
-
-const CREATOR_UPDATES: Record<
-  CreatorField,
-  (context: CreatorUpdateContext) => PalUpdate | Promise<PalUpdate>
-> = {
-  title: ({fresh}) => ({name: fresh.name}),
-  description: ({fresh}) => ({description: fresh.description ?? ''}),
-  system_prompt: ({fresh, current}) => {
-    if (!fresh.systemPrompt) {
-      return {};
-    }
-    const keptParameters = Object.fromEntries(
-      fresh.parameterSchema
-        .filter(def => current.parameters?.[def.key] !== undefined)
-        .map(def => [def.key, current.parameters[def.key]]),
-    );
-    return {
-      systemPrompt: fresh.systemPrompt,
-      originalSystemPrompt: fresh.originalSystemPrompt ?? '',
-      parameterSchema: fresh.parameterSchema,
-      parameters: {...fresh.parameters, ...keptParameters},
-    };
-  },
-  model_reference: ({fresh}) => ({defaultModel: fresh.defaultModel ?? null}),
-  model_settings: ({fresh}) => ({
-    rawPalshubGenerationSettings: fresh.rawPalshubGenerationSettings ?? null,
-  }),
-  pact: ({fresh}) => ({pact: fresh.pact ?? {talents: []}}),
-  greeting: ({fresh}) => ({greeting: fresh.greeting ?? null}),
-  categories: ({fresh}) => ({categories: fresh.categories}),
-  tags: ({fresh}) => ({tags: fresh.tags}),
-  creator: ({fresh}) => ({creator_info: fresh.creator_info}),
-  protection_level: ({fresh}) => ({protection_level: fresh.protection_level}),
-  thumbnail_url: async ({palsHubPal, localPalId}) => {
-    if (!palsHubPal.thumbnail_url) {
-      return {};
-    }
-    return {
-      thumbnail_url: await downloadPalThumbnail(
-        localPalId,
-        palsHubPal.thumbnail_url,
-      ),
-    };
-  },
-};
-
-export interface CreatorUpdateResult {
-  thumbnailFailed: boolean;
-}
-
-export interface OwnedPalInstall {
-  localPal: Pal;
-  created: boolean;
-}
 
 class PalStore {
   // Core pals storage
   pals: Pal[] = [];
-
-  // PalsHub integration state
-  cachedPalsHubPals: PalsHubPal[] = [];
-  userLibrary: PalsHubPal[] = [];
-  userCreatedPals: PalsHubPal[] = [];
-  isLoadingPalsHub: boolean = false;
-  searchFilters: SearchFilters = {};
-  syncState: SyncState = {status: 'idle'};
 
   // Migration state
   isMigrating: boolean = false;
@@ -132,12 +31,10 @@ class PalStore {
   migrationVersion: string = '1.0';
 
   readonly ready: Promise<void>;
-  private palshubInsertChains = new Map<string, Promise<unknown>>();
 
   constructor() {
-    makeAutoObservable<PalStore, 'palshubInsertChains'>(this, {
+    makeAutoObservable(this, {
       ready: false,
-      palshubInsertChains: false,
     });
     this.ready = this.initialize();
     console.log('Pal store initialized');
@@ -289,453 +186,8 @@ class PalStore {
     return this.pals.find(p => p.id === id);
   };
 
-  // PalsHub integration methods
-
-  /**
-   * Downloads a PalsHub pal and converts it to unified format
-   */
-  downloadPalsHubPal = async (palsHubPal: PalsHubPal): Promise<Pal> => {
-    if (palsHubPal.price_cents > 0) {
-      const ownership = await palsHubService.checkPalOwnership(palsHubPal.id);
-      if (!ownership.owned) {
-        throw new Error('You must own this Pal to download it');
-      }
-    }
-    const {pal} = await this.insertPalsHubPalOnce(palsHubPal.id, () =>
-      this.createPalFromPalsHub(palsHubPal),
-    );
-    return pal;
-  };
-
-  installOwnedPal = async (
-    palsHubPal: PalsHubPal,
-  ): Promise<OwnedPalInstall> => {
-    if (!palsHubPal.system_prompt) {
-      throw new Error('An owned Pal cannot be installed without its prompt');
-    }
-    const {pal, created} = await this.insertPalsHubPalOnce(palsHubPal.id, () =>
-      this.createPalFromPalsHub(palsHubPal),
-    );
-    return {localPal: pal, created};
-  };
-
-  insertPalsHubPalOnce = (
-    palshubId: string,
-    build: () => Promise<Pal>,
-  ): Promise<{pal: Pal; created: boolean}> => {
-    const previous =
-      this.palshubInsertChains.get(palshubId) ?? Promise.resolve();
-    const run = previous
-      .catch(() => undefined)
-      .then(async () => {
-        const existing = await palRepository.getPalByPalshubId(palshubId);
-        if (existing) {
-          if (!this.getPalById(existing.id)) {
-            runInAction(() => {
-              this.pals.push(existing);
-            });
-          }
-          return {pal: existing, created: false};
-        }
-        return {pal: await build(), created: true};
-      });
-    this.palshubInsertChains.set(palshubId, run);
-    run
-      .finally(() => {
-        if (this.palshubInsertChains.get(palshubId) === run) {
-          this.palshubInsertChains.delete(palshubId);
-        }
-      })
-      .catch(() => undefined);
-    return run;
-  };
-
-  applyCreatorUpdate = async (
-    localPalId: string,
-    palsHubPal: PalsHubPal,
-    fields: ReadonlySet<CreatorField>,
-  ): Promise<CreatorUpdateResult> => {
-    const current = this.getPalById(localPalId);
-    if (!current || fields.size === 0) {
-      return {thumbnailFailed: false};
-    }
-    const fresh = await this.createLocalPalFromPalsHub(
-      fields.has('model_reference')
-        ? palsHubPal
-        : {...palsHubPal, model_reference: undefined},
-    );
-    const context = {fresh, current, palsHubPal, localPalId};
-    const updates: PalUpdate = {};
-    let thumbnailFailed = false;
-    for (const field of fields) {
-      try {
-        Object.assign(updates, await CREATOR_UPDATES[field](context));
-      } catch (error) {
-        if (field !== 'thumbnail_url') {
-          throw error;
-        }
-        console.warn('Failed to refresh thumbnail:', error);
-        thumbnailFailed = true;
-      }
-    }
-    await this.updatePal(localPalId, updates);
-    return {thumbnailFailed};
-  };
-
-  private createPalFromPalsHub = async (
-    palsHubPal: PalsHubPal,
-  ): Promise<Pal> => {
-    const pal = await this.createLocalPalFromPalsHub(palsHubPal);
-    let relativeThumbnailPath: string | null = null;
-
-    if (palsHubPal.thumbnail_url) {
-      try {
-        relativeThumbnailPath = await downloadPalThumbnail(
-          pal.id,
-          palsHubPal.thumbnail_url,
-        );
-        pal.thumbnail_url = relativeThumbnailPath;
-      } catch (imageError) {
-        console.warn(
-          'Failed to download thumbnail, keeping remote URL:',
-          imageError,
-        );
-        pal.thumbnail_url = palsHubPal.thumbnail_url;
-      }
-    }
-
-    try {
-      return await this.addPal(pal);
-    } catch (dbError) {
-      if (relativeThumbnailPath) {
-        try {
-          await deletePalThumbnail(relativeThumbnailPath);
-        } catch (cleanupError) {
-          console.warn(
-            'Failed to cleanup thumbnail after database error:',
-            cleanupError,
-          );
-        }
-      }
-      throw dbError;
-    }
-  };
-
-  /**
-   * Creates a Model object from PalsHub ModelReference with complete HF metadata
-   */
-  private createLocalModelFromPHModel = async (
-    modelRef: ModelReference,
-  ): Promise<Model> => {
-    try {
-      // Resolve via the shared canonical chain so the matched file carries a
-      // populated /resolve/ download URL. modelRef values relax strictness when
-      // the HF API response is incomplete (the PalsHub flow already has them).
-      const {hfModel, modelFile} = await resolveHFModelForDownload(
-        modelRef.repo_id,
-        modelRef.filename,
-        undefined,
-        {
-          author: modelRef.author,
-          size: modelRef.size,
-          downloadUrl: modelRef.downloadUrl,
-        },
-      );
-
-      // Use the existing hfAsModel function to create a complete Model object
-      return hfAsModel(hfModel, modelFile);
-    } catch (error) {
-      console.error('Failed to fetch complete model data from HF API:', error);
-
-      // Fallback: create basic model with available data
-      return this.createBasicModelFromReference(modelRef);
-    }
-  };
-
-  /**
-   * Creates a basic Model object from ModelReference (fallback when HF API fails)
-   */
-  private createBasicModelFromReference = (modelRef: any): Model => {
-    // Extract model name from filename (remove .gguf extension)
-    const modelName = getDisplayNameFromFilename(modelRef.filename);
-
-    // Degraded fallback path: use the generic default chat template and
-    // completion params (the GGUF-embedded template is applied at load time).
-    const chatTemplate = {...chatTemplates.default};
-    const completionSettings = {...defaultCompletionParams};
-    const stopWords = completionSettings.stop ?? [];
-
-    return {
-      id: `${modelRef.repo_id}/${modelRef.filename}`,
-      author: modelRef.author,
-      name: modelName,
-      size: modelRef.size,
-      params: 0, // Will be fetched from HF API if needed
-      isDownloaded: false,
-      downloadUrl: modelRef.downloadUrl,
-      hfUrl: `${HF_DOMAIN}/${modelRef.repo_id}`,
-      progress: 0,
-      filename: modelRef.filename,
-      isLocal: false,
-      origin: ModelOrigin.HF,
-      defaultChatTemplate: {...chatTemplate},
-      chatTemplate: {...chatTemplate},
-      defaultCompletionSettings: {...completionSettings},
-      completionSettings: {...completionSettings},
-      defaultStopWords: [...stopWords],
-      stopWords: [...stopWords],
-    };
-  };
-
-  /**
-   * Converts a PalsHub pal to local pal format
-   */
-  private createLocalPalFromPalsHub = async (
-    palsHubPal: PalsHubPal,
-  ): Promise<Pal> => {
-    let parameterSchema: ParameterDefinition[] = [];
-    let parameters: Record<string, any> = {};
-    let systemPrompt = palsHubPal.system_prompt || '';
-
-    // Parse system_prompt to extract parameter schema and default values
-    // Parameters are embedded within the system_prompt field using Mustache templating
-    // with JSON schema comments
-    let originalSystemPrompt: string | undefined;
-    if (systemPrompt && this.isTemplatedSystemPrompt(systemPrompt)) {
-      // Parse the templated system prompt
-      const parsed = parsePalsHubTemplate(systemPrompt);
-      // CRITICAL: Preserve the original template for future editing
-      originalSystemPrompt = systemPrompt;
-      // Use the clean template with placeholders for the systemPrompt field
-      systemPrompt = parsed.cleanSystemPrompt;
-      parameterSchema = parsed.parameterSchema;
-      parameters = parsed.defaultParameters;
-    }
-    // If no template found, use empty schema/parameters (assistant-style pal)
-
-    // Convert PalsHub model_reference to Model object if available
-    const defaultModel = palsHubPal.model_reference
-      ? await this.createLocalModelFromPHModel(palsHubPal.model_reference)
-      : undefined;
-
-    // Strict-`=== true` so stringly-typed `required` becomes optional.
-    // Drop talents that aren't objects with a non-empty string name.
-    const wireTalents = palsHubPal.pact?.talents;
-    const validTalents = Array.isArray(wireTalents)
-      ? wireTalents.filter(
-          t =>
-            t != null &&
-            typeof t === 'object' &&
-            typeof t.name === 'string' &&
-            t.name.length > 0,
-        )
-      : [];
-    const pact =
-      validTalents.length > 0
-        ? {
-            talents: validTalents.map(t => ({
-              name: t.name,
-              necessity: (t.required === true ? 'required' : 'optional') as
-                | 'required'
-                | 'optional',
-            })),
-          }
-        : undefined;
-
-    const wireGreeting = palsHubPal.greeting;
-    const wireText = wireGreeting?.text;
-    const wirePrompts = wireGreeting?.suggested_prompts;
-    const validPrompts = Array.isArray(wirePrompts)
-      ? wirePrompts.filter(
-          (p): p is string => typeof p === 'string' && p.length > 0,
-        )
-      : [];
-    const hasText = typeof wireText === 'string' && wireText.length > 0;
-    const hasPrompts = validPrompts.length > 0;
-    const greeting =
-      hasText || hasPrompts
-        ? {
-            text: typeof wireText === 'string' ? wireText : '',
-            ...(hasPrompts ? {suggestedPrompts: validPrompts} : {}),
-          }
-        : undefined;
-
-    return {
-      type: 'local',
-      id: uuidv4(),
-      name: palsHubPal.title,
-      description: palsHubPal.description,
-      thumbnail_url: palsHubPal.thumbnail_url,
-      systemPrompt,
-      originalSystemPrompt, // Preserve the original template for editing
-      isSystemPromptChanged: false,
-      useAIPrompt: false,
-      defaultModel,
-      parameters,
-      parameterSchema,
-      ...(pact ? {pact} : {}),
-      ...(greeting ? {greeting} : {}),
-      source: 'palshub',
-      palshub_id: palsHubPal.id,
-      creator_info: {
-        id: palsHubPal.creator_id,
-        name: palsHubPal.creator?.display_name,
-        avatar_url: palsHubPal.creator?.avatar_url,
-      },
-      categories: palsHubPal.categories?.map((c: any) => c.name) || [],
-      tags: palsHubPal.tags?.map((t: any) => t.name) || [],
-      rating: palsHubPal.average_rating,
-      review_count: palsHubPal.review_count,
-      protection_level: palsHubPal.protection_level,
-      price_cents: palsHubPal.price_cents,
-      is_owned: true,
-      rawPalshubGenerationSettings: palsHubPal.model_settings,
-      created_at: palsHubPal.created_at,
-      updated_at: palsHubPal.updated_at,
-    };
-  };
-
-  /**
-   * Checks if a system prompt contains parameter template definitions
-   * Parameters are embedded within the system_prompt field using Mustache templating
-   * with JSON schema comments
-   */
-  private isTemplatedSystemPrompt = (systemPrompt: string): boolean => {
-    // Check for Mustache JSON schema pattern
-    const mustacheSchemaPattern =
-      /\{\{!\s*json-schema-start\s*[\s\S]*?\s*json-schema-end\s*\}\}/;
-
-    return mustacheSchemaPattern.test(systemPrompt);
-  };
-
-  // PalsHub methods
-  searchPalsHubPals = async (filters: any = {}) => {
-    try {
-      runInAction(() => {
-        this.isLoadingPalsHub = true;
-        this.syncState = {status: 'syncing'};
-      });
-
-      const response = await palsHubService.getPals(filters);
-
-      runInAction(() => {
-        this.cachedPalsHubPals = response.pals;
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'};
-      });
-
-      return response;
-    } catch (error) {
-      console.warn(
-        'PalsHub search failed (this is expected if not configured):',
-        error,
-      );
-      runInAction(() => {
-        this.cachedPalsHubPals = []; // Set empty array instead of failing
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'}; // Don't show error state for missing config
-      });
-
-      // Return empty response instead of throwing
-      return {
-        pals: [],
-        total_count: 0,
-        page: 1,
-        limit: filters.limit || 20,
-        has_more: false,
-      };
-    }
-  };
-
-  loadUserLibrary = async () => {
-    try {
-      runInAction(() => {
-        this.isLoadingPalsHub = true;
-        this.syncState = {status: 'syncing'};
-      });
-
-      const response = await palsHubService.getLibrary();
-
-      runInAction(() => {
-        this.userLibrary = response.pals;
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'};
-      });
-
-      return response;
-    } catch (error) {
-      console.warn(
-        'User library load failed (this is expected if not configured):',
-        error,
-      );
-      runInAction(() => {
-        this.userLibrary = []; // Set empty array instead of failing
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'}; // Don't show error state for missing config
-      });
-
-      // Return empty response instead of throwing
-      return {
-        pals: [],
-        total_count: 0,
-        page: 1,
-        limit: 20,
-        has_more: false,
-      };
-    }
-  };
-
-  loadUserCreatedPals = async () => {
-    try {
-      runInAction(() => {
-        this.isLoadingPalsHub = true;
-        this.syncState = {status: 'syncing'};
-      });
-
-      const response = await palsHubService.getMyPals();
-
-      runInAction(() => {
-        this.userCreatedPals = response.pals;
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'};
-      });
-
-      return response;
-    } catch (error) {
-      console.warn(
-        'User created pals load failed (this is expected if not configured):',
-        error,
-      );
-      runInAction(() => {
-        this.userCreatedPals = []; // Set empty array instead of failing
-        this.isLoadingPalsHub = false;
-        this.syncState = {status: 'success'}; // Don't show error state for missing config
-      });
-
-      // Return empty response instead of throwing
-      return {
-        pals: [],
-        total_count: 0,
-        page: 1,
-        limit: 20,
-        has_more: false,
-      };
-    }
-  };
-
-  clearAccountPals = () => {
-    runInAction(() => {
-      this.userLibrary = [];
-      this.userCreatedPals = [];
-    });
-  };
-
   getLocalPals = () => {
-    return this.pals.filter(pal => pal.source === 'local' || !pal.source);
-  };
-
-  getDownloadedPalsHubPals = () => {
-    return this.pals.filter(pal => pal.source === 'palshub');
+    return this.pals;
   };
 
   // Capability-based filtering methods
@@ -745,60 +197,6 @@ class PalStore {
 
   getAllPals = () => {
     return this.pals;
-  };
-
-  isPalsHubPalDownloaded = (palsHubId: string) => {
-    return this.pals.some(pal => pal.palshub_id === palsHubId);
-  };
-
-  // Additional helper methods for PalsHub integration
-
-  /**
-   * Get categories from PalsHub
-   */
-  getCategories = async () => {
-    try {
-      return await palsHubService.getCategories();
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Get tags from PalsHub
-   */
-  getTags = async (query?: any) => {
-    try {
-      return await palsHubService.getTags(query);
-    } catch (error) {
-      console.error('Failed to fetch tags:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Get a specific pal from PalsHub
-   */
-  getPalsHubPal = async (id: string) => {
-    try {
-      return await palsHubService.getPal(id);
-    } catch (error) {
-      console.error('Failed to fetch pal:', error);
-      throw error;
-    }
-  };
-
-  /**
-   * Check if user owns a specific pal
-   */
-  checkPalOwnership = async (palId: string) => {
-    try {
-      return await palsHubService.checkPalOwnership(palId);
-    } catch (error) {
-      console.error('Failed to check pal ownership:', error);
-      throw error;
-    }
   };
 
   /**
@@ -814,11 +212,12 @@ class PalStore {
 
       // Check if Lookie already exists
       const lookiePal = this.pals.find(
-        p => p.capabilities?.video === true && p.name === 'Lookie',
+        p =>
+          p.capabilities?.video === true && p.name === chinesePals.lookie.name,
       );
 
       if (!lookiePal) {
-        console.log('Creating default Lookie pal...');
+        console.log('Creating default video pal...');
 
         // Offline constant — no network resolve at pal init.
         const defaultModel = LOOKIE_DEFAULT_MODEL;
@@ -826,11 +225,9 @@ class PalStore {
         // Create the Lookie pal with all the original properties
         const palData: Omit<Pal, 'id' | 'created_at' | 'updated_at'> = {
           type: 'local',
-          name: 'Lookie',
-          description:
-            'Real-time video analysis assistant that provides concise descriptions of your camera feed.',
-          systemPrompt:
-            'You are Lookie, an AI assistant giving real-time, concise descriptions of a video feed. Use few words. If unsure, say so clearly.',
+          name: chinesePals.lookie.name,
+          description: chinesePals.lookie.description,
+          systemPrompt: chinesePals.lookie.systemPrompt,
           isSystemPromptChanged: false,
           useAIPrompt: false,
           defaultModel: defaultModel, // Set the default model so users know what to download
@@ -841,7 +238,7 @@ class PalStore {
             {
               key: 'captureInterval',
               type: 'text',
-              label: 'Capture Interval (ms)',
+              label: '截图间隔（毫秒）',
               required: false,
             },
           ],
@@ -876,7 +273,7 @@ class PalStore {
       }
 
       const existing = this.pals.find(
-        p => p.name === 'Pip' && p.source === 'local',
+        p => p.name === chinesePals.pip.name && p.source === 'local',
       );
       if (existing) {
         await AsyncStorage.setItem(PIP_SEEDED_KEY, 'true');
@@ -885,11 +282,9 @@ class PalStore {
 
       const palData: Omit<Pal, 'id' | 'created_at' | 'updated_at'> = {
         type: 'local',
-        name: 'Pip',
-        description:
-          'A friendly general-purpose pal that runs entirely on your phone.',
-        systemPrompt:
-          'You are Pip, a friendly and helpful assistant who runs locally on the user’s phone. Keep replies concise and warm.',
+        name: chinesePals.pip.name,
+        description: chinesePals.pip.description,
+        systemPrompt: chinesePals.pip.systemPrompt,
         isSystemPromptChanged: false,
         useAIPrompt: false,
         defaultModel: undefined,

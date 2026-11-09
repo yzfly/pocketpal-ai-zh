@@ -13,14 +13,12 @@ interface PalGridRowProps {
   row: PalGridRowData;
   cardWidth: number;
   onPalPress: (pal: PalGridItem) => void;
-  onUpdatePress?: (palshubId: string) => void;
 }
 
 export const PalGridRow: React.FC<PalGridRowProps> = ({
   row,
   cardWidth,
   onPalPress,
-  onUpdatePress,
 }) => (
   <View style={styles.row}>
     {row.items.map(item => (
@@ -29,7 +27,6 @@ export const PalGridRow: React.FC<PalGridRowProps> = ({
           pal={item}
           onPress={() => onPalPress(item)}
           isLocal={isLocalPal(item)}
-          onUpdatePress={onUpdatePress}
         />
       </View>
     ))}

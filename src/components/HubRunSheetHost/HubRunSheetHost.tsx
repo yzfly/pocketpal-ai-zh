@@ -25,7 +25,7 @@ import {DetailsView} from '../../screens/ModelsScreen/HFModelSearch/DetailsView'
 import {createStyles} from './styles';
 
 /**
- * Global host for the `pocketpal://hub/run` route. Sits inside
+ * Global host for the `pocketwisdom://hub/run` route. Sits inside
  * BottomSheetModalProvider, observes the parked request, resolves the full repo
  * and presents the existing DetailsView (full quant list). The user picks a file
  * there; per-file download/progress is owned by ModelFileCard. Dismiss clears

@@ -48,7 +48,7 @@ describe('getOriginalModelName', () => {
       origin: ModelOrigin.PRESET,
     };
 
-    expect(getOriginalModelName(presetModel)).toBe('gemma-2-2b-it-Q6_K');
+    expect(getOriginalModelName(presetModel)).toBe('gemma 2 2b it');
   });
 
   it('should strip .gguf for local models', () => {
@@ -58,7 +58,7 @@ describe('getOriginalModelName', () => {
       origin: ModelOrigin.LOCAL,
     };
 
-    expect(getOriginalModelName(localModel)).toBe('my-model');
+    expect(getOriginalModelName(localModel)).toBe('my model');
   });
 
   it('should derive the name from the filename for any preset', () => {
@@ -78,6 +78,6 @@ describe('getOriginalModelName', () => {
       origin: ModelOrigin.HF,
     };
 
-    expect(getOriginalModelName(hfModel)).toBe('hf-model');
+    expect(getOriginalModelName(hfModel)).toBe('hf model');
   });
 });

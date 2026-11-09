@@ -23,7 +23,7 @@ import {
   RemoteSessionBinding,
   ServerConfig,
 } from '../../utils/types';
-import {getDisplayNameFromFilename} from '../../utils/formatters';
+import {friendlyModelName} from '../../utils/formatters';
 import {getModelMemoryRequirement} from '../../utils/memoryEstimator';
 import {hasEnoughMemory} from '../../hooks/useMemoryCheck';
 import NativeHardwareInfo from '../../specs/NativeHardwareInfo';
@@ -1684,7 +1684,7 @@ describe('ModelStore', () => {
 
       modelStore.resetModelName('local-test-id');
 
-      expect(modelStore.models[0].name).toBe('my-model-file');
+      expect(modelStore.models[0].name).toBe('my model file');
     });
 
     it('should reset preset model name to the filename-derived name', () => {
@@ -1700,7 +1700,7 @@ describe('ModelStore', () => {
 
       // Display-name reset is now filename-derived for every origin.
       expect(modelStore.models[0].name).toBe(
-        getDisplayNameFromFilename(presetModelFixture.filename),
+        friendlyModelName(presetModelFixture.filename),
       );
     });
 
@@ -1719,7 +1719,7 @@ describe('ModelStore', () => {
       modelStore.resetModelName('orphan-preset-id');
 
       // Should fall back to stripping .gguf from filename
-      expect(modelStore.models[0].name).toBe('orphan-model');
+      expect(modelStore.models[0].name).toBe('orphan model');
     });
   });
 

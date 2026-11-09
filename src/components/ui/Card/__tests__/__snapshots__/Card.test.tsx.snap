@@ -15,7 +15,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 24,
@@ -47,7 +47,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 24,
@@ -79,7 +79,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 24,
@@ -111,7 +111,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 24,
@@ -143,7 +143,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 16,
@@ -175,7 +175,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 16,
@@ -207,7 +207,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 16,
@@ -239,7 +239,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 16,
@@ -271,7 +271,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 8,
@@ -303,7 +303,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 8,
@@ -335,7 +335,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 8,
@@ -367,7 +367,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "elevation": 1,
           "padding": 8,
@@ -399,7 +399,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 24,
         },
@@ -430,7 +430,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 24,
         },
@@ -461,7 +461,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 24,
         },
@@ -492,7 +492,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 24,
         },
@@ -523,7 +523,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 16,
         },
@@ -554,7 +554,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 16,
         },
@@ -585,7 +585,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 16,
         },
@@ -616,7 +616,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 16,
         },
@@ -647,7 +647,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 8,
         },
@@ -678,7 +678,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 8,
         },
@@ -709,7 +709,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 8,
         },
@@ -740,7 +740,7 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 8,
         },
@@ -771,8 +771,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 24,
@@ -804,8 +804,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 24,
@@ -837,8 +837,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 24,
@@ -870,8 +870,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 24,
@@ -903,8 +903,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 16,
@@ -936,8 +936,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 16,
@@ -969,8 +969,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 16,
@@ -1002,8 +1002,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 16,
@@ -1035,8 +1035,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 8,
@@ -1068,8 +1068,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 8,
@@ -1101,8 +1101,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 8,
@@ -1134,8 +1134,8 @@ exports[`Card — snapshot matrix baseline (variant x size x {default,disabled} 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
-          "borderColor": "rgba(51, 51, 51, 0.05)",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#EAEAEA",
           "borderRadius": 12,
           "borderWidth": 1,
           "padding": 8,
@@ -1167,7 +1167,7 @@ exports[`Card — snapshot matrix non-Latin font-fallback canary (canaryVariant 
     style={
       [
         {
-          "backgroundColor": "#F9FAFB",
+          "backgroundColor": "#FFFFFF",
           "borderRadius": 12,
           "padding": 8,
         },

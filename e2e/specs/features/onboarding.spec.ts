@@ -21,7 +21,7 @@
 import {ChatPage} from '../../pages/ChatPage';
 import {OnboardingPage} from '../../pages/OnboardingPage';
 import {byTestId} from '../../helpers/selectors';
-import {appId, reinstallApp} from '../../helpers/iap-actions';
+import {appId, reinstallApp} from '../../helpers/app-install';
 
 declare const driver: WebdriverIO.Browser;
 declare const browser: WebdriverIO.Browser;

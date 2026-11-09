@@ -65,6 +65,7 @@ import {
   DownloadIcon,
   EyeOffIcon,
 } from '../../../assets/icons';
+import {getChineseModelTagline} from '../../../store/chineseModelPresets';
 
 type ChatScreenNavigationProp = DrawerNavigationProp<RootDrawerParamList>;
 
@@ -755,6 +756,8 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
       );
     };
 
+    const tagline = getChineseModelTagline(model.id);
+
     return (
       <>
         <Card elevation={0} style={styles.card} testID={`model-card-${cardId}`}>
@@ -817,6 +820,12 @@ export const ModelCard: React.FC<ModelCardProps> = observer(
 
           {/* Content */}
           <View style={styles.cardContent}>
+            {/* 中文版：推荐模型的一句话用途说明 */}
+            {tagline ? (
+              <Text style={styles.tagline} testID="model-card-tagline">
+                {tagline}
+              </Text>
+            ) : null}
             {/* Storage Error Display */}
             {!isRemoteModel && !storageOk && !isDownloaded && (
               <HelperText

@@ -167,7 +167,7 @@
     "serverTypeHelp": "Dikesan secara automatik; tukar jika salah.",
     "internetSearch": {
       "title": "Carian Internet",
-      "description": "Biarkan Pals mencari di web dengan alat mereka sendiri. Bawa kunci API anda sendiri — PocketPal tidak sekali-kali menyimpan kunci atau menghalakan pertanyaan anda.",
+      "description": "Biarkan Pals mencari di web dengan alat mereka sendiri. Bawa kunci API anda sendiri — PocketWisdom tidak sekali-kali menyimpan kunci atau menghalakan pertanyaan anda.",
       "providerLabel": "Penyedia carian",
       "providerGated": "Akan datang",
       "keyLabel": "Kunci API",
@@ -183,7 +183,7 @@
       "resultCountLabel": "Bilangan hasil setiap carian",
       "resultCountDescription": "Lebih sedikit hasil mengekalkan lebih banyak ruang dalam konteks model.",
       "consentTitle": "Carian meninggalkan peranti anda",
-      "consentDescription": "Apabila Pal mencari di web, pertanyaan anda dihantar ke penyedia yang dipilih melalui internet. Apabila Pal membaca sesuatu halaman, URL dan kandungan halaman mungkin dihantar ke perkhidmatan pembaca lalai (r.jina.ai) sebaliknya jika penyedia yang dipilih tiada pembaca natif. Kunci dan pertanyaan tidak sekali-kali dihantar ke PocketPal.",
+      "consentDescription": "Apabila Pal mencari di web, pertanyaan anda dihantar ke penyedia yang dipilih melalui internet. Apabila Pal membaca sesuatu halaman, URL dan kandungan halaman mungkin dihantar ke perkhidmatan pembaca lalai (r.jina.ai) sebaliknya jika penyedia yang dipilih tiada pembaca natif. Kunci dan pertanyaan tidak sekali-kali dihantar ke PocketWisdom.",
       "consentAccept": "Saya faham",
       "consentRequired": "Terima pendedahan di atas untuk menetapkan kunci dan mendayakan carian.",
       "consentGivenTitle": "Carian web telah didayakan",
@@ -235,17 +235,6 @@
       "unloadBoundTitle": "Nyahmuat model ini?",
       "unloadBoundBody": "Sembang ini menggunakannya. Ia akan dimuat semula apabila anda menghantar mesej seterusnya.",
       "unloadBoundConfirm": "Nyahmuat"
-    },
-    "account": {
-      "title": "Akaun",
-      "deleteAccount": "Padam akaun",
-      "confirmTitle": "Padam akaun?",
-      "confirmMessage": "Ini akan memadam akaun PalsHub anda dan pustakanya secara kekal. Pal yang dibeli melalui App Store atau Google Play masih boleh dipulihkan pada peranti ini dengan akaun gedung anda. Rekod pembelian disimpan secara anonim atas sebab perundangan.",
-      "confirmWithoutApple": "Tidak dapat mengesahkan dengan Apple. Tetap padam akaun anda?",
-      "deleted": "Akaun anda telah dipadam.",
-      "signInAgain": "Sila log masuk semula",
-      "creatorSupport": "Akaun pencipta dipadam oleh pasukan sokongan kami: {{contact}}",
-      "failed": "Tidak dapat memadam, cuba lagi"
     }
   },
   "memory": {
@@ -546,7 +535,7 @@
     "screenTitle": "Maklumat Aplikasi",
     "description": "Aplikasi yang membawa model bahasa terus ke telefon anda. Dibina di atas llama.cpp dan llama.rn.",
     "supportProject": "Sokong Projek Ini",
-    "supportProjectDescription": "Jika anda menikmati menggunakan PocketPal AI, pertimbangkan untuk menyokong projek ini dengan:",
+    "supportProjectDescription": "Jika anda menikmati menggunakan PocketWisdom, pertimbangkan untuk menyokong projek ini dengan:",
     "githubButton": "Beri Bintang di GitHub",
     "orBy": "atau dengan",
     "versionCopiedTitle": "Versi Disalin",
@@ -554,17 +543,17 @@
     "privacyPolicy": "Dasar Privasi",
     "termsOfService": "Terma Perkhidmatan",
     "tour": "Lawatan",
-    "tourDescription": "Mainkan semula skrin alu-aluan untuk melihat apa yang ditawarkan oleh PocketPal AI.",
+    "tourDescription": "Mainkan semula skrin alu-aluan untuk melihat apa yang ditawarkan oleh PocketWisdom.",
     "showIntroButton": "Tunjuk pengenalan semula",
     "openSourceNotices": "Notis sumber terbuka",
     "phononNoticesCredit": "Model suara Phonon dan suaranya oleh Gradium, dilesenkan di bawah Apache-2.0. Dibina di atas Pocket TTS dan kodek Mimi daripada Kyutai."
   },
   "feedback": {
     "title": "Hantar Maklum Balas",
-    "description": "Suara anda penting! Ceritakan bagaimana PocketPal AI membantu anda dan apa yang boleh kami lakukan untuk menjadikannya lebih berguna.",
+    "description": "Suara anda penting! Ceritakan bagaimana PocketWisdom membantu anda dan apa yang boleh kami lakukan untuk menjadikannya lebih berguna.",
     "shareThoughtsButton": "Kongsi pemikiran anda",
     "useCase": {
-      "label": "Untuk apa anda menggunakan PocketPal AI?",
+      "label": "Untuk apa anda menggunakan PocketWisdom?",
       "placeholder": "cth., meringkaskan, main peranan, dll."
     },
     "featureRequests": {
@@ -576,7 +565,7 @@
       "placeholder": "Kongsi pemikiran lain yang anda ada."
     },
     "usageFrequency": {
-      "label": "Seberapa kerap anda menggunakan PocketPal AI? (Pilihan)",
+      "label": "Seberapa kerap anda menggunakan PocketWisdom? (Pilihan)",
       "options": {
         "daily": "Setiap hari",
         "weekly": "Mingguan",
@@ -626,7 +615,7 @@
     },
     "chatEmptyPlaceholder": {
       "noModelsTitle": "Tiada Model Tersedia",
-      "noModelsDescription": "Muat turun model untuk mula bersembang dengan PocketPal",
+      "noModelsDescription": "Muat turun model untuk mula bersembang dengan PocketWisdom",
       "noModelsButton": "Muat Turun Model",
       "activateModelTitle": "Dayakan Model untuk Memulakan",
       "activateModelDescription": "Pilih model dan muat turun. Selepas dimuat turun, ketik Muat di sebelah model dan mula bersembang.",
@@ -679,7 +668,7 @@
     },
     "modelErrorReportSheet": {
       "title": "Laporkan Masalah Pemuatan Model",
-      "privacyNote": "Bantu kami memperbaiki PocketPal dengan berkongsi butiran tentang ralat ini. Semak di bawah apa yang akan dikongsi – anda boleh membatalkan mana-mana item yang tidak mahu disertakan.",
+      "privacyNote": "Bantu kami memperbaiki PocketWisdom dengan berkongsi butiran tentang ralat ini. Semak di bawah apa yang akan dikongsi – anda boleh membatalkan mana-mana item yang tidak mahu disertakan.",
       "errorMessage": "Mesej ralat",
       "modelInfo": "Maklumat Model",
       "modelName": "Nama",
@@ -697,7 +686,7 @@
       "submit": "Hantar Laporan",
       "success": {
         "title": "Laporan Dihantar",
-        "message": "Terima kasih kerana membantu kami memperbaiki PocketPal. Laporan anda akan membantu kami membetulkan masalah ini."
+        "message": "Terima kasih kerana membantu kami memperbaiki PocketWisdom. Laporan anda akan membantu kami membetulkan masalah ini."
       },
       "error": {
         "title": "Gagal Menghantar Laporan",
@@ -1090,11 +1079,6 @@
     }
   },
   "palsScreen": {
-    "sectionTitles": {
-      "myPalsLocal": "Pal Saya (tempatan)",
-      "myLibrary": "Pustaka Saya (palshub.ai)",
-      "discoverPals": "Temui Pal (palshub.ai)"
-    },
     "systemPrompt": "Prompt Sistem",
     "videoAnalysis": "Analisis Video",
     "videoAnalysisDescription": "Ini adalah pembantu AI berasaskan video yang memberikan ulasan masa nyata pada strim video daripada kamera peranti anda.",
@@ -1116,14 +1100,10 @@
     "profile": "Profil",
     "signIn": "Log Masuk",
     "addPal": "Tambah Pal",
-    "signInToAccessLibrary": "Log masuk untuk mengakses pustaka anda daripada palshub.ai",
     "signOut": "Log Keluar",
     "signOutConfirmation": "Pasti mahu log keluar?",
     "signOutError": "Gagal log keluar. Sila cuba lagi.",
     "account": "Akaun",
-    "signInToPalsHub": "Log Masuk ke PalsHub",
-    "signInDescription": "Akses pustaka anda, cipta Pal persendirian, dan segerak merentas peranti",
-    "searchAllPals": "Cari semua Pal...",
     "deletePalConfirmation": "Pasti mahu memadam \"{{palName}}\"?",
     "filters": {
       "all": "Semua",
@@ -1145,66 +1125,6 @@
       "oldest": "Terlama",
       "rating": "Rating Tertinggi",
       "popular": "Paling Popular"
-    },
-    "palDetailSheet": {
-      "by": "oleh",
-      "unknown": "Tidak Diketahui",
-      "rating": "Rating",
-      "reviews": "Ulasan",
-      "created": "Dicipta",
-      "description": "Penerangan",
-      "noDescriptionAvailable": "Tiada penerangan tersedia.",
-      "categories": "Kategori",
-      "tags": "Tag",
-      "systemPrompt": "Prompt Sistem",
-      "downloaded": "Dimuat Turun",
-      "success": "Berjaya",
-      "palAddedToCollection": "Pal telah ditambah ke koleksi anda!",
-      "error": "Ralat",
-      "failedToLoadDetails": "Gagal memuatkan butiran pal",
-      "failedToDownload": "Gagal memuat turun pal",
-      "notAvailable": "T/A"
-    },
-    "purchase": {
-      "buy": "{{price}}",
-      "open": "Buka",
-      "install": "Pasang",
-      "pending": "Menunggu",
-      "unlocking": "Membuka kunci",
-      "retry": "Cuba lagi",
-      "supportCode": "Kod sokongan: {{code}}",
-      "noLongerAvailable": "Pal ini tidak lagi tersedia. Anda boleh {{refundLink}}.",
-      "refundLink": "minta bayaran balik daripada Apple",
-      "notCompleted": "Pembelian ini tidak dapat diselesaikan. Google akan mengembalikan bayaran anda.",
-      "withdrawnRefunding": "Pal ini telah ditarik balik. Hubungi sokongan untuk mendapatkan bayaran balik.",
-      "invalid": "Kami tidak dapat mengesahkan pembelian ini.",
-      "heldInvalid": "Kami tidak dapat membuka kunci pembelian ini. Hubungi sokongan dengan kod ini.",
-      "recommendedModel": "Model yang disyorkan",
-      "sampleExchange": "Contoh perbualan",
-      "signInLine": "Sudah memilikinya? Log masuk",
-      "licenseNotice": "Anda membeli lesen untuk menggunakan Pal ini.",
-      "termsOfSale": "Terma Jualan",
-      "appleMediaTerms": "Terma Perkhidmatan Media Apple",
-      "linkPrompt": "Log masuk untuk menggunakannya pada peranti anda yang lain juga",
-      "linkSignIn": "Log Masuk",
-      "dismiss": "Bukan sekarang",
-      "linkConflict": "Pembelian ini dipautkan ke akaun lain.",
-      "restorePurchases": "Pulihkan pembelian",
-      "badgePending": "Menunggu",
-      "badgeUnlocking": "Membuka kunci",
-      "badgeUpdate": "Kemas kini tersedia",
-      "updatePrompt": "Versi baharu daripada pencipta kini tersedia.",
-      "updatePromptWithNote": "Versi baharu daripada pencipta kini tersedia: {{note}}.",
-      "updateButton": "Kemas Kini",
-      "updateConfirmText": "Ini akan menggantikan suntingan anda pada bahagian yang diubah oleh pencipta.",
-      "updateConfirm": "Kemas Kini",
-      "updateCancel": "Batal",
-      "modelStep": {
-        "download": "Muat Turun · {{size}}",
-        "startChat": "Mulakan sembang",
-        "needsMemory": "Pal ini memerlukan peranti dengan sekurang-kurangnya {{size}} memori untuk model terkecilnya.",
-        "noModelFits": "Peranti ini tidak mempunyai memori yang mencukupi untuk Pal ini."
-      }
     }
   },
   "validation": {
@@ -1219,7 +1139,7 @@
   },
   "camera": {
     "permissionTitle": "Kebenaran Kamera Diperlukan",
-    "permissionMessage": "PocketPal memerlukan capaian kamera untuk menganalisis imej",
+    "permissionMessage": "PocketWisdom memerlukan capaian kamera untuk menganalisis imej",
     "requestingPermission": "Memohon kebenaran kamera...",
     "noDevice": "Tiada peranti kamera ditemui",
     "errorTitle": "Ralat Kamera",
@@ -1233,7 +1153,7 @@
   },
   "video": {
     "permissionTitle": "Kebenaran Kamera Diperlukan",
-    "permissionMessage": "PocketPal memerlukan capaian kamera untuk analisis video",
+    "permissionMessage": "PocketWisdom memerlukan capaian kamera untuk analisis video",
     "requestingPermission": "Memohon kebenaran kamera...",
     "noDevice": "Tiada peranti kamera ditemui",
     "errorTitle": "Ralat Kamera",
@@ -1586,14 +1506,14 @@
     "skip": "Langkau",
     "skipForNow": "Langkau buat masa ini",
     "splash": {
-      "brand": "PocketPal"
+      "brand": "PocketWisdom"
     },
     "screen1": {
       "title": "Kenali pal anda.",
       "titleAccent": "pal anda.",
       "body": "Kawan kecil yang bijak, hidup di dalam telefon anda.\nJom siapkan persediaan - hanya ambil seminit.",
       "cta": "Tunjuk sekeliling",
-      "eyebrow": "Selamat datang ke PocketPal"
+      "eyebrow": "Selamat datang ke PocketWisdom"
     },
     "screen2": {
       "title": "Bila-bila,\nDi mana-mana.",
@@ -1725,54 +1645,6 @@
     "memoryAlertBody": "Input suara memerlukan memori tambahan selain model sembang ini. Ia mungkin menjadi sangat perlahan, atau aplikasi mungkin ditutup.",
     "memoryAlertTryAnyway": "Tetap cuba"
   },
-  "plus": {
-    "eyebrow": "PocketPal Plus",
-    "headline": "Bawa AI tempatan lebih jauh.",
-    "subline": "Plus memastikan PocketPal kekal percuma dan sumber terbuka. Ciri tambahan ialah tanda terima kasih kami.",
-    "unsupportedSubline": "Ciri Plus belum boleh berjalan pada telefon ini. Anda masih boleh menyokong PocketPal.",
-    "thanksHeadline": "Terima kasih kerana memastikan PocketPal terus berjalan.",
-    "thanksSubline": "Kunci Plus telah dibuka pada peranti ini.",
-    "features": {
-      "handsFreeVoice": "Suara bebas tangan",
-      "localApiServer": "Pelayan API tempatan"
-    },
-    "ready": "Sedia",
-    "needsRam": "Perlu RAM {{gb}} GB",
-    "comingSoon": "Akan datang",
-    "speedLine": "Kelajuan bergantung kepada telefon dan model anda.",
-    "inDevelopment": "Ciri yang masih dalam pembangunan mungkin berubah atau tidak dikeluarkan.",
-    "priceCaption": "Bayar jumlah yang anda rasa sesuai. Setiap jumlah membuka kunci ciri yang sama.",
-    "buyError": "Pembelian tidak berjaya. Cuba lagi.",
-    "getPlus": "Dapatkan Plus · {{price}}",
-    "getPlusAnyway": "Tetap dapatkan Plus · {{price}}",
-    "loading": "Memuat",
-    "pending": "Menunggu",
-    "pendingTitle": "Menunggu gedung mengesahkan pembayaran anda.",
-    "pendingBody": "Kunci Plus akan terbuka sendiri sebaik sahaja pembayaran berjaya. Anda boleh menutup skrin ini.",
-    "unavailableTitle": "Pembelian tidak tersedia buat masa ini.",
-    "unavailableBody": "Gedung tidak dapat dihubungi. Cuba lagi nanti, atau pulihkan pembelian lepas.",
-    "done": "Selesai",
-    "oneTimePurchase": "Pembelian sekali sahaja",
-    "restore": "Pulihkan",
-    "openSource": "Sumber terbuka ↗",
-    "licence": "Pembelian lesen sekali sahaja untuk menggunakan Plus.",
-    "terms": "Terma",
-    "appleMediaTerms": "Terma Perkhidmatan Media Apple",
-    "noPurchaseFound": "Tiada pembelian Plus ditemui.",
-    "restoreFailed": "Tidak dapat menghubungi gedung. Cuba lagi.",
-    "sidebar": {
-      "title": "PocketPal Plus",
-      "unlocked": "Kunci dibuka",
-      "subtitleOne": "{{first}}",
-      "subtitleTwo": "{{first}}, {{second}}",
-      "subtitleMore": "{{first}}, {{second}} dan lain-lain"
-    },
-    "optIn": "Mati",
-    "optInNote": "Mati pada telefon ini. Hidupkannya dalam Tetapan jika anda berani.",
-    "offInSettingsNote": "Dimatikan dalam Tetapan.",
-    "chatStaysFree": "Plus ialah pilihan. Bersembang kekal percuma.",
-    "chooseAmount": "Pilih jumlah"
-  },
   "voiceMode": {
     "settingTitle": "Suara bebas tangan",
     "settingDescription": "Bercakap dengan model dalam sembang dan dengar balasannya.",
@@ -1824,7 +1696,7 @@
     "continueAnywayCta": "Tetap teruskan",
     "chooseSmallerModelCta": "Pilih model yang lebih kecil",
     "startLabel": "Mulakan mod suara",
-    "startLockedLabel": "Suara bebas tangan, PocketPal Plus",
+    "startLockedLabel": "Suara bebas tangan, PocketWisdom Plus",
     "startLockedHint": "Membuka pratonton pendek. Menaip dan input suara kekal percuma.",
     "teaserTitle": "Perbualan suara ialah ciri Plus",
     "teaserBody": "Bercakap bebas tangan. Ia menjawab secara lisan.",

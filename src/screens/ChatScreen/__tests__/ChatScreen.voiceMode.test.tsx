@@ -7,11 +7,9 @@ import {modelsList} from '../../../../jest/fixtures/models';
 import {
   asrStore,
   modelStore,
-  purchaseStore,
   voiceEntitlement,
   voiceModeStore,
 } from '../../../store';
-import {isPlusUnlocked} from '../../../services/plus/gate';
 
 import {ChatScreen} from '../ChatScreen';
 
@@ -166,44 +164,18 @@ describe('ChatScreen voice mode entry', () => {
     });
   });
 
-  it('with Plus unlocked, shows no lock and goes past the paywall', async () => {
-    runInAction(() => {
-      purchaseStore.plusUnlocked = true;
-      modelStore.models = modelsList as any;
-      modelStore.activeModelId = modelsList[0].id;
-    });
-    const {getByTestId, queryByTestId} = renderScreen();
-    expect(queryByTestId('voice-mode-lock')).toBeNull();
-
-    await act(async () => {
-      fireEvent.press(getByTestId('voice-mode-button'));
-    });
-
-    expect(
-      (voiceEntitlement as any).defaultSource.openPaywall,
-    ).not.toHaveBeenCalled();
-    expect(
-      mockSheetsShown.length > 0 || voiceModeStore.phase !== 'closed',
-    ).toBe(true);
-    runInAction(() => {
-      purchaseStore.plusUnlocked = false;
-    });
-  });
-
-  describe('in an ungated build', () => {
+  describe('with the default (unlocked) entitlement', () => {
     const defaultSource = (voiceEntitlement as any).defaultSource;
 
     beforeEach(() => {
-      (global as any).__PLUS_STORE_GATE__ = false;
       defaultSource.openPaywall.mockClear();
       voiceEntitlement.register({
-        isUnlocked: () => voiceModeStore.unlockOverride ?? isPlusUnlocked(),
+        isUnlocked: () => voiceModeStore.unlockOverride ?? true,
         openPaywall: defaultSource.openPaywall,
       });
     });
 
     afterEach(() => {
-      (global as any).__PLUS_STORE_GATE__ = true;
       voiceEntitlement.register(defaultSource);
     });
 
@@ -213,7 +185,6 @@ describe('ChatScreen voice mode entry', () => {
         modelStore.activeModelId = modelsList[0].id;
       });
       const {getByTestId, queryByTestId} = renderScreen();
-      expect(purchaseStore.plusUnlocked).toBe(false);
       expect(queryByTestId('voice-mode-lock')).toBeNull();
 
       await act(async () => {

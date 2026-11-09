@@ -18,22 +18,4 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       alignItems: 'center',
       minHeight: 70,
     },
-    actionButton: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 4,
-      borderRadius: 12,
-    },
-    iconContainer: {
-      marginBottom: 4,
-      padding: 4,
-    },
-    actionLabel: {
-      fontSize: 11,
-      fontWeight: '500',
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-    },
   });

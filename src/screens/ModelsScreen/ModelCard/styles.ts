@@ -97,6 +97,12 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.onSurfaceVariant,
       marginLeft: 4,
     },
+    tagline: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 8,
+    },
     serverLink: {
       flexDirection: 'row',
       alignItems: 'center',
