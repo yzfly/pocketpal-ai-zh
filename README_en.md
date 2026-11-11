@@ -74,7 +74,7 @@ The recommended model table with measured speeds is in the [Chinese README](./RE
 
 ## Install
 
-- **Android**: download the APK from [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases) (package `com.pocketwisdom`, installs alongside upstream PocketPal). If no current APK is listed, build from source as described below.
+- **Android**: download the latest APK from [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases/latest) (package `com.pocketwisdom`, installs alongside upstream PocketPal). Uninstall versions 1.6.9 and older first, because the signing key changed.
 - **iOS**: build with Xcode.
 
 Getting started: open the app → download "口袋助手 mini" (about 0.5 GB) on the Models page → tap Load and start chatting.

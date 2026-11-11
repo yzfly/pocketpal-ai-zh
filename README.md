@@ -100,7 +100,7 @@ App 里显示的是右侧的中文名。
 
 ## 📲 安装
 
-- **Android**：在 [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases) 下载 APK 安装（包名 `com.pocketwisdom`，可与上游 PocketPal 同时安装）；暂无新版 APK 时可按下方「本地开发」自行构建
+- **Android**：在 [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases/latest) 下载最新 APK 安装（包名 `com.pocketwisdom`，可与上游 PocketPal 同时安装）。从 1.6.9 及更早版本升级需先卸载旧版（签名密钥已更换）
 - **iOS**：需自行使用 Xcode 构建（欢迎有开发者账号的朋友协助上架）
 
 > 旧版（v1.6.9）APK 与 DeepSeek 模型文件仍可通过百度网盘获取（提取码 xtbf）：
