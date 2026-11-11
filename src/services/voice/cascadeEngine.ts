@@ -109,7 +109,11 @@ export class CascadeVoiceEngine implements VoiceEngine {
         }
         transcript = await whisperAsrEngine.transcribe(
           fromByteArray(utterance),
-          {tier: this.tier, language: asrStore.spokenLanguage ?? undefined},
+          {
+            tier: this.tier,
+            language: asrStore.effectiveLanguage ?? undefined,
+            prompt: asrStore.transcribePrompt(),
+          },
         );
       } catch (err) {
         if (aborted) {

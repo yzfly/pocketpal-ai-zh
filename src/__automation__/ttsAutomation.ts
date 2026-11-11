@@ -72,6 +72,8 @@ const downloadFor = (id: NeuralEngineId): (() => Promise<void>) => {
   switch (id) {
     case 'kokoro':
       return ttsStore.downloadKokoro;
+    case 'kokoroZh':
+      return ttsStore.downloadKokoroZh;
     case 'supertonic':
       return ttsStore.downloadSupertonic;
     case 'kitten':
@@ -89,6 +91,8 @@ const installedStateFor = (id: NeuralEngineId): boolean => {
   switch (id) {
     case 'kokoro':
       return ttsStore.kokoroDownloadState === 'ready';
+    case 'kokoroZh':
+      return ttsStore.kokoroZhDownloadState === 'ready';
     case 'supertonic':
       return ttsStore.supertonicDownloadState === 'ready';
     case 'kitten':

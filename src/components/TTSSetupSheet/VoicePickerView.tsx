@@ -23,9 +23,11 @@ import {useTheme} from '../../hooks';
 import {
   KITTEN_VOICES,
   KOKORO_VOICES,
+  KOKORO_ZH_VOICES,
   SUPERTONIC_VOICES,
   SUPERTONIC_MODEL_ESTIMATED_BYTES,
   KOKORO_MODEL_ESTIMATED_BYTES,
+  KOKORO_ZH_MODEL_ESTIMATED_BYTES,
   KITTEN_MODEL_ESTIMATED_BYTES,
   PHONON_MODEL_ESTIMATED_BYTES,
   PHONON_VOICES,
@@ -48,7 +50,14 @@ type DownloadState = 'not_installed' | 'downloading' | 'ready' | 'error';
 
 // System TTS hidden until language/accent/search filtering is built —
 // 180+ iOS / 470+ Android unfiltered voices is hostile UX.
-const ENGINE_ORDER: EngineId[] = ['phonon', 'kitten', 'kokoro', 'supertonic'];
+// 口袋AI：中文引擎放第一位
+const ENGINE_ORDER: EngineId[] = [
+  'kokoroZh',
+  'phonon',
+  'kitten',
+  'kokoro',
+  'supertonic',
+];
 
 const engineTitle = (engineId: EngineId, l: L10n): string => {
   switch (engineId) {
@@ -56,6 +65,8 @@ const engineTitle = (engineId: EngineId, l: L10n): string => {
       return l.voiceAndSpeech.engineChipKitten;
     case 'kokoro':
       return l.voiceAndSpeech.engineChipKokoro;
+    case 'kokoroZh':
+      return l.voiceAndSpeech.engineChipKokoroZh;
     case 'supertonic':
       return l.voiceAndSpeech.engineChipSupertonic;
     case 'phonon':
@@ -73,6 +84,8 @@ const engineTagline = (engineId: EngineId, l: L10n): string => {
       return l.voiceAndSpeech.engineKittenTagline;
     case 'kokoro':
       return l.voiceAndSpeech.engineKokoroTagline;
+    case 'kokoroZh':
+      return l.voiceAndSpeech.engineKokoroZhTagline;
     case 'supertonic':
       return l.voiceAndSpeech.engineSupertonicTagline;
     case 'phonon':
@@ -88,6 +101,8 @@ const engineTierLabel = (engineId: EngineId, l: L10n): string => {
       return l.voiceAndSpeech.engineTierLightest;
     case 'kokoro':
       return l.voiceAndSpeech.engineTierBestQuality;
+    case 'kokoroZh':
+      return l.voiceAndSpeech.engineTierChinese;
     case 'supertonic':
       return l.voiceAndSpeech.engineTierFastestStart;
     case 'phonon':
@@ -103,6 +118,8 @@ const neuralStateFor = (engineId: NeuralEngineId): DownloadState => {
       return ttsStore.kittenDownloadState;
     case 'kokoro':
       return ttsStore.kokoroDownloadState;
+    case 'kokoroZh':
+      return ttsStore.kokoroZhDownloadState;
     case 'supertonic':
       return ttsStore.supertonicDownloadState;
     case 'phonon':
@@ -116,6 +133,8 @@ const neuralProgressFor = (engineId: NeuralEngineId): number => {
       return ttsStore.kittenDownloadProgress;
     case 'kokoro':
       return ttsStore.kokoroDownloadProgress;
+    case 'kokoroZh':
+      return ttsStore.kokoroZhDownloadProgress;
     case 'supertonic':
       return ttsStore.supertonicDownloadProgress;
     case 'phonon':
@@ -129,6 +148,8 @@ const neuralErrorFor = (engineId: NeuralEngineId): string | null => {
       return ttsStore.kittenDownloadError;
     case 'kokoro':
       return ttsStore.kokoroDownloadError;
+    case 'kokoroZh':
+      return ttsStore.kokoroZhDownloadError;
     case 'supertonic':
       return ttsStore.supertonicDownloadError;
     case 'phonon':
@@ -142,6 +163,8 @@ const triggerDownload = (engineId: NeuralEngineId) => {
       return ttsStore.downloadKitten();
     case 'kokoro':
       return ttsStore.downloadKokoro();
+    case 'kokoroZh':
+      return ttsStore.downloadKokoroZh();
     case 'supertonic':
       return ttsStore.downloadSupertonic();
     case 'phonon':
@@ -155,6 +178,8 @@ const triggerRetry = (engineId: NeuralEngineId) => {
       return ttsStore.retryKittenDownload();
     case 'kokoro':
       return ttsStore.retryKokoroDownload();
+    case 'kokoroZh':
+      return ttsStore.downloadKokoroZh();
     case 'supertonic':
       return ttsStore.retryDownload();
     case 'phonon':
@@ -168,6 +193,8 @@ const triggerDelete = (engineId: NeuralEngineId) => {
       return ttsStore.deleteKitten();
     case 'kokoro':
       return ttsStore.deleteKokoro();
+    case 'kokoroZh':
+      return ttsStore.deleteKokoroZh();
     case 'supertonic':
       return ttsStore.deleteSupertonic();
     case 'phonon':
@@ -178,6 +205,7 @@ const triggerDelete = (engineId: NeuralEngineId) => {
 const NEURAL_ESTIMATED_BYTES: Record<NeuralEngineId, number> = {
   supertonic: SUPERTONIC_MODEL_ESTIMATED_BYTES,
   kokoro: KOKORO_MODEL_ESTIMATED_BYTES,
+  kokoroZh: KOKORO_ZH_MODEL_ESTIMATED_BYTES,
   kitten: KITTEN_MODEL_ESTIMATED_BYTES,
   phonon: PHONON_MODEL_ESTIMATED_BYTES,
 };
@@ -201,6 +229,7 @@ const isEngineReady = (engineId: EngineId): boolean => {
 const VOICES_BY_ENGINE: Record<EngineId, Voice[]> = {
   kitten: KITTEN_VOICES,
   kokoro: KOKORO_VOICES,
+  kokoroZh: KOKORO_ZH_VOICES,
   supertonic: SUPERTONIC_VOICES,
   phonon: PHONON_VOICES,
   system: [], // populated async via SystemEngine

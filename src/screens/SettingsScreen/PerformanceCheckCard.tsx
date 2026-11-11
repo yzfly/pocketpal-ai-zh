@@ -77,7 +77,11 @@ export const PerformanceCheckCard: React.FC = observer(() => {
 
   return (
     <Card elevation={0} style={styles.card} testID="perf-check-card">
-      <Card.Title title={copy.title} />
+      <Card.Title
+        title={copy.title}
+        titleStyle={styles.cardTitle}
+        style={styles.cardTitleContainer}
+      />
       <Card.Content>
         <View style={styles.settingItemContainer}>
           <Text style={muted}>{copy.subtitle}</Text>

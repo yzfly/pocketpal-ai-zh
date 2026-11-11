@@ -8,6 +8,7 @@ import {useTheme} from '../../hooks';
 import {asrStore} from '../../store';
 import {L10nContext} from '../../utils';
 import {t} from '../../locales';
+import {asrLanguageLabel} from '../../utils/asrLanguage';
 import {
   ASR_LEVEL_HISTORY,
   ASR_MAX_RECORD_MS,
@@ -79,6 +80,20 @@ const LanguageLabel: React.FC<{
   styles: ReturnType<typeof createStyles>;
 }> = observer(({styles}) => {
   const l10n = useContext(L10nContext);
+  const choice = asrStore.languageChoice;
+  if (choice !== 'auto') {
+    // 口袋AI：设置里选定的语言，不提供点击重置。
+    return (
+      <Text
+        variant="labelSmall"
+        style={styles.language}
+        testID="voice-language">
+        {t(l10n.voiceInput.recordingLanguageFixed, {
+          language: asrLanguageLabel(choice, l10n),
+        })}
+      </Text>
+    );
+  }
   const code = asrStore.spokenLanguage;
   if (!code) {
     return (

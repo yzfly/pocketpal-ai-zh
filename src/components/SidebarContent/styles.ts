@@ -8,6 +8,29 @@ export const createStyles = (theme: MD3Theme) =>
       flex: 1,
       backgroundColor: theme.colors.surface,
     },
+    // 抽屉顶部品牌区：与桌面图标同一标识
+    brandHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 16,
+    },
+    brandText: {
+      flex: 1,
+    },
+    brandName: {
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+    },
+    brandTagline: {
+      fontSize: 12,
+      lineHeight: 18,
+      color: theme.colors.onSurfaceVariant,
+    },
     divider: {
       marginHorizontal: 16,
       backgroundColor: theme.colors.onSurfaceVariant,

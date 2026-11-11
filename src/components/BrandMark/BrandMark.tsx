@@ -11,7 +11,8 @@ interface BrandMarkProps {
 }
 
 /**
- * 口袋AI 标识（口袋 + 星光）。浅色模式黑底白标，深色模式白底黑标，
+ * 口袋AI 标识（星球轨道），与桌面图标同源：由 scripts/generate-app-icons.js
+ * 从同一组 SVG 生成。浅色模式黑底白标，深色模式白底黑标，
  * 与 Geist 黑白主色保持一致。
  */
 export const BrandMark: React.FC<BrandMarkProps> = ({

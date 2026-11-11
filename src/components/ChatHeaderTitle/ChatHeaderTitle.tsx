@@ -17,7 +17,7 @@ export const ChatHeaderTitle: React.FC = observer(() => {
 
   return (
     <View style={styles.container}>
-      <Text numberOfLines={1} variant="titleSmall">
+      <Text numberOfLines={1} variant="titleSmall" style={styles.title}>
         {activeSession?.title || l10n.components.chatHeaderTitle.defaultTitle}
       </Text>
       {activeModel?.name && (

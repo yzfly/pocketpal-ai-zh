@@ -23,6 +23,21 @@ export const createStyles = (theme: Theme) =>
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outlineVariant,
     },
+    // 分组标题：小号加粗的灰色标签，紧贴本组第一项（Paper 默认 72 高，留白过大）
+    cardTitleContainer: {
+      minHeight: 0,
+      paddingTop: 24,
+      paddingBottom: 0,
+    },
+    cardTitle: {
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '600',
+      letterSpacing: 0.3,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 0,
+      minHeight: 18,
+    },
     settingItemContainer: {
       marginVertical: 16,
     },

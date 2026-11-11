@@ -30,6 +30,7 @@ import type {
 import type {MemoryFitStatus} from '../utils/memoryDisplay';
 
 import {modelStore} from './ModelStore';
+import {uiStore} from './UIStore';
 
 /**
  * Store coordinating on-device voice input (ASR).
@@ -59,6 +60,9 @@ export class ASRStore {
   // Persisted: the language whisper detected on the first transcription,
   // passed on every later one. null = detect on the next transcription.
   spokenLanguage: string | null = null;
+  // 口袋AI：用户手选的识别语言（whisper 语言码、'zh-Hant' 繁体中文或 'auto'）。
+  // null = 跟随默认：简体界面默认简体中文，繁体界面默认繁体中文，其他自动检测。
+  preferredLanguage: string | null = null;
 
   // Per-tier model lifecycle — derived from disk on init(), NOT persisted.
   downloadStates: Record<AsrTier, AsrDownloadState> = {
@@ -100,7 +104,12 @@ export class ASRStore {
     );
     this.hydrated = makePersistable(this, {
       name: 'ASRStore',
-      properties: ['userASROverride', 'selectedTier', 'spokenLanguage'],
+      properties: [
+        'userASROverride',
+        'selectedTier',
+        'spokenLanguage',
+        'preferredLanguage',
+      ],
       storage: AsyncStorage,
     }).then(
       () => undefined,
@@ -272,6 +281,49 @@ export class ASRStore {
 
   setSpokenLanguage(language: string | null): void {
     this.spokenLanguage = language;
+  }
+
+  /** 识别语言选项：手选值，或按界面语言给的默认值。 */
+  get languageChoice(): string {
+    if (this.preferredLanguage) {
+      return this.preferredLanguage;
+    }
+    if (uiStore.language === 'zh_Hant') {
+      return 'zh-Hant';
+    }
+    return uiStore.language === 'zh' ? 'zh' : 'auto';
+  }
+
+  /** 实际传给 whisper 的语言：手选优先；自动时用首次检测到的语言。 */
+  get effectiveLanguage(): string | null {
+    const choice = this.languageChoice;
+    if (choice === 'auto') {
+      return this.spokenLanguage;
+    }
+    // 简体、繁体都用 whisper 的 zh，靠提示词区分字形
+    return choice === 'zh-Hant' ? 'zh' : choice;
+  }
+
+  /**
+   * whisper 的提示词。中文时没有上文就给一句对应字形的提示，否则 whisper
+   * 常常简繁混杂输出。
+   */
+  transcribePrompt(previous?: string): string | undefined {
+    if (previous) {
+      return previous;
+    }
+    if (this.languageChoice === 'zh-Hant') {
+      return '以下是普通話的句子，使用繁體中文。';
+    }
+    if (this.effectiveLanguage === 'zh') {
+      return '以下是普通话的句子，使用简体中文。';
+    }
+    return undefined;
+  }
+
+  setPreferredLanguage(language: string): void {
+    this.preferredLanguage = language;
+    this.spokenLanguage = null;
   }
 
   setWaitingForChat(value: boolean): void {

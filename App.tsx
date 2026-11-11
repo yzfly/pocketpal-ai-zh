@@ -277,6 +277,9 @@ const createStyles = (theme: Theme) =>
     },
     headerTitle: {
       ...theme.fonts.titleSmall,
+      fontSize: 17,
+      lineHeight: 24,
+      fontWeight: '600',
     },
   });
 

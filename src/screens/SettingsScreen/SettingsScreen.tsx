@@ -91,6 +91,7 @@ import {
   getAllowedCacheTypeKOptions,
   getAllowedCacheTypeVOptions,
 } from '../../utils/flashAttnCompatibility';
+import {ASR_LANGUAGE_OPTIONS, asrLanguageLabel} from '../../utils/asrLanguage';
 
 // OpenCL documentation URL (not localized)
 const OPENCL_DOCS_URL =
@@ -118,6 +119,7 @@ export const SettingsScreen: React.FC = observer(() => {
   const draftValueCacheMenu = useMenuAnchor();
   const draftModelMenu = useMenuAnchor();
   const searchProviderMenu = useMenuAnchor();
+  const asrLanguageMenu = useMenuAnchor();
   const [showHfTokenDialog, setShowHfTokenDialog] = useState(false);
   const [showSearchKeySheet, setShowSearchKeySheet] = useState(false);
   const [gpuSupported, setGpuSupported] = useState(false);
@@ -372,7 +374,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* Model Initialization Settings */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.modelInitializationSettings} />
+            <Card.Title
+              title={l10n.settings.modelInitializationSettings}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               {/* Device Selection */}
 
@@ -939,7 +945,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* Memory Settings */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.memorySettings} />
+            <Card.Title
+              title={l10n.settings.memorySettings}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 {/* Use Memory Lock */}
@@ -1023,7 +1033,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* Model Loading Settings */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.modelLoadingSettings} />
+            <Card.Title
+              title={l10n.settings.modelLoadingSettings}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 {/* Auto Offload/Load */}
@@ -1072,7 +1086,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* UI Settings */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.appSettings} />
+            <Card.Title
+              title={l10n.settings.appSettings}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 {/* Language Selection */}
@@ -1215,22 +1233,51 @@ export const SettingsScreen: React.FC = observer(() => {
                         variant="labelSmall"
                         style={styles.textDescription}
                         testID="asr-spoken-language">
-                        {asrStore.spokenLanguage
+                        {asrStore.languageChoice === 'auto' &&
+                        asrStore.spokenLanguage
                           ? t(l10n.voiceInput.spokenLanguageDetected, {
                               language: languageName(asrStore.spokenLanguage),
                             })
-                          : l10n.voiceInput.spokenLanguageAuto}
+                          : l10n.voiceInput.spokenLanguageHint}
                       </Text>
                     </View>
-                    {asrStore.spokenLanguage && (
+                    <View style={styles.menuContainer}>
                       <Button
+                        ref={asrLanguageMenu.buttonRef}
+                        testID="asr-language-selector-button"
                         mode="outlined"
-                        testID="asr-reset-language"
-                        onPress={() => asrStore.setSpokenLanguage(null)}
-                        style={styles.menuButton}>
-                        {l10n.voiceInput.resetLanguageCta}
+                        onPress={asrLanguageMenu.open}
+                        style={styles.menuButton}
+                        contentStyle={styles.buttonContent}
+                        icon={({size, color}) => (
+                          <Icon
+                            source="chevron-down"
+                            size={size}
+                            color={color}
+                          />
+                        )}>
+                        {asrLanguageLabel(asrStore.languageChoice, l10n)}
                       </Button>
-                    )}
+                      <Menu
+                        visible={asrLanguageMenu.visible}
+                        onDismiss={asrLanguageMenu.close}
+                        anchor={asrLanguageMenu.anchor}
+                        selectable>
+                        {ASR_LANGUAGE_OPTIONS.map(code => (
+                          <Menu.Item
+                            key={code}
+                            testID={`asr-language-option-${code}`}
+                            style={styles.menu}
+                            label={asrLanguageLabel(code, l10n)}
+                            selected={code === asrStore.languageChoice}
+                            onPress={() => {
+                              asrStore.setPreferredLanguage(code);
+                              asrLanguageMenu.close();
+                            }}
+                          />
+                        ))}
+                      </Menu>
+                    </View>
                   </View>
                 )}
 
@@ -1423,7 +1470,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* Internet Search */}
           <Card elevation={0} style={styles.card} testID="internet-search-card">
-            <Card.Title title={l10n.settings.internetSearch.title} />
+            <Card.Title
+              title={l10n.settings.internetSearch.title}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 <Text variant="labelSmall" style={styles.textDescription}>
@@ -1594,7 +1645,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* API Settings */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.apiSettingsTitle} />
+            <Card.Title
+              title={l10n.settings.apiSettingsTitle}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 {/* Hugging Face Token */}
@@ -1645,7 +1700,11 @@ export const SettingsScreen: React.FC = observer(() => {
           {/* Cache & Storage Settings - iOS only (for Shortcuts) */}
           {Platform.OS === 'ios' && (
             <Card elevation={0} style={styles.card}>
-              <Card.Title title={l10n.settings.cacheStorageTitle} />
+              <Card.Title
+                title={l10n.settings.cacheStorageTitle}
+                titleStyle={styles.cardTitle}
+                style={styles.cardTitleContainer}
+              />
               <Card.Content>
                 <View style={styles.settingItemContainer}>
                   {/* Clear Shortcuts Caches */}
@@ -1743,7 +1802,11 @@ export const SettingsScreen: React.FC = observer(() => {
 
           {/* Export Options */}
           <Card elevation={0} style={styles.card}>
-            <Card.Title title={l10n.settings.exportOptions} />
+            <Card.Title
+              title={l10n.settings.exportOptions}
+              titleStyle={styles.cardTitle}
+              style={styles.cardTitleContainer}
+            />
             <Card.Content>
               <View style={styles.settingItemContainer}>
                 {/* Legacy Export */}

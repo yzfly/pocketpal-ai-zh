@@ -8013,7 +8013,7 @@ picomatch@^4.0.2, picomatch@^4.0.3:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-4.0.3.tgz#796c76136d1eead715db1e7bad785dedd695a042"
   integrity sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==
 
-pinyin-pro@^3.26.0:
+pinyin-pro@3.28.1, pinyin-pro@^3.26.0:
   version "3.28.1"
   resolved "https://registry.yarnpkg.com/pinyin-pro/-/pinyin-pro-3.28.1.tgz#dbc54ee79ab2d3025722322712f2be5b65444707"
   integrity sha512-oqz8ulwRgtUXRi0vbqEfGNly19zpyCxYrjhkk5TibGcgSW6eNwS5woajCXRwqURi8Ehc2yOFTiB4uNoZ+NJOnA==

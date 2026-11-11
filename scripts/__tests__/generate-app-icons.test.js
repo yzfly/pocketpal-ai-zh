@@ -7,6 +7,7 @@ const GENERATOR_PATH = path.join(__dirname, '..', 'generate-app-icons.js');
 const {
   APPICONSET,
   ANDROID_RES,
+  BRAND_DIR,
   SOURCE_DIR,
   SOURCE_FILES,
   generate,
@@ -460,17 +461,33 @@ const ARGUMENT_COUNTS = {
 
 const MITER_LIMIT = 4;
 
-function arcDiameter([x1, y1], [x2, y2], [rx, ry, rotation]) {
-  const [a, b] = [Math.abs(rx), Math.abs(ry)];
+// The circle that bounds the whole ellipse an arc is cut from: its centre
+// (SVG implementation notes F.6.5) and its larger radius.
+function arcBound([x1, y1], [x2, y2], [rx, ry, rotation, large, sweep]) {
+  let [a, b] = [Math.abs(rx), Math.abs(ry)];
   if (!a || !b) {
-    return 0;
+    return {point: [x2, y2], radius: 0};
   }
   const angle = (rotation * Math.PI) / 180;
+  const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
   const [dx, dy] = [(x1 - x2) / 2, (y1 - y2) / 2];
-  const x = Math.cos(angle) * dx + Math.sin(angle) * dy;
-  const y = Math.cos(angle) * dy - Math.sin(angle) * dx;
+  const x = cos * dx + sin * dy;
+  const y = cos * dy - sin * dx;
   const scaleUp = Math.sqrt(Math.max(1, (x / a) ** 2 + (y / b) ** 2));
-  return 2 * Math.max(a, b) * scaleUp;
+  [a, b] = [a * scaleUp, b * scaleUp];
+  const spread = (a * y) ** 2 + (b * x) ** 2;
+  const factor = spread
+    ? Math.sqrt(Math.max(0, ((a * b) ** 2 - spread) / spread)) *
+      (large !== sweep ? 1 : -1)
+    : 0;
+  const [cx, cy] = [(factor * a * y) / b, (-factor * b * x) / a];
+  return {
+    point: [
+      cos * cx - sin * cy + (x1 + x2) / 2,
+      sin * cx + cos * cy + (y1 + y2) / 2,
+    ],
+    radius: Math.max(a, b),
+  };
 }
 
 function pathExtremes(d) {
@@ -496,7 +513,6 @@ function pathExtremes(d) {
       : current;
     let end;
     let controls = [];
-    let radius = 0;
     switch (upper) {
       case 'M':
       case 'L':
@@ -524,7 +540,7 @@ function pathExtremes(d) {
         break;
       case 'A':
         end = point(args[5], args[6]);
-        radius = arcDiameter(current, end, args);
+        extremes.push(arcBound(current, end, args));
         break;
       case 'Z':
         end = start;
@@ -534,7 +550,7 @@ function pathExtremes(d) {
     for (const control of controls) {
       extremes.push({point: control, radius: 0});
     }
-    extremes.push({point: end, radius});
+    extremes.push({point: end, radius: 0});
     if (upper === 'M') {
       start = end;
       command = relative ? 'l' : 'L';
@@ -564,8 +580,21 @@ function applyTransform(transform, [x, y], radius) {
 }
 
 function palPointsOutsideSafeCircle(text) {
-  const outside = [];
-  const visit = (node, transforms, inPal) => {
+  const measure = (d, id, strokeReach, transforms, outside) => {
+    for (const extreme of pathExtremes(d)) {
+      let {point, radius} = extreme;
+      radius += strokeReach;
+      for (const transform of [...transforms].reverse()) {
+        [point, radius] = applyTransform(transform, point, radius);
+      }
+      const distance =
+        Math.hypot(point[0] - SAFE_CENTER, point[1] - SAFE_CENTER) + radius;
+      if (distance > SAFE_RADIUS) {
+        outside.push({id, point, distance});
+      }
+    }
+  };
+  const visit = (node, transforms, inPal, outside) => {
     if (node.type === 'path') {
       if (!inPal) {
         return;
@@ -573,27 +602,26 @@ function palPointsOutsideSafeCircle(text) {
       const strokeReach = node.attrs.stroke
         ? (Number(node.attrs['stroke-width']) * MITER_LIMIT) / 2
         : 0;
-      for (const extreme of pathExtremes(node.attrs.d)) {
-        let {point, radius} = extreme;
-        radius += strokeReach;
-        for (const transform of [...transforms].reverse()) {
-          [point, radius] = applyTransform(transform, point, radius);
-        }
-        const distance =
-          Math.hypot(point[0] - SAFE_CENTER, point[1] - SAFE_CENTER) + radius;
-        if (distance > SAFE_RADIUS) {
-          outside.push({id: node.attrs.id, point, distance});
-        }
-      }
+      measure(node.attrs.d, node.attrs.id, strokeReach, transforms, outside);
       return;
     }
     const nested = node.transform
       ? [...transforms, node.transform]
       : transforms;
+    // A clipped group only paints inside its clip, so it stays in the safe
+    // circle when the clip does, whatever its children draw beyond it.
+    if (node.clipD) {
+      const clipOutside = [];
+      measure(node.clipD, node.clipId, 0, nested, clipOutside);
+      if (!clipOutside.length) {
+        return;
+      }
+    }
     for (const child of node.children) {
-      visit(child, nested, inPal || node.id === 'pal');
+      visit(child, nested, inPal || node.id === 'pal', outside);
     }
   };
+  const outside = [];
   const tree = parseSvg(text);
   let palGroups = 0;
   const countPal = nodes => {
@@ -607,7 +635,7 @@ function palPointsOutsideSafeCircle(text) {
   countPal(tree.children);
   expect(palGroups).toBe(1);
   for (const node of tree.children) {
-    visit(node, [], false);
+    visit(node, [], false, outside);
   }
   return outside;
 }
@@ -631,8 +659,11 @@ describe('committed sources', () => {
   );
 
   it('names the pal path that leaves the safe circle', () => {
-    const moved = readSource('foregroundLight').replace('M80 19C', 'M80 -45C');
-    expect(outsideIds(moved)).toEqual(['spark']);
+    const moved = readSource('foregroundLight').replace(
+      'M78.7 29.1A',
+      'M78.7 -45A',
+    );
+    expect(outsideIds(moved)).toEqual(['moon']);
   });
 
   it('applies group transforms before measuring', () => {
@@ -659,11 +690,24 @@ describe('committed outputs', () => {
     );
   });
 
-  it('cuts the hollow and the sparkle outline out of the monochrome frame', () => {
+  it('hides the far side of the ring behind the planet in the monochrome layer', () => {
     const monochrome =
       textOutputs[`${ANDROID_RES}/drawable/ic_launcher_monochrome.xml`];
     expect(monochrome).toContain('android:fillType="evenOdd"');
-    expect(monochrome).not.toContain('<clip-path');
+    expect(monochrome.match(/<clip-path/g)).toHaveLength(2);
+  });
+
+  it('draws the in-app logo from the launcher sources', () => {
+    const art = text => text.slice(text.indexOf('<g id="pal">'));
+    const launcher = art(sources.foregroundLight).replace(/\s*\n\s*/g, '');
+    const mark = textOutputs[`${BRAND_DIR}/mark.svg`];
+    const inverse = textOutputs[`${BRAND_DIR}/mark-inverse.svg`];
+    const paths = text => [...text.matchAll(/ d="([^"]+)"/g)].map(([, d]) => d);
+    expect(paths(art(mark))).toEqual(paths(launcher));
+    expect(paths(art(inverse))).toEqual(paths(launcher));
+    expect(mark).toContain('fill="#000000"/>');
+    expect(inverse).toContain('fill="#FFFFFF"/>');
+    expect(art(inverse)).not.toContain('#FFFFFF');
   });
 
   it('ships exactly three opaque 1024 iOS icons', () => {
@@ -855,6 +899,16 @@ describe('safe-circle scan', () => {
     expect(outsideIds(canvas(`<g id="pal">${body}</g>`))).toEqual([id]);
   });
 
+  it('lets a clip inside the safe circle bound what its group draws', () => {
+    const clipped = clip =>
+      canvas(
+        `<defs><clipPath id="c"><path d="${clip}"/></clipPath></defs>` +
+          '<g id="pal"><g clip-path="url(#c)"><path id="wide" d="M-20 -20H130V130Z" fill="#000000"/></g></g>',
+      );
+    expect(outsideIds(clipped('M40 40H70V70H40Z'))).toEqual([]);
+    expect(outsideIds(clipped('M-28 -28H140V140Z'))).toEqual(['wide']);
+  });
+
   it('ignores clip geometry and paths outside the pal group', () => {
     const text = canvas(
       '<defs><clipPath id="c"><path d="M-28 -28H140V140Z"/></clipPath></defs>' +
@@ -882,9 +936,9 @@ describe('committed source structure', () => {
       path.join(__dirname, '..', '..', SOURCE_DIR, SOURCE_FILES[key]),
       'utf-8',
     );
-  // 口袋AI 标识（方案 A 口字星光）：镂空“口”字框，右上角星光压在框角，
-  // 星光外圈的黑边用框上的镂空表示，三个图层同一几何、纯白。
-  const MARK = ['frame', 'spark'];
+  // 口袋AI 标识（星球轨道）：倾斜的星环绕过星球，环的远侧被星球挡住，
+  // 近侧与星球之间留一道缝；右上角一颗卫星。三个图层同一几何、纯白。
+  const MARK = ['ringBackBand', 'planetBody', 'ringFront', 'moon'];
 
   it.each(Object.keys(SOURCE_FILES))(
     'puts the whole mark of %s in the pal group with nothing outside',
@@ -908,7 +962,7 @@ describe('committed source structure', () => {
 
   it('draws every layer from the same geometry', () => {
     const light = readSource('foregroundLight');
-    expect(light).toContain('id="frame" d="');
+    expect(light).toContain('id="planetBody" d="');
     expect(readSource('foregroundDark')).toBe(light);
     expect(readSource('monochrome')).toBe(light);
   });
@@ -1134,25 +1188,25 @@ describe('committed PNG content', () => {
   const png = relative =>
     decodePng(fs.readFileSync(path.join(repoRoot, relative)));
   const BACKDROP = [1, 1];
-  const FRAME = [34, 58];
-  const HOLLOW = [54, 58];
-  const SPARK = [80, 32];
-  const OUTLINE = [72, 34];
+  const PLANET = [52.6, 47.7];
+  const GAP = [57.3, 59.2];
+  const RING = [59.1, 63.7];
+  const MOON = [82.9, 29.1];
 
   it.each([
     ['AppIcon.png', '#000000', '#FFFFFF'],
     ['AppIcon-dark.png', '#0A0A0A', '#FFFFFF'],
     ['AppIcon-tinted.png', '#000000', '#FFFFFF'],
   ])(
-    '%s paints backdrop %s and mark %s with the hollow and sparkle outline cut out and no transparency chunk',
+    '%s paints backdrop %s and mark %s with the gap between planet and ring cut out and no transparency chunk',
     (name, backdrop, mark) => {
       const icon = png(`${APPICONSET}/${name}`);
       expect(icon.chunks).toEqual(['IHDR', 'IDAT', 'IEND']);
       expect(icon.at(...BACKDROP)).toEqual({color: backdrop, alpha: 255});
-      expect(icon.at(...FRAME)).toEqual({color: mark, alpha: 255});
-      expect(icon.at(...SPARK)).toEqual({color: mark, alpha: 255});
-      expect(icon.at(...HOLLOW)).toEqual({color: backdrop, alpha: 255});
-      expect(icon.at(...OUTLINE)).toEqual({color: backdrop, alpha: 255});
+      expect(icon.at(...PLANET)).toEqual({color: mark, alpha: 255});
+      expect(icon.at(...RING)).toEqual({color: mark, alpha: 255});
+      expect(icon.at(...MOON)).toEqual({color: mark, alpha: 255});
+      expect(icon.at(...GAP)).toEqual({color: backdrop, alpha: 255});
     },
   );
 
@@ -1164,10 +1218,11 @@ describe('committed PNG content', () => {
         `${ANDROID_RES}/mipmap-${density}/ic_launcher_round.png`,
       );
       const ios = png(`${APPICONSET}/AppIcon.png`);
-      for (const icon of [square, round]) {
+      const brand = png(`${BRAND_DIR}/mark-512.png`);
+      for (const icon of [square, round, brand]) {
         expect(icon.colorType).toBe(6);
         expect(icon.at(0, 0).alpha).toBe(0);
-        for (const point of [FRAME, HOLLOW, SPARK]) {
+        for (const point of [PLANET, GAP, RING, MOON]) {
           expect(icon.at(...point)).toEqual(ios.at(...point));
         }
       }
@@ -1215,6 +1270,9 @@ describe('generate from the committed sources', () => {
       .readdirSync(path.join(repoRoot, ANDROID_RES), {recursive: true})
       .filter(file => path.basename(file).startsWith('ic_launcher'))
       .map(file => `${ANDROID_RES}/${file.split(path.sep).join('/')}`),
+    ...listFiles(path.join(repoRoot, BRAND_DIR)).map(
+      file => `${BRAND_DIR}/${file}`,
+    ),
   ].sort();
 
   afterAll(() => {
@@ -1314,7 +1372,7 @@ describe('command line', () => {
   it('reports what it wrote and exits zero', () => {
     expect(run([])).toEqual({
       status: 0,
-      stdout: 'wrote 19 outputs, 0 previews\n',
+      stdout: 'wrote 22 outputs, 0 previews\n',
     });
   });
 

@@ -103,7 +103,11 @@ export const LocalApiServerCard: React.FC = observer(() => {
   return (
     <>
       <Card elevation={0} style={styles.card} testID="local-api-server-card">
-        <Card.Title title={copy.title} />
+        <Card.Title
+          title={copy.title}
+          titleStyle={styles.cardTitle}
+          style={styles.cardTitleContainer}
+        />
         <Card.Content>
           <View style={styles.settingItemContainer}>
             <View style={styles.switchContainer}>

@@ -97,20 +97,20 @@ export function useVoiceCapture(
           }
         }
         const prompt = textsRef.current.join(' ').slice(-ASR_PROMPT_CHARS);
-        const fixedLanguage = asrStore.spokenLanguage;
+        const fixedLanguage = asrStore.effectiveLanguage;
         try {
           const {text, language} = await whisperAsrEngine.transcribe(
             fromByteArray(pcm),
             {
               tier: asrStore.selectedTier,
               language: fixedLanguage ?? undefined,
-              prompt: prompt || undefined,
+              prompt: asrStore.transcribePrompt(prompt || undefined),
             },
           );
           if (session === sessionRef.current && text.length > 0) {
             textsRef.current.push(text);
             // Save only a detected language, so a reset during the decode holds.
-            if (!fixedLanguage && !asrStore.spokenLanguage && language) {
+            if (!fixedLanguage && !asrStore.effectiveLanguage && language) {
               asrStore.setSpokenLanguage(language);
             }
           }

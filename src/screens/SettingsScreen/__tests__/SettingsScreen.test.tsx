@@ -1398,6 +1398,7 @@ describe('SettingsScreen', () => {
         asrStore.downloadError.small = null;
         asrStore.freeDiskBytes = null;
         asrStore.spokenLanguage = null;
+        asrStore.preferredLanguage = null;
       });
     });
 
@@ -1454,10 +1455,31 @@ describe('SettingsScreen', () => {
       expect(getByTestId('asr-spoken-language').props.children).toBe(
         'Auto-detected: English (EN)',
       );
-      act(() => {
-        fireEvent.press(getByTestId('asr-reset-language'));
+    });
+
+    it('picks a fixed spoken language from the menu', () => {
+      const mockNativeMethods =
+        require('@react-native/jest-preset/jest/MockNativeMethods').default;
+      mockNativeMethods.measure.mockImplementation((cb: any) =>
+        cb(0, 0, 120, 40, 30, 200),
+      );
+      runInAction(() => {
+        modelStore.deviceTier = 'high';
+        asrStore.spokenLanguage = 'en';
       });
-      expect(asrStore.setSpokenLanguage).toHaveBeenCalledWith(null);
+      const {getByTestId} = renderSettings();
+      act(() => {
+        fireEvent.press(getByTestId('asr-language-selector-button'));
+      });
+      act(() => {
+        fireEvent.press(getByTestId('asr-language-option-zh'));
+      });
+      expect(asrStore.setPreferredLanguage).toHaveBeenCalledWith('zh');
+      expect(asrStore.spokenLanguage).toBeNull();
+      expect(getByTestId('asr-spoken-language').props.children).toBe(
+        l10n.en.voiceInput.spokenLanguageHint,
+      );
+      mockNativeMethods.measure.mockReset();
     });
 
     it('names a spoken language the app has no UI translation for by its code', () => {
@@ -1471,15 +1493,15 @@ describe('SettingsScreen', () => {
       );
     });
 
-    it('shows auto-detect without Reset before a language is detected', () => {
+    it('shows the language hint before a language is detected', () => {
       runInAction(() => {
         modelStore.deviceTier = 'high';
       });
       const {getByTestId, queryByTestId} = renderSettings();
       expect(getByTestId('asr-spoken-language').props.children).toBe(
-        l10n.en.voiceInput.spokenLanguageAuto,
+        l10n.en.voiceInput.spokenLanguageHint,
       );
-      expect(queryByTestId('asr-reset-language')).toBeNull();
+      expect(queryByTestId('asr-language-option-zh')).toBeNull();
     });
 
     it('writes the override through setUserASROverride when toggled', () => {

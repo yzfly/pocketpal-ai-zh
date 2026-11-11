@@ -10,7 +10,13 @@ import type {
  * rest of the app doesn't touch that package directly.
  */
 
-export type EngineId = 'kitten' | 'kokoro' | 'supertonic' | 'phonon' | 'system';
+export type EngineId =
+  | 'kitten'
+  | 'kokoro'
+  | 'kokoroZh'
+  | 'supertonic'
+  | 'phonon'
+  | 'system';
 
 /** Engines whose model files the app downloads and manages. */
 export type NeuralEngineId = Exclude<EngineId, 'system'>;
@@ -61,7 +67,7 @@ export interface StreamingHandle {
 
 /** Per-stream options for `Engine.playStreaming`. */
 export interface StreamOptions {
-  /** `'clause'` starts speaking at the first clause instead of sentence. */
+  /** `'clause'` starts speaking at the first clause; `'clauses'` cuts every chunk at clause boundaries. */
   firstChunk?: FirstChunkMode;
   /** Called as each chunk starts playing, with its range in the stream. */
   onProgress?: (event: StreamProgressEvent) => void;

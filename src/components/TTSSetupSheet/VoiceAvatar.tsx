@@ -6,6 +6,7 @@ import type {EngineId, Voice} from '../../services/tts';
 const ENGINE_STOPS: Record<EngineId, [string, string, string]> = {
   kitten: ['#FFD5B3', '#F29547', '#B8531A'],
   kokoro: ['#C0BAEF', '#6F5CD6', '#3A2D8A'],
+  kokoroZh: ['#D9D9D9', '#5A5A5A', '#1F1F1F'],
   supertonic: ['#A4C5FF', '#1E4DF6', '#0B2A8C'],
   phonon: ['#B5EDE5', '#0E9F8E', '#08695E'],
   system: ['#D7DCE3', '#7B8896', '#3D4651'],

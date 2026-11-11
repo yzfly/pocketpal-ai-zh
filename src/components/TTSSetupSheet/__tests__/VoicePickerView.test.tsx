@@ -39,6 +39,7 @@ describe('VoicePickerView', () => {
       ttsStore.currentVoice = null;
       ttsStore.kittenDownloadState = 'not_installed';
       ttsStore.kokoroDownloadState = 'not_installed';
+      ttsStore.kokoroZhDownloadState = 'not_installed';
       ttsStore.supertonicDownloadState = 'not_installed';
       ttsStore.phononDownloadState = 'not_installed';
       ttsStore.phononSupported = false;
@@ -93,7 +94,7 @@ describe('VoicePickerView', () => {
   });
 
   describe('Phonon', () => {
-    it('is listed first with its credit and install size when the device supports it', () => {
+    it('is listed right after Kokoro Chinese with its credit and install size when the device supports it', () => {
       runInAction(() => {
         ttsStore.phononSupported = true;
       });
@@ -103,6 +104,7 @@ describe('VoicePickerView', () => {
         g => g.props.testID,
       );
       expect(groups).toEqual([
+        'tts-engine-group-kokoroZh',
         'tts-engine-group-phonon',
         'tts-engine-group-kitten',
         'tts-engine-group-kokoro',
@@ -121,6 +123,7 @@ describe('VoicePickerView', () => {
       expect(
         getAllByTestId(/^tts-engine-group-(?!toggle)/).map(g => g.props.testID),
       ).toEqual([
+        'tts-engine-group-kokoroZh',
         'tts-engine-group-kitten',
         'tts-engine-group-kokoro',
         'tts-engine-group-supertonic',

@@ -36,6 +36,12 @@ const LEGACY_SIZES = {mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192};
 
 const ANDROID_RES = 'android/app/src/main/res';
 const APPICONSET = 'ios/PocketPal/Images.xcassets/AppIcon.appiconset';
+// In-app logo (BrandMark, README). Drawn from the launcher sources so the
+// icon on the home screen and the logo inside the app can never drift apart.
+const BRAND_DIR = 'src/assets/brand';
+const BRAND_PNG_SIZE = 512;
+const BRAND_INVERSE_BACKGROUND = '#FFFFFF';
+const BRAND_INVERSE_FOREGROUND = '#000000';
 
 const IOS_ICONS = [
   {filename: 'AppIcon.png'},
@@ -469,8 +475,28 @@ function appIconContents() {
   return `${json.replace(/^(\s*"[^"]+"):/gm, '$1 :')}\n`;
 }
 
-function buildTextOutputs(sources) {
+function brandCompositions(trees) {
   return {
+    mark: composition(trees.foregroundLight, {
+      background: BACKGROUND_LIGHT,
+      mask: ROUNDED_MASK,
+    }),
+    markInverse: composition(trees.monochrome, {
+      background: BRAND_INVERSE_BACKGROUND,
+      recolor: BRAND_INVERSE_FOREGROUND,
+      mask: ROUNDED_MASK,
+    }),
+  };
+}
+
+function buildTextOutputs(sources) {
+  const brand = brandCompositions({
+    foregroundLight: parseSvg(sources.foregroundLight),
+    monochrome: parseSvg(sources.monochrome),
+  });
+  return {
+    [`${BRAND_DIR}/mark.svg`]: `${brand.mark}\n`,
+    [`${BRAND_DIR}/mark-inverse.svg`]: `${brand.markInverse}\n`,
     [`${ANDROID_RES}/drawable/ic_launcher_foreground.xml`]: toVectorDrawable(
       parseSvg(sources.foregroundLight),
     ),
@@ -589,6 +615,11 @@ function buildRasterOutputs(trees) {
       ).asPng();
     }
   }
+  outputs[`${BRAND_DIR}/mark-512.png`] = render(
+    Resvg,
+    brandCompositions(trees).mark,
+    BRAND_PNG_SIZE,
+  ).asPng();
   return outputs;
 }
 
@@ -745,6 +776,7 @@ if (require.main === module) {
 module.exports = {
   APPICONSET,
   ANDROID_RES,
+  BRAND_DIR,
   SOURCE_DIR,
   SOURCE_FILES,
   generate,

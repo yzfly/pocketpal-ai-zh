@@ -1,0 +1,183 @@
+diff --git a/node_modules/@pocketpalai/react-native-speech/lib/module/engines/StreamingChunker.js b/node_modules/@pocketpalai/react-native-speech/lib/module/engines/StreamingChunker.js
+index 146cbe1..b3155df 100644
+--- a/node_modules/@pocketpalai/react-native-speech/lib/module/engines/StreamingChunker.js
++++ b/node_modules/@pocketpalai/react-native-speech/lib/module/engines/StreamingChunker.js
+@@ -119,12 +119,41 @@ export class StreamingChunker {
+ 
+   /** With `firstChunk: 'clause'`, only the first chunk may end at a clause boundary. */
+   extractReadyChunk() {
+-    const chunk = this.firstChunk === 'clause' && !this.firstTaken ? this.extractFirstClause() : this.extractSentences();
++    const chunk = this.firstChunk === 'clauses' ? this.extractClauses() : this.firstChunk === 'clause' && !this.firstTaken ? this.extractFirstClause() : this.extractSentences();
+     if (chunk) {
+       this.firstTaken = true;
+     }
+     return chunk;
+   }
++  /**
++   * 口袋AI：`firstChunk: 'clauses'`——每一段都可在子句处收尾。一次取走缓冲里
++   * 所有已完整的子句（不超过 maxChunkSize）：合成跟得上时逐子句起播，
++   * 合成落后时自动并成长段，语调更连贯。
++   */
++  extractClauses() {
++    let end = 0;
++    while (end < this.buffer.length) {
++      const next = findFirstClauseEnd(this.buffer.slice(end));
++      if (next <= 0) {
++        break;
++      }
++      if (end > 0 && end + next > this.maxChunkSize) {
++        break;
++      }
++      end += next;
++    }
++    if (end <= 0) {
++      return null;
++    }
++    const chunk = {
++      text: this.buffer.slice(0, end),
++      startIndex: this.absoluteOffset,
++      endIndex: this.absoluteOffset + end
++    };
++    this.buffer = this.buffer.slice(end);
++    this.absoluteOffset += end;
++    return chunk;
++  }
+   extractFirstClause() {
+     const end = findFirstClauseEnd(this.buffer);
+     if (end <= 0) {
+diff --git a/node_modules/@pocketpalai/react-native-speech/lib/module/engines/kokoro/KokoroEngine.js b/node_modules/@pocketpalai/react-native-speech/lib/module/engines/kokoro/KokoroEngine.js
+index 4e1349c..91085fe 100644
+--- a/node_modules/@pocketpalai/react-native-speech/lib/module/engines/kokoro/KokoroEngine.js
++++ b/node_modules/@pocketpalai/react-native-speech/lib/module/engines/kokoro/KokoroEngine.js
+@@ -411,6 +411,11 @@ export class KokoroEngine {
+     let phonemes;
+     if (raw) {
+       phonemes = chunkText;
++    } else if (language === 'zh' && this.config?.zhPhonemize) {
++      // PocketWisdom: Chinese voices (Kokoro v1.1-zh) use the app-supplied
++      // misaki-compatible Zhuyin phonemizer; embedded English goes through
++      // the built-in English phonemizer.
++      phonemes = await this.config.zhPhonemize(chunkText, en => this.phonemizer.phonemize(this.normalizer.normalize(normalizeForSpeech(en)), 'en-us'));
+     } else {
+       const normalized = this.normalizer.normalize(normalizeForSpeech(chunkText));
+ 
+@@ -450,7 +455,7 @@ export class KokoroEngine {
+     if (tokens.length > MAX_TOKEN_LIMIT && raw) {
+       log.warn(`Phoneme input has ${tokens.length} tokens, exceeding limit of ${MAX_TOKEN_LIMIT}; synthesis may fail.`);
+     } else if (tokens.length > MAX_TOKEN_LIMIT) {
+-      const pieces = splitInHalves(chunkText);
++      const pieces = language === 'zh' ? splitZhInHalves(chunkText) : splitInHalves(chunkText);
+       if (pieces.length <= 1) {
+         log.warn(`Unsplittable oversized chunk (${tokens.length} tokens); dropping ${chunkText.length} chars.`);
+         return {
+@@ -896,6 +901,9 @@ export class KokoroEngine {
+   getLanguageFromVoice(voiceId) {
+     const langCode = voiceId.charAt(0).toLowerCase();
+     switch (langCode) {
++      case 'z':
++        if (this.config?.zhPhonemize) return 'zh';
++        return 'en-us';
+       case 'a':
+         return 'en-us';
+       // American English
+@@ -915,3 +923,23 @@ export class KokoroEngine {
+   }
+ }
+ //# sourceMappingURL=KokoroEngine.js.map
++
++/**
++ * PocketWisdom: split oversized Chinese text near the middle, preferring
++ * Chinese/ASCII clause punctuation (Chinese has no spaces after commas, so
++ * splitInHalves cannot find a break and would drop the chunk).
++ */
++function splitZhInHalves(text) {
++  const t = text.trim();
++  if (t.length < 2) return [];
++  const mid = Math.floor(t.length / 2);
++  const isBreak = c => '，、；：。！？,;:.!? '.includes(c);
++  for (let d = 0; d < mid; d++) {
++    for (const i of [mid + d, mid - d]) {
++      if (i > 0 && i < t.length - 1 && isBreak(t[i])) {
++        return [t.slice(0, i + 1).trim(), t.slice(i + 1).trim()].filter(Boolean);
++      }
++    }
++  }
++  return [t.slice(0, mid), t.slice(mid)];
++}
+\ No newline at end of file
+diff --git a/node_modules/@pocketpalai/react-native-speech/lib/module/utils/stripMarkdown.js b/node_modules/@pocketpalai/react-native-speech/lib/module/utils/stripMarkdown.js
+index a130bac..4e474f2 100644
+--- a/node_modules/@pocketpalai/react-native-speech/lib/module/utils/stripMarkdown.js
++++ b/node_modules/@pocketpalai/react-native-speech/lib/module/utils/stripMarkdown.js
+@@ -267,7 +267,9 @@ export function createMarkdownStreamBuffer(options = {}) {
+   let inFence = false;
+   // The clause cut stays armed until the emitted text holds a boundary the
+   // chunker can cut at (a leading `Okay\n` has none).
+-  let firstPending = opts.firstChunk === 'clause';
++  // 口袋AI：clauses 模式每段都按子句切。
++  const everyClause = opts.firstChunk === 'clauses';
++  let firstPending = opts.firstChunk === 'clause' || everyClause;
+   let firstEmitted = '';
+   // Whether `buffer` starts at a real line start. False after a mid-line
+   // (sentence or clause) cut: the remainder continues that line, so it
+@@ -278,7 +280,7 @@ export function createMarkdownStreamBuffer(options = {}) {
+     return stripMarkdown(CONTINUATION + text, opts).replace(CONTINUATION, '');
+   }
+   function noteEmitted(text) {
+-    if (!firstPending || !text) return;
++    if (!firstPending || !text || everyClause) return;
+     firstEmitted += text;
+     if (findFirstClauseEnd(firstEmitted) > 0) {
+       firstPending = false;
+@@ -358,9 +360,10 @@ export function createMarkdownStreamBuffer(options = {}) {
+           }
+         }
+         if (cut <= 0) {
+-          const sentMatch = buffer.match(/^([\s\S]*?[.!?]+)([ \t]+)/);
++          // 口袋AI：中文句末（。！？）后面没有空格，也要能切。
++          const sentMatch = buffer.match(/^[\s\S]*?(?:[.!?]+[ \t]+|[。！？]+)/);
+           if (!sentMatch) break;
+-          cut = sentMatch[1].length + sentMatch[2].length;
++          cut = sentMatch[0].length;
+         }
+         const sentence = buffer.slice(0, cut);
+         buffer = buffer.slice(cut);
+@@ -380,7 +383,7 @@ export function createMarkdownStreamBuffer(options = {}) {
+       // Stream ended inside a fenced code block — discard partial code,
+       // consistent with `dropCodeBlocks`. Reset state so the buffer can
+       // be reused for a fresh stream.
+-      firstPending = opts.firstChunk === 'clause';
++      firstPending = opts.firstChunk === 'clause' || everyClause;
+       firstEmitted = '';
+       const continuation = !atLineStart;
+       atLineStart = true;
+diff --git a/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Engine.d.ts b/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Engine.d.ts
+index f33b513..e1b6b6d 100644
+--- a/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Engine.d.ts
++++ b/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Engine.d.ts
+@@ -63,7 +63,7 @@ export interface AudioBuffer {
+  * Where a stream's first chunk may end. `'sentence'` waits for `.!?`;
+  * `'clause'` also accepts a clause boundary for lower time-to-first-audio.
+  */
+-export type FirstChunkMode = 'sentence' | 'clause';
++export type FirstChunkMode = 'sentence' | 'clause' | 'clauses';
+ export interface SynthesisOptions {
+     /** Voice identifier (engine-specific) */
+     voiceId?: string;
+diff --git a/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Kokoro.d.ts b/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Kokoro.d.ts
+index 5fa58e7..7313d5b 100644
+--- a/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Kokoro.d.ts
++++ b/node_modules/@pocketpalai/react-native-speech/lib/typescript/src/types/Kokoro.d.ts
+@@ -68,6 +68,12 @@ export interface KokoroConfig {
+     mergesPath?: string;
+     /** Phonemizer type: 'js' uses pure-JS GPL-free phonemizer (recommended), 'js-ipa' returns raw IPA without Kokoro post-processing, 'none' disables phonemization */
+     phonemizerType?: 'js' | 'js-ipa' | 'none';
++    /**
++     * PocketWisdom: phonemizer for Chinese voices (ids starting with "z",
++     * Kokoro v1.1-zh). Receives the raw chunk text and a helper that
++     * phonemizes embedded English with the built-in English phonemizer.
++     */
++    zhPhonemize?: (text: string, enPhonemize: (en: string) => Promise<string>) => Promise<string>;
+     /**
+      * Path to the IPA dictionary TSV file (word<TAB>ipa per line).
+      * Required when `phonemizerType` is 'js' (or unset, which defaults to 'js').

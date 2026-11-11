@@ -46,6 +46,14 @@ export const ENGINE_META: Record<EngineId, EngineMeta> = {
     gradientFrom: 'rgba(111, 92, 214, 0.14)',
     gradientTo: 'rgba(111, 92, 214, 0.02)',
   },
+  kokoroZh: {
+    sizeMb: 340,
+    ramMb: 640,
+    voices: 8,
+    accent: '#3A3A3A',
+    gradientFrom: 'rgba(58, 58, 58, 0.12)',
+    gradientTo: 'rgba(58, 58, 58, 0.02)',
+  },
   supertonic: {
     sizeMb: 380,
     ramMb: 670,

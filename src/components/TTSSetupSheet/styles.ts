@@ -26,6 +26,11 @@ export const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       overflow: 'hidden',
     },
+    engineLogoZhGlyph: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      includeFontPadding: false,
+    },
     engineLogoSystemBadge: {
       alignItems: 'center',
       justifyContent: 'center',

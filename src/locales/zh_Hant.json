@@ -385,6 +385,7 @@
       "defaultTitle": "聊天"
     },
     "sidebarContent": {
+      "brandTagline": "本機運行 · 資料不出手機",
       "dateGroups": {
         "older": "較舊",
         "lastMonth": "上個月",
@@ -1577,7 +1578,7 @@
     "previewButton": "預覽",
     "stopPreviewButton": "停止預覽",
     "voicesTitle": "語音",
-    "voicesEmptyHint": "點一個引擎即可下載並選擇聲音。目前這些聲音還不能朗讀中文。",
+    "voicesEmptyHint": "點一個引擎即可下載並選擇聲音。中文請選「Kokoro 中文」，其他引擎只能朗讀外語。",
     "supertonicStepsLabel": "品質 (擴散步數)",
     "toggleAutoSpeakLabel": "切換自動朗讀",
     "openSettingsLabel": "TTS 設定",
@@ -1652,7 +1653,10 @@
     "enginePhononTagline": "啟動快速且記憶體佔用低。僅支援英文。",
     "enginePhononCredit": "模型與語音由 Gradium 提供（採用 Apache-2.0 授權），建構於 Kyutai 的 Mimi 之上。",
     "engineTierNatural": "英語 · 自然",
-    "engineChipPhonon": "Phonon"
+    "engineChipPhonon": "Phonon",
+    "engineChipKokoroZh": "Kokoro 中文",
+    "engineKokoroZhTagline": "自然的普通話聲音，回覆裡夾的英文也能讀，完全在手機上執行。",
+    "engineTierChinese": "中文 · 推薦"
   },
   "htmlPreview": {
     "defaultTitle": "預覽",
@@ -1782,10 +1786,12 @@
     "unsupportedDeviceHelper": "此裝置低於建議規格，語音輸入可能會很慢或無法運作。",
     "spokenLanguageLabel": "口說語言",
     "spokenLanguageAuto": "自動偵測",
+    "spokenLanguageHint": "選定說話語言，辨識更快更準",
     "spokenLanguageDetected": "自動偵測：{{language}}",
     "resetLanguageCta": "重置",
     "recordingLanguageAuto": "語言：自動",
     "recordingLanguage": "語言：{{code}}（點擊可重置）",
+    "recordingLanguageFixed": "語言：{{language}}",
     "waitingForChatLabel": "將在回覆完成後轉錄…",
     "tierSizeLabel": "{{sizeMb}} MB",
     "installCta": "下載",

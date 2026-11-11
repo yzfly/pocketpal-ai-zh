@@ -33,6 +33,11 @@ const mockSupertonicDeleteModel = jest.fn().mockResolvedValue(undefined);
 const mockSupertonicReclaimLegacySpace = jest.fn().mockResolvedValue(undefined);
 const mockSupertonicGetVoices = jest.fn().mockResolvedValue([]);
 const mockKokoroIsInstalled = jest.fn().mockResolvedValue(false);
+const mockKokoroZhPlayStreaming = jest.fn(() => ({
+  appendText: jest.fn(),
+  finalize: jest.fn().mockResolvedValue(undefined),
+  cancel: jest.fn().mockResolvedValue(undefined),
+}));
 const mockKokoroDownloadModel = jest.fn().mockResolvedValue(undefined);
 const mockKokoroDeleteModel = jest.fn().mockResolvedValue(undefined);
 const mockKokoroPlay = jest.fn().mockResolvedValue(undefined);
@@ -101,7 +106,7 @@ const mockSupertonicPlayStreaming = jest.fn(() => {
 jest.mock('../../services/tts', () => {
   const actual = jest.requireActual('../../services/tts');
   const getEngine = (
-    id: 'system' | 'supertonic' | 'kokoro' | 'kitten' | 'phonon',
+    id: 'system' | 'supertonic' | 'kokoro' | 'kokoroZh' | 'kitten' | 'phonon',
   ) => {
     if (id === 'system') {
       return {
@@ -128,6 +133,18 @@ jest.mock('../../services/tts', () => {
         downloadModel: mockKokoroDownloadModel,
         deleteModel: mockKokoroDeleteModel,
         reclaimLegacySpace: mockKokoroReclaimLegacySpace,
+      };
+    }
+    if (id === 'kokoroZh') {
+      return {
+        id: 'kokoroZh',
+        isInstalled: jest.fn().mockResolvedValue(false),
+        getVoices: jest.fn().mockResolvedValue([]),
+        play: jest.fn(),
+        playStreaming: mockKokoroZhPlayStreaming,
+        stop: jest.fn(),
+        downloadModel: jest.fn(),
+        deleteModel: jest.fn(),
       };
     }
     if (id === 'phonon') {
@@ -539,6 +556,26 @@ describe('TTSStore', () => {
       return store;
     };
 
+    it('a Kokoro Chinese stream starts at the first clause', async () => {
+      const store = await makeStore();
+      store.setCurrentVoice({
+        id: 'zf_001',
+        name: '女声 1',
+        engine: 'kokoroZh',
+        language: 'zh',
+        gender: 'f',
+      });
+      store.setAutoSpeak(true);
+
+      store.onAssistantMessageStart('msg-1');
+
+      expect(mockKokoroZhPlayStreaming).toHaveBeenCalledWith(
+        expect.objectContaining({id: 'zf_001'}),
+        expect.anything(),
+        {firstChunk: 'clauses'},
+      );
+    });
+
     it('onAssistantMessageStart opens a streaming handle when gating passes', async () => {
       const store = await setupEligible();
 
@@ -778,7 +815,7 @@ describe('TTSStore', () => {
       mockSupertonicPlayStreaming.mockImplementation(defaultPlayStreaming);
     });
 
-    it('opens a voice reply with a clause first chunk and progress', async () => {
+    it('opens a voice reply with per-clause chunks and progress', async () => {
       const store = await makeVoiceStore();
 
       store.onAssistantMessageStart('msg-1');
@@ -787,7 +824,7 @@ describe('TTSStore', () => {
       const [handle] = voiceHandles;
       expect(handle!.opts).toEqual(
         expect.objectContaining({
-          firstChunk: 'clause',
+          firstChunk: 'clauses',
           language: 'na',
           onProgress: expect.any(Function),
         }),
@@ -1977,6 +2014,10 @@ describe('TTSStore', () => {
 
       const store = await storeWithVoice(KITTEN_VOICE);
       expect(store.currentVoice).toEqual(KITTEN_VOICE);
+      // Kitten is loaded, so the preview's stop reaches it.
+      track(jest.spyOn(ttsRuntime, 'getActiveEngineId')).mockReturnValue(
+        'kitten',
+      );
 
       await store.preview(ZOEY);
       await flush();
@@ -1985,6 +2026,20 @@ describe('TTSStore', () => {
       expect(store.currentVoice).toEqual(KITTEN_VOICE);
       expect(releaseSpy).not.toHaveBeenCalled();
       expect(mockKittenStop).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('stop with nothing loaded', () => {
+    it('skips the native stop for a neural voice when no engine is loaded', async () => {
+      const store = new TTSStore();
+      store.setCurrentVoice(KOKORO_VOICE);
+      const spy = jest
+        .spyOn(ttsRuntime, 'getActiveEngineId')
+        .mockReturnValue(null);
+      mockKokoroStop.mockClear();
+      await store.stop();
+      expect(mockKokoroStop).not.toHaveBeenCalled();
+      spy.mockRestore();
     });
   });
 
@@ -2398,6 +2453,10 @@ describe('TTSStore', () => {
         store.setAutoSpeak(true);
         store.setVoiceOutputActive(voiceReply);
         const isSupertonic = voice.engine === 'supertonic';
+        // A loaded engine, so the stream's stop reaches it.
+        const activeSpy = jest
+          .spyOn(ttsRuntime, 'getActiveEngineId')
+          .mockReturnValue(voice.engine);
         const stopMock = isSupertonic ? mockSupertonicStop : mockSystemStop;
         const playStreaming = isSupertonic
           ? mockSupertonicPlayStreaming
@@ -2430,6 +2489,7 @@ describe('TTSStore', () => {
         ensure.resolve(true);
         await flush();
         expect(released).toBe(true);
+        activeSpy.mockRestore();
       },
     );
 

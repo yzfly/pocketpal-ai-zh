@@ -1162,6 +1162,7 @@
       "generationBusy": "A reply is still running. Try again when it's done."
     },
     "sidebarContent": {
+      "brandTagline": "Private AI, right on your phone",
       "menuItems": {
         "chat": "Chat",
         "models": "Models",
@@ -1660,7 +1661,10 @@
     "engineRetryCta": "Try again",
     "voicesEmptyState": "No voices found.",
     "kokoroDeviceNote": "Some voices may not work on all devices.",
-    "insufficientStorage": "Not enough space — free up {{requiredMb}} MB to install this engine ({{freeMb}} MB available)."
+    "insufficientStorage": "Not enough space — free up {{requiredMb}} MB to install this engine ({{freeMb}} MB available).",
+    "engineChipKokoroZh": "Kokoro Chinese",
+    "engineKokoroZhTagline": "Natural Mandarin voices that also read English words in replies. Runs fully on device.",
+    "engineTierChinese": "Chinese · Recommended"
   },
   "voiceInput": {
     "micLabel": "Dictate",
@@ -1676,10 +1680,12 @@
     "unsupportedDeviceHelper": "This device is below the recommended spec. Voice input will likely be slow or may fail.",
     "spokenLanguageLabel": "Spoken language",
     "spokenLanguageAuto": "Auto-detect",
+    "spokenLanguageHint": "Language you speak; fixing it is faster and more accurate",
     "spokenLanguageDetected": "Auto-detected: {{language}}",
     "resetLanguageCta": "Reset",
     "recordingLanguageAuto": "Language: auto",
     "recordingLanguage": "Language: {{code}} (tap to reset)",
+    "recordingLanguageFixed": "Language: {{language}}",
     "waitingForChatLabel": "Transcribing after the reply finishes…",
     "tierNameBase": "Base",
     "tierNameSmall": "Small",

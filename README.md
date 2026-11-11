@@ -1,22 +1,47 @@
 <div align="center">
 
-<img src="src/assets/brand/mark-512.png" alt="口袋AI logo" width="120" />
+<img src="assets/screenshots/hero.png" alt="口袋AI：完全在手机上运行的私人 AI 助手，离线可用、数据不出手机" width="100%" />
 
-# 口袋AI
+# 口袋AI · 在手机上离线运行大模型的私人 AI 助手
 
-**完全在手机上运行的私人 AI 助手**
+**本地大模型 App｜离线可用｜聊天数据不出手机｜中文模型优先｜免费开源**
 
-模型在本地运行，聊天数据不出设备。离线可用，登录可选。
+[![GitHub stars](https://img.shields.io/github/stars/yzfly/pocketpal-ai-zh?style=flat&color=000000)](https://github.com/yzfly/pocketpal-ai-zh/stargazers)
+[![License: MIT](https://img.shields.io/github/license/yzfly/pocketpal-ai-zh?color=000000)](./LICENSE)
+[![平台](https://img.shields.io/badge/平台-Android%20%7C%20iOS-000000)](#-安装)
+[![llama.cpp](https://img.shields.io/badge/llama.cpp-v0.9.0-000000)](https://github.com/ggml-org/llama.cpp)
+[![上游](https://img.shields.io/badge/同步上游-PocketPal%20v1.22.1-000000)](https://github.com/a-ghorbani/pocketpal-ai)
 
-[English](./README_en.md) | 简体中文
+[功能截图](#-功能截图) · [特色](#-中文版特色) · [推荐模型](#-内置推荐模型) · [安装](#-安装) · [常见问题](#-常见问题) · [English](./README_en.md)
 
 </div>
 
 ---
 
-口袋AI 基于开源项目 [PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai) 二次开发，与上游 v1.22.1 同步（2026 年 11 月），推理引擎为 llama.cpp v0.9.0。它是独立应用：包名 `com.pocketwisdom`（沿用口袋AI 旧中文版），可以和上游 PocketPal 同时安装。
+**口袋AI**（PocketWisdom）是一款开源的手机端本地大模型应用：通义千问 Qwen、MiniCPM、百灵 Ling 等 GGUF 模型直接在 Android / iOS 手机上用 [llama.cpp](https://github.com/ggml-org/llama.cpp) 推理，不需要服务器、不需要联网，也不需要注册账号。它基于 [PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai) 二次开发，针对国内网络与中文用户做了大量优化。
+
+- **真离线**：下载一次模型，飞行模式下也能聊天、看图、语音对话
+- **真隐私**：对话、图片、语音都只在本机处理，不上传任何服务器
+- **真能用**：约 0.5 GB 的小模型在 2020 年的骁龙 865 手机上实测约 27 tokens/秒
 
 > 使用指南：https://mp.weixin.qq.com/s/szj3L6RdFhZYPgCcP_9YEw
+
+## 📸 功能截图
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="assets/screenshots/chat.png" alt="口袋AI 离线聊天：本地模型用中文回答问题，显示生成速度" /><br/><sub><b>离线聊天</b><br/>本地推理，实时显示速度</sub></td>
+    <td align="center" width="25%"><img src="assets/screenshots/models.png" alt="口袋AI 模型页：按用途命名的中文推荐模型，一键下载" /><br/><sub><b>模型管理</b><br/>按用途命名，一键下载</sub></td>
+    <td align="center" width="25%"><img src="assets/screenshots/details.png" alt="口袋AI 模型详情：GGUF 文件、量化、参数量、上下文长度与看图组件" /><br/><sub><b>模型详情</b><br/>参数一目了然，支持看图</sub></td>
+    <td align="center" width="25%"><img src="assets/screenshots/assistants.png" alt="口袋AI 助手页：聊天助手、看图助手与自定义角色" /><br/><sub><b>助手</b><br/>聊天、看图、自定义角色</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/drawer.png" alt="口袋AI 侧边栏：历史会话与功能导航" /><br/><sub><b>会话与导航</b><br/>历史对话都存在本机</sub></td>
+    <td align="center"><img src="assets/screenshots/settings.png" alt="口袋AI 设置页：按手机内存与处理器自动调参的性能自检" /><br/><sub><b>性能自检</b><br/>按手机配置自动调参</sub></td>
+    <td align="center"><img src="assets/screenshots/benchmark.png" alt="口袋AI 基准测试：测试手机运行大模型的 tokens 每秒" /><br/><sub><b>基准测试</b><br/>测一测手机能跑多快</sub></td>
+    <td align="center"><img src="assets/screenshots/chat-dark.png" alt="口袋AI 深色模式聊天界面" /><br/><sub><b>深色模式</b><br/>黑白极简界面</sub></td>
+  </tr>
+</table>
 
 ## ✨ 中文版特色
 
@@ -59,24 +84,49 @@ App 里显示的是右侧的中文名。
 > - MTP 投机解码在纯 CPU 手机上会变慢（K30 Pro 实测 Qwen3.5 2B 从 14.2 降到 8.2 tok/s），默认关闭；有 NPU/GPU 加速的新旗舰可在设置里尝试开启。
 > - ≥2B 的模型优先选 Q4_0 量化，ARM CPU 与 NPU 加速效果最好。
 
-## 🚀 主要功能（与上游同步）
+## 🚀 主要功能
 
-- **完全离线**：推理全部在本地进行，支持后台下载、自动加载/卸载模型
-- **多模态**：支持视觉模型，可拍照/发图与 AI 对话
-- **助手**：内置聊天、编程、学习、角色扮演、写作、看图助手，也可自定义系统提示词与角色
-- **语音输入与免提语音对话**：端侧 Whisper 识别，全程离线
-- **语音朗读（TTS）**：内置多种本地语音引擎
-- **本地 API 服务**：可把手机上的模型以 OpenAI 兼容接口提供给局域网内的其他应用
-- **性能基准测试**：测试设备推理速度，可提交到[排行榜](https://pocketpal.dev/leaderboard)
-- **实时性能显示**：逐 token 速度、内存占用一目了然
+| 功能 | 说明 |
+|------|------|
+| 💬 离线聊天 | 推理全部在本机进行；支持后台下载、自动加载/释放模型，实时显示 tokens/秒 与首字延迟 |
+| 🖼️ 看图（多模态） | 支持视觉模型，拍照或选图后直接提问、读文档、识别文字 |
+| 🎭 助手 | 内置聊天、编程、学习、角色扮演、写作、看图助手，也可自定义提示词与角色 |
+| 🎙️ 语音输入与免提对话 | 端侧 Whisper 识别，全程离线；国内多源下载并校验 |
+| 🔊 语音朗读（TTS） | 多种本地语音引擎，含 Kokoro 中文声音（4 女 4 男） |
+| 🔧 端侧工具调用 | 模型可调用联网搜索、读网页、计算器、日期时间、生成网页预览等工具 |
+| 🌐 本地 API 服务 | 把手机上的模型以 OpenAI 兼容接口提供给局域网内的其他应用 |
+| ⚡ 硬件加速 | 支持高通 Hexagon NPU（骁龙 8 Gen 2 及以上），可用时自动启用，加载失败自动回退 CPU |
+| 📊 基准测试 | 测试设备推理速度，可提交到[排行榜](https://pocketpal.dev/leaderboard) |
 
 ## 📲 安装
 
-- **Android**：从 [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases) 下载最新 APK 安装
+- **Android**：在 [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases) 下载 APK 安装（包名 `com.pocketwisdom`，可与上游 PocketPal 同时安装）；暂无新版 APK 时可按下方「本地开发」自行构建
 - **iOS**：需自行使用 Xcode 构建（欢迎有开发者账号的朋友协助上架）
 
 > 旧版（v1.6.9）APK 与 DeepSeek 模型文件仍可通过百度网盘获取（提取码 xtbf）：
 > https://pan.baidu.com/s/1fnMiflbqNrbd4CpRxvXvOQ
+
+**三步上手**：打开 App → 在「模型」页下载「口袋助手 mini」（约 0.5 GB）→ 点「加载」即可开始聊天。
+
+## ❓ 常见问题
+
+**手机上真的能跑大模型吗？需要什么配置？**
+能。默认推荐的「口袋助手 mini」（0.8B，约 0.5 GB）在入门手机上也能流畅运行；内存越大，可以选越大的模型（2B / 4B / 9B）。App 会按本机内存和芯片自动推荐模型并设置参数。
+
+**需要联网或登录吗？**
+只有下载模型时需要联网。聊天、看图、语音全部离线；登录是可选的，不登录也能使用全部功能。
+
+**国内下载模型慢怎么办？**
+默认开启 Hugging Face 镜像加速，并会自动切换到魔搭（ModelScope）同名文件，无需科学上网。
+
+**支持哪些模型？能用 DeepSeek、Gemma、Llama 吗？**
+支持所有 llama.cpp 能运行的 GGUF 模型。除内置推荐外，可以在模型页搜索 Hugging Face 上的任意 GGUF 模型，或导入本地文件。
+
+**和 PocketPal AI 是什么关系？**
+口袋AI 是 PocketPal AI 的中文分支，与上游 v1.22.1 同步（2026 年 11 月），在其全部功能之上做了国内网络、中文模型、中文界面等优化，并移除了在线市场与付费功能。
+
+**我的聊天记录会被上传吗？**
+不会。对话保存在手机本地，不会上传；只有您主动开启「联网搜索」工具时，搜索词才会发给您选择的搜索服务。
 
 ## 🔄 发布更新（维护者）
 

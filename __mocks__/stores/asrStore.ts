@@ -23,6 +23,7 @@ class MockASRStore {
   userASROverride: boolean | null = null;
   selectedTier: AsrTier = 'base';
   spokenLanguage: string | null = null;
+  preferredLanguage: string | null = null;
 
   downloadStates: Record<AsrTier, DownloadState> = {
     base: 'not_installed',
@@ -53,6 +54,7 @@ class MockASRStore {
   setUserASROverride: jest.Mock;
   selectTier: jest.Mock;
   setSpokenLanguage: jest.Mock;
+  setPreferredLanguage: jest.Mock;
   setWaitingForChat: jest.Mock;
   refreshFreeDisk: jest.Mock;
   downloadModel: jest.Mock;
@@ -71,6 +73,8 @@ class MockASRStore {
       setUserASROverride: false,
       selectTier: false,
       setSpokenLanguage: false,
+      setPreferredLanguage: false,
+      transcribePrompt: false,
       setWaitingForChat: false,
       refreshFreeDisk: false,
       downloadModel: false,
@@ -105,6 +109,12 @@ class MockASRStore {
     this.setSpokenLanguage = jest.fn((language: string | null) => {
       runInAction(() => {
         this.spokenLanguage = language;
+      });
+    });
+    this.setPreferredLanguage = jest.fn((language: string) => {
+      runInAction(() => {
+        this.preferredLanguage = language;
+        this.spokenLanguage = null;
       });
     });
     this.setWaitingForChat = jest.fn((value: boolean) => {
@@ -146,6 +156,30 @@ class MockASRStore {
         this.waitingForChat = false;
       });
     });
+  }
+
+  get languageChoice(): string {
+    return this.preferredLanguage ?? 'auto';
+  }
+
+  get effectiveLanguage(): string | null {
+    const choice = this.languageChoice;
+    if (choice === 'auto') {
+      return this.spokenLanguage;
+    }
+    return choice === 'zh-Hant' ? 'zh' : choice;
+  }
+
+  transcribePrompt(previous?: string): string | undefined {
+    if (previous) {
+      return previous;
+    }
+    if (this.languageChoice === 'zh-Hant') {
+      return '以下是普通話的句子，使用繁體中文。';
+    }
+    return this.effectiveLanguage === 'zh'
+      ? '以下是普通话的句子，使用简体中文。'
+      : undefined;
   }
 
   get deviceSupported(): boolean {

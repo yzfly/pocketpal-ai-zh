@@ -9,6 +9,9 @@ import type {NeuralEngineId} from './types';
 export const TTS_PREVIEW_SAMPLE =
   "Oh, hello there! I've been waiting for you to test me. I sound pretty good!";
 
+/** 口袋AI：中文声音的试听文本。 */
+export const TTS_PREVIEW_SAMPLE_ZH = '你好呀！我是口袋AI，听听我的声音怎么样？';
+
 /** Minimum total RAM required to enable the TTS feature (4 GiB). */
 export const TTS_MIN_RAM_BYTES = 4 * 1024 * 1024 * 1024;
 
@@ -16,6 +19,7 @@ export const TTS_MIN_RAM_BYTES = 4 * 1024 * 1024 * 1024;
 export const TTS_ENGINE_RUNTIME_BYTES: Record<NeuralEngineId, number> = {
   supertonic: 500_000_000,
   kokoro: 500_000_000,
+  kokoroZh: 500_000_000,
   kitten: 200_000_000,
   phonon: 200 * 1024 * 1024,
 };
@@ -137,6 +141,31 @@ export const KOKORO_VOICES_MANIFEST_FILENAME = 'voices-manifest.json';
 
 /** Estimated total size of the Kokoro FP32 model bundle (~330 MB including voices). */
 export const KOKORO_MODEL_ESTIMATED_BYTES = 330 * 1024 * 1024;
+
+// ---------------------------------------------------------------------------
+// 口袋AI：Kokoro 中文（v1.1-zh，FP32）
+// ---------------------------------------------------------------------------
+
+/** 中文模型目录，与英文 Kokoro 分开，互不影响。 */
+export const KOKORO_ZH_MODEL_SUBDIR = 'tts/kokoro-zh';
+
+/**
+ * 模型来源：魔搭（国内直连），与 HuggingFace 上 onnx-community 的同名仓库
+ * 文件一致（sha256 已核对）。FP32：上游发现部分安卓 ONNX Runtime 上
+ * FP16 无声、Q8 杂音。
+ */
+export const KOKORO_ZH_MODEL_BASE_URL =
+  'https://modelscope.cn/models/onnx-community/Kokoro-82M-v1.1-zh-ONNX/resolve/master';
+
+export const KOKORO_ZH_VOICES_BASE_URL = `${KOKORO_ZH_MODEL_BASE_URL}/voices`;
+
+export const KOKORO_ZH_MODEL_FILES = [
+  {name: 'model_fp32.onnx', urlPath: 'onnx/model.onnx'},
+  {name: 'tokenizer.json', urlPath: 'tokenizer.json'},
+] as const;
+
+/** 约 324 MB 模型 + 声音 + 英文词典。 */
+export const KOKORO_ZH_MODEL_ESTIMATED_BYTES = 340 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
 // Kitten (nano-fp32 variant)

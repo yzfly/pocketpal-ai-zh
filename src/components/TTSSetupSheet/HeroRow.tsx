@@ -20,6 +20,7 @@ import {VoiceAvatar} from './VoiceAvatar';
 const engineChipKey = {
   kitten: 'engineChipKitten',
   kokoro: 'engineChipKokoro',
+  kokoroZh: 'engineChipKokoroZh',
   supertonic: 'engineChipSupertonic',
   phonon: 'engineChipPhonon',
   system: 'engineChipSystem',

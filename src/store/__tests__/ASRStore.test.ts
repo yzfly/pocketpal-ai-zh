@@ -10,6 +10,14 @@ jest.mock('mobx-persist-store', () => ({
 jest.mock('../ModelStore', () => ({
   modelStore: require('../../../__mocks__/stores/modelStore').mockModelStore,
 }));
+let mockUiLanguage = 'en';
+jest.mock('../UIStore', () => ({
+  uiStore: {
+    get language() {
+      return mockUiLanguage;
+    },
+  },
+}));
 
 // Capture AppState handlers so a background/inactive transition can be invoked.
 const appStateHandlers: Array<(s: string) => void> = [];
@@ -274,6 +282,46 @@ describe('ASRStore', () => {
       expect(store.spokenLanguage).toBe('de');
       store.setSpokenLanguage(null);
       expect(store.spokenLanguage).toBeNull();
+    });
+
+    afterEach(() => {
+      mockUiLanguage = 'en';
+    });
+
+    it('defaults by UI language: simplified, traditional, else auto', () => {
+      expect(store.languageChoice).toBe('auto');
+      store.setSpokenLanguage('de');
+      expect(store.effectiveLanguage).toBe('de');
+      mockUiLanguage = 'zh';
+      expect(store.languageChoice).toBe('zh');
+      expect(store.effectiveLanguage).toBe('zh');
+      mockUiLanguage = 'zh_Hant';
+      expect(store.languageChoice).toBe('zh-Hant');
+      expect(store.effectiveLanguage).toBe('zh');
+    });
+
+    it('a picked language wins and clears the detected one', () => {
+      store.setSpokenLanguage('de');
+      store.setPreferredLanguage('en');
+      expect(store.spokenLanguage).toBeNull();
+      expect(store.effectiveLanguage).toBe('en');
+      store.setPreferredLanguage('auto');
+      expect(store.effectiveLanguage).toBeNull();
+    });
+
+    it('gives whisper a hint in the chosen Chinese script', () => {
+      store.setPreferredLanguage('zh');
+      expect(store.transcribePrompt()).toBe(
+        '以下是普通话的句子，使用简体中文。',
+      );
+      store.setPreferredLanguage('zh-Hant');
+      expect(store.effectiveLanguage).toBe('zh');
+      expect(store.transcribePrompt()).toBe(
+        '以下是普通話的句子，使用繁體中文。',
+      );
+      expect(store.transcribePrompt('上文')).toBe('上文');
+      store.setPreferredLanguage('en');
+      expect(store.transcribePrompt()).toBeUndefined();
     });
   });
 

@@ -10,6 +10,7 @@ import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
 import {chatSessionStore, SessionMetaData} from '../../store';
 import {Menu, RenameModal, Checkbox} from '..';
+import {BrandMark} from '../BrandMark';
 import {
   BenchmarkIcon,
   ChatIcon,
@@ -349,6 +350,9 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
       [props.navigation],
     );
 
+    // 当前所在页面：抽屉里对应的入口高亮
+    const activeRoute = props.state?.routes?.[props.state.index]?.name;
+
     const handleSessionPress = React.useCallback(
       async (sessionId: string) => {
         await chatSessionStore.setActiveSession(sessionId);
@@ -545,11 +549,23 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
     const ListHeaderComponent = React.useMemo(
       () => (
         <View>
+          <View style={styles.brandHeader} testID="drawer-brand">
+            <BrandMark size={40} />
+            <View style={styles.brandText}>
+              <Text style={styles.brandName}>
+                {l10n.onboarding.splash.brand}
+              </Text>
+              <Text style={styles.brandTagline} numberOfLines={1}>
+                {l10n.components.sidebarContent.brandTagline}
+              </Text>
+            </View>
+          </View>
           <Drawer.Section showDivider={false}>
             <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.chat}
               icon={() => <ChatIcon stroke={theme.colors.primary} />}
               onPress={() => navigateTo(ROUTES.CHAT)}
+              active={activeRoute === ROUTES.CHAT}
               style={styles.menuDrawerItem}
               testID="drawer-item-chat"
             />
@@ -557,6 +573,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
               label={l10n.components.sidebarContent.menuItems.pals}
               icon={() => <PalIcon stroke={theme.colors.primary} />}
               onPress={() => navigateTo(ROUTES.PALS)}
+              active={activeRoute === ROUTES.PALS}
               style={styles.menuDrawerItem}
               testID="drawer-item-pals"
             />
@@ -564,6 +581,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
               label={l10n.components.sidebarContent.menuItems.models}
               icon={() => <ModelIcon stroke={theme.colors.primary} />}
               onPress={() => navigateTo(ROUTES.MODELS)}
+              active={activeRoute === ROUTES.MODELS}
               style={styles.menuDrawerItem}
               testID="drawer-item-models"
             />
@@ -571,6 +589,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
               label={l10n.components.sidebarContent.menuItems.benchmark}
               icon={() => <BenchmarkIcon stroke={theme.colors.primary} />}
               onPress={() => navigateTo(ROUTES.BENCHMARK)}
+              active={activeRoute === ROUTES.BENCHMARK}
               style={styles.menuDrawerItem}
               testID="drawer-item-benchmark"
             />
@@ -584,6 +603,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                 />
               )}
               onPress={() => navigateTo(ROUTES.SETTINGS)}
+              active={activeRoute === ROUTES.SETTINGS}
               style={styles.menuDrawerItem}
               testID="drawer-item-settings"
             />
@@ -597,6 +617,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                 />
               )}
               onPress={() => navigateTo(ROUTES.APP_INFO)}
+              active={activeRoute === ROUTES.APP_INFO}
               style={styles.menuDrawerItem}
             />
             {/* Only show Dev Tools in debug mode */}
@@ -618,7 +639,7 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
           <Divider style={styles.divider} />
         </View>
       ),
-      [l10n, theme, styles, navigateTo],
+      [l10n, theme, styles, navigateTo, activeRoute],
     );
 
     return (

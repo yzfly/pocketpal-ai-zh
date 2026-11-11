@@ -6,6 +6,8 @@ export type {SupertonicProgressCallback} from './engines/supertonic';
 export {SUPERTONIC_VOICES} from './engines/supertonic/voices';
 export {KokoroEngine} from './engines/kokoro';
 export type {KokoroProgressCallback} from './engines/kokoro';
+export {KokoroZhEngine} from './engines/kokoroZh';
+export {KOKORO_ZH_VOICES} from './engines/kokoroZh/voices';
 export {KOKORO_VOICES} from './engines/kokoro/voices';
 export {KittenEngine} from './engines/kitten';
 export type {KittenProgressCallback} from './engines/kitten';

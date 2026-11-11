@@ -17,8 +17,10 @@ import {
   SupertonicEngine,
   TTS_MIN_RAM_BYTES,
   TTS_PREVIEW_SAMPLE,
+  TTS_PREVIEW_SAMPLE_ZH,
   SUPERTONIC_MODEL_ESTIMATED_BYTES,
   KOKORO_MODEL_ESTIMATED_BYTES,
+  KOKORO_ZH_MODEL_ESTIMATED_BYTES,
   KITTEN_MODEL_ESTIMATED_BYTES,
   PHONON_MODEL_ESTIMATED_BYTES,
   ttsRuntime,
@@ -172,6 +174,10 @@ export class TTSStore {
   kokoroDownloadState: NeuralDownloadState = 'not_installed';
   kokoroDownloadProgress: number = 0;
   kokoroDownloadError: string | null = null;
+
+  kokoroZhDownloadState: NeuralDownloadState = 'not_installed';
+  kokoroZhDownloadProgress: number = 0;
+  kokoroZhDownloadError: string | null = null;
 
   kittenDownloadState: NeuralDownloadState = 'not_installed';
   kittenDownloadProgress: number = 0;
@@ -493,6 +499,9 @@ export class TTSStore {
       case 'kokoro':
         this.kokoroDownloadState = state;
         break;
+      case 'kokoroZh':
+        this.kokoroZhDownloadState = state;
+        break;
       case 'kitten':
         this.kittenDownloadState = state;
         break;
@@ -513,6 +522,9 @@ export class TTSStore {
         break;
       case 'kokoro':
         this.kokoroDownloadProgress = progress;
+        break;
+      case 'kokoroZh':
+        this.kokoroZhDownloadProgress = progress;
         break;
       case 'kitten':
         this.kittenDownloadProgress = progress;
@@ -535,6 +547,9 @@ export class TTSStore {
       case 'kokoro':
         this.kokoroDownloadError = error;
         break;
+      case 'kokoroZh':
+        this.kokoroZhDownloadError = error;
+        break;
       case 'kitten':
         this.kittenDownloadError = error;
         break;
@@ -554,6 +569,8 @@ export class TTSStore {
         return this.supertonicDownloadState;
       case 'kokoro':
         return this.kokoroDownloadState;
+      case 'kokoroZh':
+        return this.kokoroZhDownloadState;
       case 'kitten':
         return this.kittenDownloadState;
       case 'phonon':
@@ -586,7 +603,13 @@ export class TTSStore {
       }
       return;
     }
-    if (voice) {
+    // 口袋AI：神经引擎还没加载时不必停止。否则 Speech.stop() 会退回系统
+    // 朗读引擎，在没有系统 TTS 的手机上要等 4~5 秒绑定超时，首次试听/朗读都被拖慢。
+    const nothingLoaded =
+      voice != null &&
+      voice.engine !== 'system' &&
+      ttsRuntime.getActiveEngineId() === null;
+    if (voice && !nothingLoaded) {
       try {
         await getEngine(voice.engine).stop();
       } catch (err) {
@@ -687,7 +710,12 @@ export class TTSStore {
           inferenceSteps: this.supertonicSteps,
         });
       } else {
-        await engine.play(TTS_PREVIEW_SAMPLE, voice);
+        await engine.play(
+          voice.engine === 'kokoroZh'
+            ? TTS_PREVIEW_SAMPLE_ZH
+            : TTS_PREVIEW_SAMPLE,
+          voice,
+        );
       }
     } catch (err) {
       console.warn('[TTSStore] preview failed:', err);
@@ -755,6 +783,12 @@ export class TTSStore {
       );
     } else if (voiceOpts) {
       engineHandle = engine.playStreaming(voice, voiceReady, voiceOpts);
+    } else if (voice.engine === 'kokoroZh') {
+      // 口袋AI：中文长句多（一句常有四五十字），按整句送合成要等很久；
+      // 每个子句（逗号/顿号/句号处）一出来就送去合成。
+      engineHandle = engine.playStreaming(voice, voiceReady, {
+        firstChunk: 'clauses',
+      });
     } else {
       engineHandle = engine.playStreaming(voice, voiceReady);
     }
@@ -789,7 +823,9 @@ export class TTSStore {
     }
     this.voiceStream = stream;
     return {
-      firstChunk: 'clause',
+      // 口袋AI：语音对话里每个子句一出来就送合成（Phonon 有自己的分块，
+      // 只认首句子句）。
+      firstChunk: this.currentVoice?.engine === 'phonon' ? 'clause' : 'clauses',
       onProgress: event => this.onVoiceProgress(messageId, event),
     };
   }
@@ -959,6 +995,7 @@ export class TTSStore {
   > = {
     supertonic: SUPERTONIC_MODEL_ESTIMATED_BYTES,
     kokoro: KOKORO_MODEL_ESTIMATED_BYTES,
+    kokoroZh: KOKORO_ZH_MODEL_ESTIMATED_BYTES,
     kitten: KITTEN_MODEL_ESTIMATED_BYTES,
     phonon: PHONON_MODEL_ESTIMATED_BYTES,
   };
@@ -1074,6 +1111,14 @@ export class TTSStore {
 
   async downloadKokoro(): Promise<void> {
     return this.downloadNeuralEngine('kokoro');
+  }
+
+  async downloadKokoroZh(): Promise<void> {
+    return this.downloadNeuralEngine('kokoroZh');
+  }
+
+  async deleteKokoroZh(): Promise<void> {
+    return this.deleteNeuralEngine('kokoroZh');
   }
 
   async downloadKitten(): Promise<void> {
