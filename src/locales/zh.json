@@ -665,7 +665,7 @@
   },
   "about": {
     "screenTitle": "关于",
-    "description": "一款将大语言模型直接部署到您手机上的 App，基于 llama.cpp 与 llama.rn 构建。",
+    "description": "在手机上离线运行的 AI 助手，聊天内容只留在这台手机里。",
     "supportProject": "支持项目",
     "supportProjectDescription": "如果您喜欢使用口袋AI，请考虑通过以下方式支持项目：",
     "githubButton": "在 GitHub 上点个 Star",
@@ -680,7 +680,7 @@
     "openSourceNotices": "开源声明",
     "phononNoticesCredit": "Phonon 语音模型与语音由 Gradium 提供，采用 Apache-2.0 许可。基于 Pocket TTS 和 Kyutai 的 Mimi 编解码器构建。",
     "chineseEdition": "中文版",
-    "chineseEditionDescription": "中文版由「云中江树」维护：内置 HF 镜像加速、中文开源模型优先推荐、最新 llama.cpp 推理引擎、默认中文界面。",
+    "chineseEditionDescription": "中文版由「云中江树」维护，专为中文用户优化。",
     "chineseEditionGithubButton": "中文版 GitHub 仓库",
     "chineseEditionWechatButton": "微信公众号「云中江树」",
     "chineseEditionWechatCopiedTitle": "已复制",

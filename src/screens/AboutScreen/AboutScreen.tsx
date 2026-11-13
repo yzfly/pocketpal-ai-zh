@@ -15,7 +15,6 @@ import {observer} from 'mobx-react';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {Text, Button, SegmentedButtons} from 'react-native-paper';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {BuildInfo} from '../../services/llm';
 
 import {submitFeedback} from '../../api/feedback';
 import phononNotices from '../../assets/licenses/phononThirdPartyNotices.json';
@@ -245,9 +244,6 @@ export const AboutScreen: React.FC = observer(() => {
                 stroke={theme.colors.onSurfaceVariant}
               />
             </TouchableOpacity>
-            <Text style={styles.llamaBuildText}>
-              llama.cpp {BuildInfo.number} ({BuildInfo.commit.substring(0, 7)})
-            </Text>
           </View>
 
           {updateService.supported && (

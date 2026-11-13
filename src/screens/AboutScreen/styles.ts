@@ -56,12 +56,6 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       color: theme.colors.onSurface,
       fontVariant: ['tabular-nums'],
     },
-    llamaBuildText: {
-      ...theme.fonts.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      marginTop: theme.spacing.default / 2,
-      opacity: 0.7,
-    },
     section: {
       paddingTop: theme.spacing.default * 0.75,
       paddingBottom: theme.spacing.default * 0.25,

@@ -665,7 +665,7 @@
   },
   "about": {
     "screenTitle": "App Info",
-    "description": "An app that brings language models directly to your phone. Sits on the shoulders of llama.cpp and llama.rn.",
+    "description": "An AI assistant that runs offline on your phone. Your chats stay on this device.",
     "supportProject": "Support the Project",
     "supportProjectDescription": "If you enjoy using PocketWisdom, please consider supporting the project by:",
     "githubButton": "Star on GitHub",
@@ -680,7 +680,7 @@
     "openSourceNotices": "Open-source notices",
     "phononNoticesCredit": "Phonon voice model and voices by Gradium, licensed under Apache-2.0. Built on Pocket TTS and the Mimi codec by Kyutai.",
     "chineseEdition": "Chinese Edition",
-    "chineseEditionDescription": "This Chinese edition is maintained by yzfly (Yunzhong Jiangshu): built-in HF mirror acceleration, Chinese open models recommended first, the latest llama.cpp engine, and a Chinese-first interface.",
+    "chineseEditionDescription": "This Chinese edition is maintained by yzfly (Yunzhong Jiangshu) and tuned for Chinese-speaking users.",
     "chineseEditionGithubButton": "Chinese Edition on GitHub",
     "chineseEditionWechatButton": "WeChat Official Account: Yunzhong Jiangshu",
     "chineseEditionWechatCopiedTitle": "Copied",
