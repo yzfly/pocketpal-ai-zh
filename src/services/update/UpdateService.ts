@@ -92,9 +92,15 @@ async function fetchManifest(url: string): Promise<UpdateManifest> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const sep = url.includes('?') ? '&' : '?';
-    const res = await fetch(`${url}${sep}t=${Date.now()}`, {
-      headers: {Accept: 'application/json'},
+    // 地址原样请求：GitCode 的发行版地址带上任何查询参数都会返回 404，
+    // 所以不能用 ?t=时间戳 的办法绕缓存，改用请求头。
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+      cache: 'no-store',
       signal: controller.signal,
     });
     if (!res.ok) {

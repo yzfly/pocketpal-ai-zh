@@ -131,6 +131,10 @@ describe('update sources', () => {
 });
 
 describe('UpdateService with fallbacks', () => {
+  const GITCODE_URL =
+    'https://gitcode.com/langgpt/pocketpal-ai-zh/releases/download/latest/update.json';
+  const GITHUB_URL =
+    'https://github.com/yzfly/pocketpal-ai-zh/releases/latest/download/update.json';
   const manifest = {
     versionCode: 999,
     versionName: '9.9.9',
@@ -182,6 +186,12 @@ describe('UpdateService with fallbacks', () => {
     await expect(service.check()).resolves.toBe(true);
     const asked = fetchMock.mock.calls.map(c => c[0]);
     expect(asked).toHaveLength(3);
+    // 地址必须原样请求：GitCode 的发行版地址带查询参数会 404
+    expect(asked).toEqual([
+      'https://example.com/update.json',
+      GITCODE_URL,
+      GITHUB_URL,
+    ]);
     expect(asked[0]).toContain('example.com/update.json');
     expect(asked[1]).toContain('gitcode.com/langgpt');
     expect(asked[2]).toContain('github.com/yzfly');
