@@ -11,8 +11,18 @@ export interface SystemPromptDependencies {
  * Resolves the system prompt based on priority:
  * 1. Pal's system prompt (with parameter rendering if needed)
  * 2. Fallback to model's chat template system prompt
- * 3. Empty string if neither exists
+ * 3. 口袋AI's default identity prompt if neither exists
  */
+
+/**
+ * 没选助手、模型也没自带系统提示词时用的默认身份。
+ * 不加的话模型会自称底层模型的名字（如 “我是 Qwen3.5”），普通用户看不懂。
+ * 用户在模型设置里填了系统提示词、或选了助手时，以用户的为准。
+ */
+export const DEFAULT_SYSTEM_PROMPT =
+  '你是口袋AI，一个直接在用户手机上离线运行的 AI 助手。' +
+  '回答简洁、友好，使用用户提问时所用的语言。' +
+  '被问到你是谁或你是什么模型时，说明你是口袋AI，由手机上的开源模型驱动。';
 export function resolveSystemPrompt(
   dependencies: SystemPromptDependencies,
 ): string {
@@ -33,8 +43,8 @@ export function resolveSystemPrompt(
     return model.chatTemplate.systemPrompt;
   }
 
-  // Priority 3: Empty string
-  return '';
+  // Priority 3: 默认身份
+  return DEFAULT_SYSTEM_PROMPT;
 }
 
 type ChatMessage = {role: string; content?: unknown};

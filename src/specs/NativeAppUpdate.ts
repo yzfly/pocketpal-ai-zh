@@ -18,6 +18,8 @@ export interface Spec extends TurboModule {
   openInstallSettings(): void;
   /** 调起系统安装界面 */
   install(id: string): Promise<void>;
+  /** 删除已装上的旧安装包（versionCode ≤ 当前版本的 PocketWisdom-*.apk），返回删除个数 */
+  cleanup(currentVersionCode: number): Promise<number>;
 }
 
 export default TurboModuleRegistry.get<Spec>('AppUpdateModule');

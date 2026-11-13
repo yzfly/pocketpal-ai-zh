@@ -1,4 +1,5 @@
 import Clipboard from '@react-native-clipboard/clipboard';
+import {Share} from 'react-native';
 import {renderHook, act} from '@testing-library/react-hooks';
 
 import {textMessage, user} from '../../../jest/fixtures';
@@ -53,6 +54,43 @@ describe('useMessageActions', () => {
     });
 
     expect(Clipboard.setString).toHaveBeenCalledWith('Copy this text');
+  });
+
+  it('shares message text through the system sheet, with an optional footer', async () => {
+    const share = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({action: 'sharedAction'} as any);
+    const {result} = renderHook(() =>
+      useMessageActions({
+        user,
+        messages,
+        handleSendPress: mockHandleSendPress,
+        setInputText: mockSetInputText,
+      }),
+    );
+    const message = {...textMessage, text: ' Share me ', type: 'text'} as const;
+
+    await act(async () => {
+      await result.current.handleShare(message, '— footer');
+    });
+    expect(share).toHaveBeenLastCalledWith({message: 'Share me\n\n— footer'});
+
+    await act(async () => {
+      await result.current.handleShare(message);
+    });
+    expect(share).toHaveBeenLastCalledWith({message: 'Share me'});
+
+    // 空消息不弹分享面板；用户取消（reject）也不抛错
+    share.mockClear();
+    await act(async () => {
+      await result.current.handleShare({...message, text: '  '});
+    });
+    expect(share).not.toHaveBeenCalled();
+    share.mockRejectedValueOnce(new Error('dismissed'));
+    await act(async () => {
+      await result.current.handleShare(message);
+    });
+    share.mockRestore();
   });
 
   it('enters edit mode for user message', () => {

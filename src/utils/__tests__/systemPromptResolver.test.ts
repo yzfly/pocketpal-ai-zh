@@ -1,5 +1,6 @@
 import {
   assembleMessages,
+  DEFAULT_SYSTEM_PROMPT,
   resolveSystemPrompt,
   resolveSystemMessages,
 } from '../systemPromptResolver';
@@ -89,16 +90,17 @@ describe('systemPromptResolver', () => {
       expect(result).toBe('Model default system prompt');
     });
 
-    it('should return empty string when no pal and no model system prompt', () => {
+    it('falls back to the default identity when no pal and no model system prompt', () => {
       const result = resolveSystemPrompt({
         pal: null,
         model: null,
       });
 
-      expect(result).toBe('');
+      expect(result).toBe(DEFAULT_SYSTEM_PROMPT);
+      expect(result).toContain('口袋AI');
     });
 
-    it('should return empty string when model has no chat template', () => {
+    it('falls back to the default identity when model has no chat template', () => {
       const activeModel: Partial<Model> = {
         chatTemplate: undefined,
       };
@@ -108,7 +110,7 @@ describe('systemPromptResolver', () => {
         model: activeModel as Model,
       });
 
-      expect(result).toBe('');
+      expect(result).toBe(DEFAULT_SYSTEM_PROMPT);
     });
 
     it('should prioritize pal system prompt over model system prompt', () => {
@@ -154,13 +156,15 @@ describe('systemPromptResolver', () => {
       ]);
     });
 
-    it('should return empty array when system prompt is empty', () => {
+    it('uses the default identity as the system message when nothing is set', () => {
       const result = resolveSystemMessages({
         pal: null,
         model: null,
       });
 
-      expect(result).toEqual([]);
+      expect(result).toEqual([
+        {role: 'system', content: DEFAULT_SYSTEM_PROMPT},
+      ]);
     });
 
     it('should return empty array when system prompt is whitespace only', () => {

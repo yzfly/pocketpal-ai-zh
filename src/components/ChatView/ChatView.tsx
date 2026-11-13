@@ -91,13 +91,20 @@ import {
   SuggestedPromptsRow,
   VoiceBar,
 } from '..';
+import {APP_SHARE_LINK} from '../../config/urls';
+import {canShareAsImage, shareReplyAsImage} from '../../services/shareCard';
+import {derivedText} from '../../utils/chat';
 import {
   AlertIcon,
   CopyIcon,
   GridIcon,
   PencilLineIcon,
   RefreshIcon,
+  ShareIcon,
 } from '../../assets/icons';
+
+/** 长按菜单距屏幕左右边缘的距离 */
+const MENU_EDGE_INSET = 16;
 
 type MenuItem = {
   label: string;
@@ -614,14 +621,19 @@ export const ChatView = observer(
       setInputText(prev => (prev ? `${prev} ${text}` : text));
     }, []);
 
-    const {handleCopy, handleEdit, handleTryAgain, handleTryAgainWith} =
-      useMessageActions({
-        user,
-        messages,
-        handleSendPress: wrappedOnSendPress,
-        setInputText,
-        setInputImages,
-      });
+    const {
+      handleCopy,
+      handleShare,
+      handleEdit,
+      handleTryAgain,
+      handleTryAgainWith,
+    } = useMessageActions({
+      user,
+      messages,
+      handleSendPress: wrappedOnSendPress,
+      setInputText,
+      setInputImages,
+    });
 
     // ============ AUTO-SCROLL ON NEW USER MESSAGE ============
     // Scroll to bottom when user sends a new message
@@ -708,13 +720,20 @@ export const ChatView = observer(
           return;
         }
 
-        const {pageX, pageY} = event.nativeEvent;
-        setMenuPosition({x: pageX, y: pageY});
+        // 菜单横向贴着消息所在的一侧（助手靠左、自己靠右），纵向跟随手指。
+        // 直接用手指的横坐标时，在屏幕中间长按会让较宽的中文菜单被翻到
+        // 屏幕左边缘之外，图标和前几个字被裁掉。
+        const {pageY} = event.nativeEvent;
+        const isOwnMessage = message.author.id === user.id;
+        setMenuPosition({
+          x: isOwnMessage ? size.width - MENU_EDGE_INSET : MENU_EDGE_INSET,
+          y: pageY,
+        });
         setSelectedMessage(message);
         setMenuVisible(true);
         externalOnMessageLongPress?.(message);
       },
-      [externalOnMessageLongPress],
+      [externalOnMessageLongPress, size.width, user.id],
     );
 
     const handleMenuDismiss = React.useCallback(() => {
@@ -727,14 +746,59 @@ export const ChatView = observer(
       [],
     );
 
+    // 新对话的起手提示：助手自带的优先；没选助手时给一组通用提示，
+    // 让第一次用的人不必自己想问什么。选了助手但它没配提示时不显示。
+    const starterPrompts: string[] = activePal
+      ? (activePal.greeting?.suggestedPrompts ?? [])
+      : (l10n.components.chatEmptyPlaceholder.starterPrompts ?? []);
+
     // ============ CONTEXT MENU CONFIGURATION ============
     const {
       copy: copyLabel,
+      share: shareLabel,
+      shareImage: shareImageLabel,
       regenerate: regenerateLabel,
       regenerateWith: regenerateWithLabel,
       edit: editLabel,
       reportContent: reportContentLabel,
     } = l10n.components.chatView.menuItems;
+    const shareFooter = l10n.components.chatView.shareFooter;
+    const shareCardTagline = l10n.components.chatView.shareCardTagline;
+
+    /** 把这条回复连同它回答的那个问题画成图片分享出去 */
+    const handleShareImage = React.useCallback(
+      (message: MessageType.Text | MessageType.AssistantTurn) => {
+        // 这条回复之前最近的一条用户消息就是它回答的问题（与列表顺序无关）
+        const at = message.createdAt ?? 0;
+        const question = messages
+          .filter(
+            (m): m is MessageType.Text =>
+              m.type === 'text' &&
+              m.author.id === user.id &&
+              (m.createdAt ?? 0) <= at,
+          )
+          .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))[0];
+        shareReplyAsImage({
+          brand: '口袋AI',
+          question: question?.text,
+          answer: derivedText(message),
+          tagline: shareCardTagline,
+          link: APP_SHARE_LINK,
+          dark: theme.dark,
+        }).catch(() => {
+          // 画图或分享失败时退回到分享文字，不让这次操作落空
+          handleShare(message, shareFooter);
+        });
+      },
+      [
+        messages,
+        user.id,
+        shareCardTagline,
+        theme.dark,
+        handleShare,
+        shareFooter,
+      ],
+    );
 
     const isStopping = chatSessionStore.isStopping;
     const voiceModeOpen = voiceModeStore.isOpen;
@@ -764,7 +828,29 @@ export const ChatView = observer(
         },
       ];
 
+      if (!isAuthor && canShareAsImage()) {
+        baseItems.push({
+          label: shareImageLabel,
+          onPress: () => {
+            handleShareImage(selectedMessage);
+            handleMenuDismiss();
+          },
+          icon: () => <ShareIcon stroke={theme.colors.primary} />,
+          disabled: false,
+        });
+      }
+
       if (!isAuthor) {
+        baseItems.push({
+          label: shareLabel,
+          onPress: () => {
+            handleShare(selectedMessage, shareFooter);
+            handleMenuDismiss();
+          },
+          icon: () => <ShareIcon stroke={theme.colors.primary} />,
+          disabled: false,
+        });
+
         baseItems.push({
           label: regenerateLabel,
           onPress: () => {
@@ -819,6 +905,11 @@ export const ChatView = observer(
       voiceModeOpen,
       user.id,
       handleCopy,
+      handleShare,
+      handleShareImage,
+      shareFooter,
+      shareLabel,
+      shareImageLabel,
       handleTryAgain,
       handleTryAgainWith,
       handleEdit,
@@ -1267,8 +1358,7 @@ export const ChatView = observer(
             !isStreaming &&
             !voiceModeOpen &&
             modelStore.activeModelId !== undefined &&
-            activePal?.greeting?.suggestedPrompts &&
-            activePal.greeting.suggestedPrompts.length > 0 ? (
+            starterPrompts.length > 0 ? (
               <Reanimated.View
                 pointerEvents="box-none"
                 style={[
@@ -1277,7 +1367,7 @@ export const ChatView = observer(
                   {bottom: chatInputHeight.height},
                 ]}>
                 <SuggestedPromptsRow
-                  prompts={activePal.greeting.suggestedPrompts}
+                  prompts={starterPrompts}
                   onSelect={prompt =>
                     wrappedOnSendPress({type: 'text', text: prompt})
                   }

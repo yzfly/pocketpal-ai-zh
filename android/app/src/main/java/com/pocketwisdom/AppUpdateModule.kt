@@ -100,6 +100,23 @@ class AppUpdateModule(reactContext: ReactApplicationContext) :
     }.start()
   }
 
+  override fun cleanup(currentVersionCode: Double, promise: Promise) {
+    try {
+      val dir = reactApplicationContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+      val pattern = Regex("""PocketWisdom-(\d+)\.apk""")
+      var removed = 0
+      dir?.listFiles()?.forEach { f ->
+        val code = pattern.matchEntire(f.name)?.groupValues?.get(1)?.toLongOrNull()
+        if (code != null && code <= currentVersionCode.toLong() && f.delete()) {
+          removed++
+        }
+      }
+      promise.resolve(removed)
+    } catch (e: Exception) {
+      promise.resolve(0)
+    }
+  }
+
   override fun canInstall(promise: Promise) {
     promise.resolve(
         Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||

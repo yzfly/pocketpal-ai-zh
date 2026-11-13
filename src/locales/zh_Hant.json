@@ -22,7 +22,9 @@
     "chineseEditionWechatCopiedTitle": "已複製",
     "chineseEditionWechatCopiedDescription": "「云中江树」已複製到剪貼簿，可在微信中搜尋關注。",
     "checkUpdate": "檢查更新",
-    "upToDate": "已經是最新版本"
+    "upToDate": "已經是最新版本",
+    "shareApp": "推薦給朋友",
+    "shareAppMessage": "我在用口袋AI：直接在手機上離線運行的 AI 助手，免費，聊天內容不出手機。下載：{{url}}"
   },
   "benchmark": {
     "title": "基準",
@@ -321,7 +323,13 @@
       "activateModelButton": "選擇模型",
       "loading": "正在載入...",
       "gettingReadyTitle": "{{name}} 正在準備中",
-      "gettingReadyDescription": "我們會在您的夥伴可以開始聊天時立即通知您。點擊上方的橫幅可查看目前的進度。"
+      "gettingReadyDescription": "我們會在您的夥伴可以開始聊天時立即通知您。點擊上方的橫幅可查看目前的進度。",
+      "starterPrompts": [
+        "你能幫我做些什麼？",
+        "幫我寫一則請假訊息，語氣禮貌一點",
+        "用簡單的話解釋什麼是人工智慧",
+        "給我三個週末放鬆的小點子"
+      ]
     },
     "chatInput": {
       "inputPlaceholder": "訊息",
@@ -724,8 +732,12 @@
         "copy": "複製",
         "regenerate": "重新生成",
         "regenerateWith": "使用...重新生成",
-        "reportContent": "報告內容"
-      }
+        "reportContent": "報告內容",
+        "share": "分享文字",
+        "shareImage": "分享圖片"
+      },
+      "shareFooter": "—— 來自口袋AI，在手機上離線運行的 AI",
+      "shareCardTagline": "在手機上離線運行的 AI"
     },
     "lookiePalSheet": {
       "palName": "名稱",

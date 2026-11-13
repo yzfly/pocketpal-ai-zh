@@ -3,9 +3,11 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
+  Share,
 } from 'react-native';
 
 import DeviceInfo from 'react-native-device-info';
@@ -17,9 +19,18 @@ import {BuildInfo} from '../../services/llm';
 
 import {submitFeedback} from '../../api/feedback';
 import phononNotices from '../../assets/licenses/phononThirdPartyNotices.json';
-import {REPO_URL} from '../../config/urls';
+import {APP_DOWNLOAD_URL, REPO_URL} from '../../config/urls';
 
-import {CopyIcon, GithubIcon, ChevronRightIcon} from '../../assets/icons';
+import {
+  ChatIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  GithubIcon,
+  LinkExternalIcon,
+  PlayIcon,
+  RefreshIcon,
+  ShareIcon,
+} from '../../assets/icons';
 
 import {BrandMark, Sheet, TextInput} from '../../components';
 import {useTheme} from '../../hooks';
@@ -29,13 +40,82 @@ import {uiStore} from '../../store';
 import {updateService} from '../../services';
 import {reflowNotice} from './reflowNotice';
 
-const GithubButtonIcon = ({color}: {color: string}) => (
-  <GithubIcon stroke={color} />
-);
+type RowIcon = React.ComponentType<{
+  width?: number;
+  height?: number;
+  stroke?: string;
+}>;
 
-const ChevronRightButtonIcon = ({color}: {color: string}) => (
-  <ChevronRightIcon stroke={color} />
-);
+interface AboutRowProps {
+  icon: RowIcon;
+  label: string;
+  /** 行尾：进入下一层、跳到 App 外、复制，或一段状态文字 */
+  trailing: 'chevron' | 'external' | 'copy';
+  status?: string;
+  loading?: boolean;
+  last?: boolean;
+  role?: 'button' | 'link';
+  onPress: () => void;
+  testID?: string;
+}
+
+const TRAILING_ICONS: Record<AboutRowProps['trailing'], RowIcon> = {
+  chevron: ChevronRightIcon,
+  external: LinkExternalIcon,
+  copy: CopyIcon,
+};
+
+/** 关于页的一行操作：左图标、文字、行尾图标，整行可点（≥56dp） */
+const AboutRow: React.FC<
+  AboutRowProps & {styles: ReturnType<typeof createStyles>}
+> = ({
+  icon: Icon,
+  label,
+  trailing,
+  status,
+  loading,
+  last,
+  role = 'button',
+  onPress,
+  testID,
+  styles,
+}) => {
+  const theme = useTheme();
+  const Trailing = TRAILING_ICONS[trailing];
+  return (
+    <Pressable
+      accessibilityRole={role}
+      accessibilityState={{disabled: !!loading}}
+      disabled={loading}
+      onPress={onPress}
+      android_ripple={{color: theme.colors.surfaceVariant}}
+      style={({pressed}) => [
+        styles.row,
+        !last && styles.rowDivider,
+        pressed && styles.rowPressed,
+      ]}
+      testID={testID}>
+      <Icon width={20} height={20} stroke={theme.colors.onSurface} />
+      <Text style={styles.rowLabel} numberOfLines={2}>
+        {label}
+      </Text>
+      {status ? (
+        <Text style={styles.rowStatus} numberOfLines={1}>
+          {status}
+        </Text>
+      ) : null}
+      {loading ? (
+        <ActivityIndicator size="small" color={theme.colors.onSurfaceVariant} />
+      ) : (
+        <Trailing
+          width={18}
+          height={18}
+          stroke={theme.colors.onSurfaceVariant}
+        />
+      )}
+    </Pressable>
+  );
+};
 
 export const AboutScreen: React.FC = observer(() => {
   const theme = useTheme();
@@ -140,80 +220,99 @@ export const AboutScreen: React.FC = observer(() => {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.card}>
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={styles.brandRow}>
-                <BrandMark size={56} />
-                <Text variant="titleLarge" style={styles.title}>
-                  口袋AI
-                </Text>
-              </View>
-              <Text variant="bodyMedium" style={styles.description}>
-                {l10n.about.description}
+          <View style={styles.hero}>
+            <BrandMark size={72} />
+            <Text variant="titleLarge" style={styles.title}>
+              口袋AI
+            </Text>
+            <Text
+              variant="bodyMedium"
+              textBreakStrategy="balanced"
+              style={styles.heroDescription}>
+              {l10n.about.description}
+            </Text>
+            <TouchableOpacity
+              style={styles.versionButton}
+              accessibilityRole="button"
+              hitSlop={{top: 6, bottom: 6}}
+              onPress={copyVersionToClipboard}>
+              <Text style={styles.versionText}>
+                v{appInfo.version} ({appInfo.build})
               </Text>
-              <View style={styles.versionContainer}>
-                <TouchableOpacity
-                  style={styles.versionButton}
-                  onPress={copyVersionToClipboard}>
-                  <Text style={styles.versionText}>
-                    v{appInfo.version} ({appInfo.build})
-                  </Text>
-                  <CopyIcon
-                    width={16}
-                    height={16}
-                    stroke={theme.colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.llamaBuildText}>
-                llama.cpp {BuildInfo.number} ({BuildInfo.commit.substring(0, 7)}
-                )
-              </Text>
-              {updateService.supported && (
-                <Button
-                  mode="contained"
-                  testID="about-check-update"
-                  style={styles.actionButton}
-                  loading={updateService.status === 'checking'}
-                  disabled={updateService.status === 'checking'}
-                  onPress={async () => {
-                    const found = await updateService.check();
-                    if (found) {
-                      updateService.showDialog();
-                    } else {
-                      Alert.alert(
-                        l10n.about.checkUpdate,
-                        updateService.error ?? l10n.about.upToDate,
-                      );
-                    }
-                  }}>
-                  {l10n.about.checkUpdate}
-                </Button>
-              )}
-            </View>
+              <CopyIcon
+                width={14}
+                height={14}
+                stroke={theme.colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+            <Text style={styles.llamaBuildText}>
+              llama.cpp {BuildInfo.number} ({BuildInfo.commit.substring(0, 7)})
+            </Text>
           </View>
+
+          {updateService.supported && (
+            <View style={styles.section}>
+              <AboutRow
+                styles={styles}
+                icon={RefreshIcon}
+                label={l10n.about.checkUpdate}
+                trailing="chevron"
+                status={
+                  updateService.status === 'upToDate'
+                    ? l10n.about.upToDate
+                    : undefined
+                }
+                loading={updateService.status === 'checking'}
+                last
+                testID="about-check-update"
+                onPress={async () => {
+                  const found = await updateService.check();
+                  if (found) {
+                    updateService.showDialog();
+                  } else if (updateService.error) {
+                    Alert.alert(l10n.about.checkUpdate, updateService.error);
+                  }
+                }}
+              />
+            </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{l10n.about.supportProject}</Text>
             <Text variant="bodyMedium" style={styles.description}>
               {l10n.about.supportProjectDescription}
             </Text>
-            <Button
-              mode="outlined"
+            <AboutRow
+              styles={styles}
+              icon={ShareIcon}
+              label={l10n.about.shareApp}
+              trailing="chevron"
+              testID="about-share-app"
+              onPress={() => {
+                Share.share({
+                  message: l10n.about.shareAppMessage.replace(
+                    '{{url}}',
+                    APP_DOWNLOAD_URL,
+                  ),
+                }).catch(() => {});
+              }}
+            />
+            <AboutRow
+              styles={styles}
+              icon={GithubIcon}
+              label={l10n.about.githubButton}
+              trailing="external"
+              role="link"
               onPress={() => Linking.openURL(REPO_URL)}
-              style={styles.actionButton}
-              icon={GithubButtonIcon}>
-              {l10n.about.githubButton}
-            </Button>
-            <Text style={styles.orText}>{l10n.about.orBy}</Text>
-            <Button
-              mode="outlined"
-              style={styles.actionButton}
-              contentStyle={styles.feedbackButtonContent}
-              icon={ChevronRightButtonIcon}
-              onPress={() => setShowFeedback(true)}>
-              {l10n.feedback.shareThoughtsButton}
-            </Button>
+            />
+            <AboutRow
+              styles={styles}
+              icon={ChatIcon}
+              label={l10n.feedback.shareThoughtsButton}
+              trailing="chevron"
+              last
+              onPress={() => setShowFeedback(true)}
+            />
           </View>
 
           <View style={styles.section}>
@@ -221,17 +320,22 @@ export const AboutScreen: React.FC = observer(() => {
             <Text variant="bodyMedium" style={styles.description}>
               {l10n.about.chineseEditionDescription}
             </Text>
-            <Button
-              mode="outlined"
+            <AboutRow
+              styles={styles}
+              icon={GithubIcon}
+              label={l10n.about.chineseEditionGithubButton}
+              trailing="external"
+              role="link"
               onPress={() =>
                 Linking.openURL('https://github.com/yzfly/pocketpal-ai-zh')
               }
-              style={styles.actionButton}
-              icon={GithubButtonIcon}>
-              {l10n.about.chineseEditionGithubButton}
-            </Button>
-            <Button
-              mode="outlined"
+            />
+            <AboutRow
+              styles={styles}
+              icon={ChatIcon}
+              label={l10n.about.chineseEditionWechatButton}
+              trailing="copy"
+              last
               onPress={() => {
                 Clipboard.setString('云中江树');
                 Alert.alert(
@@ -239,10 +343,7 @@ export const AboutScreen: React.FC = observer(() => {
                   l10n.about.chineseEditionWechatCopiedDescription,
                 );
               }}
-              style={[styles.actionButton, styles.stackedButton]}
-              icon={ChevronRightButtonIcon}>
-              {l10n.about.chineseEditionWechatButton}
-            </Button>
+            />
           </View>
 
           <View style={styles.section}>
@@ -250,13 +351,14 @@ export const AboutScreen: React.FC = observer(() => {
             <Text variant="bodyMedium" style={styles.description}>
               {l10n.about.tourDescription}
             </Text>
-            <Button
-              mode="outlined"
+            <AboutRow
+              styles={styles}
+              icon={PlayIcon}
+              label={l10n.about.showIntroButton}
+              trailing="chevron"
+              last
               onPress={() => uiStore.replayOnboarding()}
-              style={styles.actionButton}
-              icon={ChevronRightButtonIcon}>
-              {l10n.about.showIntroButton}
-            </Button>
+            />
           </View>
 
           <View style={styles.legalRow}>

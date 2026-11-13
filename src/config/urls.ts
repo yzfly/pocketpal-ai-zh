@@ -4,6 +4,11 @@ export const HF_DOMAIN = 'https://huggingface.co';
 export const HF_API_BASE = `${HF_DOMAIN}/api/models`;
 
 export const REPO_URL = 'https://github.com/a-ghorbani/pocketpal-ai';
+/** 口袋AI 的下载页（“推荐给朋友”里发出去的链接） */
+/** 分享图片底部印的短地址（不带协议，便于辨认和手输） */
+export const APP_SHARE_LINK = 'github.com/yzfly/pocketpal-ai-zh';
+export const APP_DOWNLOAD_URL =
+  'https://github.com/yzfly/pocketpal-ai-zh/releases/latest';
 export const APPLE_EULA_URL =
   'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 export const APPLE_MEDIA_TERMS_URL =

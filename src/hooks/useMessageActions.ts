@@ -1,4 +1,5 @@
 import {useCallback} from 'react';
+import {Share} from 'react-native';
 
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -36,6 +37,25 @@ export const useMessageActions = ({
     }
     Clipboard.setString(derivedText(message).trim());
   }, []);
+
+  /** 用系统分享面板把这条消息的文字发出去；footer 是附在末尾的一行来源说明 */
+  const handleShare = useCallback(
+    async (message: CopyableMessage, footer?: string) => {
+      if (message.type !== 'text' && message.type !== 'assistant_turn') {
+        return;
+      }
+      const text = derivedText(message).trim();
+      if (!text) {
+        return;
+      }
+      try {
+        await Share.share({message: footer ? `${text}\n\n${footer}` : text});
+      } catch {
+        // 用户取消或系统没有可用的分享目标：不需要提示
+      }
+    },
+    [],
+  );
 
   const handleEdit = useCallback(
     async (message: CopyableMessage) => {
@@ -122,6 +142,7 @@ export const useMessageActions = ({
 
   return {
     handleCopy,
+    handleShare,
     handleEdit,
     handleTryAgain,
     handleTryAgainWith,

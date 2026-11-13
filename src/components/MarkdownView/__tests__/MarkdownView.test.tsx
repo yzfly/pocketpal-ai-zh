@@ -20,6 +20,11 @@ describe('MarkdownView Component', () => {
     expect(getByText('Hello World')).toBeTruthy();
   });
 
+  it('keeps single line breaks instead of merging lines into one paragraph', () => {
+    const {marked} = require('marked');
+    expect(marked('第一条\n第二条')).toContain('第一条<br>第二条');
+  });
+
   it('handles different content widths properly', () => {
     const markdownText = '# Test Markdown';
     const {getByTestId, rerender} = render(

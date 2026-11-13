@@ -686,7 +686,9 @@
     "chineseEditionWechatCopiedTitle": "Copied",
     "chineseEditionWechatCopiedDescription": "The account name has been copied. Search for it in WeChat to follow.",
     "checkUpdate": "Check for updates",
-    "upToDate": "You are on the latest version"
+    "upToDate": "You are on the latest version",
+    "shareApp": "Recommend to a friend",
+    "shareAppMessage": "I am using PocketWisdom: an AI assistant that runs fully offline on the phone, free, and chats never leave the device. Download: {{url}}"
   },
   "feedback": {
     "title": "Send Feedback",
@@ -785,7 +787,13 @@
       "activateModelButton": "Select Model",
       "loading": "Loading...",
       "gettingReadyTitle": "{{name}} is getting ready",
-      "gettingReadyDescription": "We’ll let you know the moment your pal can chat. Tap the banner up top to see how it’s going."
+      "gettingReadyDescription": "We’ll let you know the moment your pal can chat. Tap the banner up top to see how it’s going.",
+      "starterPrompts": [
+        "What can you help me with?",
+        "Write a polite message asking for a day off",
+        "Explain artificial intelligence in simple words",
+        "Give me three ideas for a relaxing weekend"
+      ]
     },
     "chatInput": {
       "inputPlaceholder": "Message",
@@ -1220,8 +1228,12 @@
         "regenerate": "Regenerate",
         "regenerateWith": "Regenerate with",
         "edit": "Edit",
-        "reportContent": "Report Content"
-      }
+        "reportContent": "Report Content",
+        "share": "Share as text",
+        "shareImage": "Share as image"
+      },
+      "shareFooter": "— from PocketWisdom, AI that runs offline on your phone",
+      "shareCardTagline": "AI that runs offline on your phone"
     },
     "palHeaderRight": {
       "exportAllPals": "Export all pals",

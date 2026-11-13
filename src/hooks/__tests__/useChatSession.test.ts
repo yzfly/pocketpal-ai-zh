@@ -1,4 +1,5 @@
 import {LlamaContext} from '../../services/llm';
+import {DEFAULT_SYSTEM_PROMPT} from '../../utils/systemPromptResolver';
 import {AccessibilityInfo} from 'react-native';
 import {renderHook, act, waitFor} from '@testing-library/react-native';
 import {runInAction} from 'mobx';
@@ -763,8 +764,13 @@ describe('useChatSession', () => {
           msg => msg.role === 'system',
         );
         expect(systemMessage.content).toBe(systemPrompt);
+      } else if (!systemPrompt) {
+        // 口袋AI：没有任何系统提示词时用默认身份（见 DEFAULT_SYSTEM_PROMPT）
+        expect(
+          capturedMessages.find(msg => msg.role === 'system')?.content,
+        ).toBe(DEFAULT_SYSTEM_PROMPT);
       } else {
-        // Check that no system message was included
+        // Whitespace-only prompt: no system message is included
         expect(capturedMessages.some(msg => msg.role === 'system')).toBe(false);
       }
     },

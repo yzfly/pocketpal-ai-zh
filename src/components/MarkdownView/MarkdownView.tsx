@@ -4,7 +4,9 @@ import React, {useMemo} from 'react';
 import {marked} from 'marked';
 import {RenderHTMLSource} from 'react-native-render-html';
 
-marked.use({});
+// breaks：单个换行也换行。小模型常用换行（而不是空行或列表语法）分条，
+// 不开的话多条内容会被挤成一整段。
+marked.use({breaks: true});
 
 interface MarkdownViewProps {
   markdownText: string;

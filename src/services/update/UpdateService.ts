@@ -145,6 +145,8 @@ export class UpdateService {
     if (!this.supported) {
       return;
     }
+    // 更新装好后，上一次下载的安装包（约 200 MB）不再有用，启动时清掉
+    NativeAppUpdate?.cleanup?.(this.currentVersionCode)?.catch(() => {});
     try {
       const last = Number(await AsyncStorage.getItem(LAST_CHECK_KEY)) || 0;
       if (Date.now() - last < AUTO_CHECK_INTERVAL_MS) {

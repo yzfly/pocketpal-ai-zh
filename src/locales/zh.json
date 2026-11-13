@@ -686,7 +686,9 @@
     "chineseEditionWechatCopiedTitle": "已复制",
     "chineseEditionWechatCopiedDescription": "「云中江树」已复制到剪贴板，可在微信中搜索关注。",
     "checkUpdate": "检查更新",
-    "upToDate": "已经是最新版本"
+    "upToDate": "已经是最新版本",
+    "shareApp": "推荐给朋友",
+    "shareAppMessage": "我在用口袋AI：直接在手机上离线运行的 AI 助手，免费，聊天内容不出手机。下载：{{url}}"
   },
   "feedback": {
     "title": "发送反馈",
@@ -764,7 +766,13 @@
       "activateModelButton": "选择模型",
       "loading": "加载中...",
       "gettingReadyTitle": "{{name}} 正在准备中",
-      "gettingReadyDescription": "我们会在您的助手可以开始聊天时通知您，点击顶部的横幅可以查看进度。"
+      "gettingReadyDescription": "我们会在您的助手可以开始聊天时通知您，点击顶部的横幅可以查看进度。",
+      "starterPrompts": [
+        "你能帮我做些什么？",
+        "帮我写一条请假消息，语气礼貌一点",
+        "用简单的话解释什么是人工智能",
+        "给我三个周末放松的小点子"
+      ]
     },
     "chatInput": {
       "inputPlaceholder": "消息",
@@ -1192,8 +1200,12 @@
         "regenerate": "重新生成",
         "regenerateWith": "重新生成（重选模型）",
         "edit": "编辑",
-        "reportContent": "举报内容"
-      }
+        "reportContent": "举报内容",
+        "share": "分享文字",
+        "shareImage": "分享图片"
+      },
+      "shareFooter": "—— 来自口袋AI，在手机上离线运行的 AI",
+      "shareCardTagline": "在手机上离线运行的 AI"
     },
     "palHeaderRight": {
       "exportAllPals": "导出所有助手",

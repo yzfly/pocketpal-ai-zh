@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, Linking, Platform} from 'react-native';
+import {Alert, Linking, Platform, Share} from 'react-native';
 import {
   render as baseRender,
   fireEvent,
@@ -112,6 +112,21 @@ describe('AboutScreen', () => {
     expect(second).toHaveStyle({opacity: 0});
   });
 
+  it('opens the system share sheet with the download link', () => {
+    const share = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({action: 'sharedAction'} as any);
+    const {getByTestId} = render(<AboutScreen />);
+
+    fireEvent.press(getByTestId('about-share-app'));
+
+    expect(share).toHaveBeenCalledTimes(1);
+    expect((share.mock.calls[0][0] as {message: string}).message).toContain(
+      'https://github.com/yzfly/pocketpal-ai-zh/releases/latest',
+    );
+    share.mockRestore();
+  });
+
   it('opens GitHub URL when GitHub button is pressed', () => {
     const {getByText} = render(<AboutScreen />);
 
@@ -139,7 +154,7 @@ describe('AboutScreen', () => {
       expect(queryByText('Become a Sponsor')).toBeNull();
       expect(queryByText('or')).toBeNull();
       expect(getByText(l10n.en.about.githubButton)).toBeTruthy();
-      expect(getByText(l10n.en.about.orBy)).toBeTruthy();
+      expect(queryByText(l10n.en.about.orBy)).toBeNull();
       expect(getByText(l10n.en.feedback.shareThoughtsButton)).toBeTruthy();
     });
   });

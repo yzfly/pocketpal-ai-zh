@@ -13,55 +13,48 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       padding: theme.spacing.default,
       paddingBottom: theme.spacing.default + insets.bottom,
     },
-    // 口袋AI：去掉卡片套卡片和灰色头图，正文与其他页面一样距屏幕边 16
+    // 口袋AI：居中的品牌区 + 平铺分组列表（与设置页一致），正文距屏幕边 16
     card: {
       backgroundColor: theme.colors.background,
     },
-    header: {
-      paddingVertical: theme.spacing.default * 1.5,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.surfaceVariant,
-    },
-    brandRow: {
-      flexDirection: 'row',
+    hero: {
       alignItems: 'center',
-      gap: 12,
-    },
-    stackedButton: {
-      marginTop: theme.spacing.default * 0.75,
-    },
-    headerContent: {
-      gap: theme.spacing.default,
+      paddingTop: theme.spacing.default * 1.5,
+      paddingBottom: theme.spacing.default * 1.5,
     },
     title: {
       ...theme.fonts.headlineMedium,
       color: theme.colors.onSurface,
       letterSpacing: -0.5,
+      marginTop: theme.spacing.default,
+    },
+    heroDescription: {
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginTop: theme.spacing.default / 2,
+      marginBottom: theme.spacing.default * 1.25,
+      paddingHorizontal: theme.spacing.default,
     },
     description: {
+      ...theme.fonts.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      marginBottom: theme.spacing.default,
-      lineHeight: 24,
-    },
-    versionContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.default / 2,
+      lineHeight: 20,
+      marginBottom: theme.spacing.default / 4,
     },
     versionButton: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surfaceContainerHigh,
-      paddingHorizontal: theme.spacing.default,
-      paddingVertical: theme.spacing.default / 2,
-      borderRadius: theme.borders.default,
+      paddingHorizontal: 14,
+      minHeight: 32,
+      borderRadius: 16,
       gap: theme.spacing.default / 2,
-      borderWidth: 1,
-      borderColor: theme.colors.surfaceVariant,
     },
     versionText: {
-      ...theme.fonts.bodyMedium,
+      ...theme.fonts.labelLarge,
       color: theme.colors.onSurface,
+      fontVariant: ['tabular-nums'],
     },
     llamaBuildText: {
       ...theme.fonts.bodySmall,
@@ -70,28 +63,43 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       opacity: 0.7,
     },
     section: {
-      paddingVertical: theme.spacing.default * 1.5,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.surfaceVariant,
+      paddingTop: theme.spacing.default * 0.75,
+      paddingBottom: theme.spacing.default * 0.25,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outlineVariant,
     },
+    // 分组标题：与设置页相同的小号灰色标签
     sectionTitle: {
-      ...theme.fonts.titleMedium,
-      color: theme.colors.onSurface,
-      marginBottom: theme.spacing.default,
-    },
-    actionButton: {
-      borderWidth: 1,
-      borderColor: theme.colors.surfaceVariant,
-    },
-    orText: {
-      ...theme.fonts.bodyMedium,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '600',
+      letterSpacing: 0.3,
       color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      marginVertical: theme.spacing.default,
-      opacity: 0.7,
+      marginTop: theme.spacing.default / 2,
+      marginBottom: theme.spacing.default / 4,
     },
-    feedbackButtonContent: {
-      flexDirection: 'row-reverse',
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 56,
+      gap: 14,
+      paddingVertical: theme.spacing.default / 2,
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outlineVariant,
+    },
+    rowPressed: {
+      opacity: 0.6,
+    },
+    rowLabel: {
+      ...theme.fonts.bodyLarge,
+      color: theme.colors.onSurface,
+      flex: 1,
+    },
+    rowStatus: {
+      ...theme.fonts.bodySmall,
+      color: theme.colors.onSurfaceVariant,
     },
     feedbackForm: {
       padding: theme.spacing.default,
@@ -118,7 +126,9 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       flexWrap: 'wrap',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: theme.spacing.default * 1.5,
+      paddingVertical: theme.spacing.default,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outlineVariant,
       columnGap: theme.spacing.default / 2,
       rowGap: theme.spacing.default / 4,
     },

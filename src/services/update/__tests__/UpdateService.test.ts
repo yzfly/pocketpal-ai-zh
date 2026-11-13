@@ -81,6 +81,7 @@ describe('UpdateService with fallbacks', () => {
       canInstall: jest.fn().mockResolvedValue(true),
       openInstallSettings: jest.fn(),
       install: jest.fn().mockResolvedValue(undefined),
+      cleanup: jest.fn().mockResolvedValue(1),
     };
     jest.doMock('../../../specs/NativeAppUpdate', () => ({
       __esModule: true,
@@ -107,6 +108,12 @@ describe('UpdateService with fallbacks', () => {
     expect(fetchMock.mock.calls[1][0]).toContain('github.com/yzfly');
     expect(service.status).toBe('available');
     expect(service.manifest.versionCode).toBe(999);
+  });
+
+  it('removes already-installed update packages on launch', async () => {
+    (global as any).fetch = jest.fn().mockRejectedValue(new Error('offline'));
+    await service.autoCheck();
+    expect(native.cleanup).toHaveBeenCalledWith(service.currentVersionCode);
   });
 
   it('reports an error when no manifest url works', async () => {
