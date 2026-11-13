@@ -1,12 +1,15 @@
 // 应用内更新（仅 Android）。
 //
-// 更新清单 update.json 放在国内可直连的地址（如国内对象存储或自有服务器），
-// 地址来自 .env 的 UPDATE_MANIFEST_URL；没配置时整个功能关闭。清单格式：
+// 更新清单 update.json 的地址按顺序尝试，用第一个能取到的：
+//   1. .env 的 UPDATE_MANIFEST_URL（可选，多个用英文逗号分隔），放国内可直连的地址；
+//   2. 内置的 GitHub Releases 地址（每次发版把 update.json 作为附件上传）。
+// 清单格式：
 //   {
 //     "versionCode": 160,              // 必填，大于当前 versionCode 才提示
 //     "versionName": "1.23.0",
 //     "notes": ["更新说明1", "更新说明2"],
 //     "apkUrl": "https://.../PocketWisdom-1.23.0.apk",
+//     "apkUrls": ["https://备用地址/…apk"], // 可选，apkUrl 下载失败后依次尝试
 //     "sha256": "…",                   // 可选，下载后校验
 //     "size": 220000000,               // 可选，字节
 //     "minVersionCode": 150            // 可选，低于它的版本强制更新
@@ -26,6 +29,8 @@ export interface UpdateManifest {
   versionName: string;
   notes?: string[];
   apkUrl: string;
+  /** 备用下载地址，apkUrl 失败后依次尝试 */
+  apkUrls?: string[];
   sha256?: string;
   size?: number;
   minVersionCode?: number;
@@ -45,6 +50,54 @@ export type UpdateStatus =
 const SKIP_KEY = 'update.skippedVersionCode';
 const LAST_CHECK_KEY = 'update.lastCheckAt';
 const AUTO_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 10 * 1000;
+
+/** 每次发版随 APK 一起上传到 GitHub Releases 的清单 */
+export const DEFAULT_MANIFEST_URL =
+  'https://github.com/yzfly/pocketpal-ai-zh/releases/latest/download/update.json';
+
+/** 清单地址：.env 配置的在前，内置 GitHub 地址兜底 */
+export function manifestUrls(configured: string | undefined): string[] {
+  const urls = (configured ?? '')
+    .split(',')
+    .map(u => u.trim())
+    .filter(Boolean);
+  if (!urls.includes(DEFAULT_MANIFEST_URL)) {
+    urls.push(DEFAULT_MANIFEST_URL);
+  }
+  return urls;
+}
+
+/** 安装包下载地址：apkUrl 在前，其后是 https 的备用地址（去重） */
+export function apkSources(m: UpdateManifest): string[] {
+  const extra = Array.isArray(m.apkUrls) ? m.apkUrls : [];
+  return [m.apkUrl, ...extra].filter(
+    (u, i, all) =>
+      typeof u === 'string' && /^https:\/\//.test(u) && all.indexOf(u) === i,
+  );
+}
+
+async function fetchManifest(url: string): Promise<UpdateManifest> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const sep = url.includes('?') ? '&' : '?';
+    const res = await fetch(`${url}${sep}t=${Date.now()}`, {
+      headers: {Accept: 'application/json'},
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error('http ' + res.status);
+    }
+    const m = await res.json();
+    if (!isValidManifest(m)) {
+      throw new Error('invalid manifest');
+    }
+    return m;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export function isNewer(manifest: UpdateManifest, currentCode: number) {
   return Number(manifest.versionCode) > currentCode;
@@ -75,9 +128,7 @@ export class UpdateService {
   }
 
   get supported(): boolean {
-    return (
-      Platform.OS === 'android' && !!NativeAppUpdate && !!UPDATE_MANIFEST_URL
-    );
+    return Platform.OS === 'android' && !!NativeAppUpdate;
   }
 
   get currentVersionCode(): number {
@@ -126,20 +177,20 @@ export class UpdateService {
       this.error = null;
     });
     try {
-      const sep = UPDATE_MANIFEST_URL.includes('?') ? '&' : '?';
-      const res = await fetch(`${UPDATE_MANIFEST_URL}${sep}t=${Date.now()}`, {
-        headers: {Accept: 'application/json'},
-      });
-      if (!res.ok) {
-        throw new Error('http ' + res.status);
+      let m: UpdateManifest | null = null;
+      for (const url of manifestUrls(UPDATE_MANIFEST_URL)) {
+        try {
+          m = await fetchManifest(url);
+          break;
+        } catch {}
       }
-      const m = await res.json();
-      if (!isValidManifest(m)) {
-        throw new Error('invalid manifest');
+      if (!m) {
+        throw new Error('no manifest');
       }
-      const newer = isNewer(m, this.currentVersionCode);
+      const found = m;
+      const newer = isNewer(found, this.currentVersionCode);
       runInAction(() => {
-        this.manifest = m;
+        this.manifest = found;
         this.status = newer ? 'available' : 'upToDate';
       });
       return newer;
@@ -182,19 +233,34 @@ export class UpdateService {
       this.error = null;
     });
     try {
-      const id = await NativeAppUpdate.download(
-        m.apkUrl,
-        `PocketWisdom-${m.versionCode}.apk`,
-        `口袋AI ${m.versionName || ''} 更新`,
-      );
-      this.downloadId = id;
-      await this.waitForDownload(id);
-      runInAction(() => {
-        this.status = 'verifying';
-      });
-      const ok = await NativeAppUpdate.verify(id, m.sha256 ?? '');
-      if (!ok) {
-        throw new Error('checksum');
+      const sources = apkSources(m);
+      for (let i = 0; i < sources.length; i++) {
+        try {
+          const id = await NativeAppUpdate.download(
+            sources[i],
+            `PocketWisdom-${m.versionCode}.apk`,
+            `口袋AI ${m.versionName || ''} 更新`,
+          );
+          this.downloadId = id;
+          await this.waitForDownload(id);
+          runInAction(() => {
+            this.status = 'verifying';
+          });
+          const ok = await NativeAppUpdate.verify(id, m.sha256 ?? '');
+          if (!ok) {
+            throw new Error('checksum');
+          }
+          break;
+        } catch (e) {
+          // 还有备用地址就换下一个，从头下载
+          if (i === sources.length - 1) {
+            throw e;
+          }
+          runInAction(() => {
+            this.status = 'downloading';
+            this.progress = 0;
+          });
+        }
       }
       runInAction(() => {
         this.status = 'readyToInstall';

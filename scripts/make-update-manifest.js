@@ -2,11 +2,12 @@
 /**
  * 从构建好的 APK 生成应用内更新清单 update.json。
  *
- *   node scripts/make-update-manifest.js <apk> <apkUrl> [notes.txt] [--min <versionCode>]
+ *   node scripts/make-update-manifest.js <apk> <apkUrl>[,<备用地址>...] [notes.txt] [--min <versionCode>]
  *
  * versionCode / versionName 读自 android/app/build.gradle；notes.txt 每行一条更新说明。
- * 输出到 stdout，把它和 APK 一起上传到国内可直连的地址（如国内对象存储或自有服务器），
- * 再把 update.json 的地址写进 .env 的 UPDATE_MANIFEST_URL。
+ * apkUrl 可用英文逗号给多个地址：第一个优先，其余写进 apkUrls 作为备用。
+ * 输出到 stdout。把 update.json 和 APK 一起作为附件传到 GitHub Release（App 内置这个地址）；
+ * 另有国内可直连的地址时，把那里的 update.json 地址写进 .env 的 UPDATE_MANIFEST_URL（优先使用）。
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,10 +20,18 @@ if (minIdx >= 0) {
   min = Number(args[minIdx + 1]);
   args.splice(minIdx, 2);
 }
-const [apk, apkUrl, notesFile] = args;
-if (!apk || !apkUrl || !/^https:\/\//.test(apkUrl)) {
+const [apk, apkUrlArg, notesFile] = args;
+const [apkUrl, ...apkUrls] = (apkUrlArg || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+if (
+  !apk ||
+  !apkUrl ||
+  ![apkUrl, ...apkUrls].every(u => /^https:\/\//.test(u))
+) {
   console.error(
-    'usage: make-update-manifest.js <apk> <https apkUrl> [notes.txt] [--min <versionCode>]',
+    'usage: make-update-manifest.js <apk> <https apkUrl>[,<https mirror>...] [notes.txt] [--min <versionCode>]',
   );
   process.exit(1);
 }
@@ -51,6 +60,7 @@ const manifest = {
   versionName,
   notes,
   apkUrl,
+  ...(apkUrls.length ? {apkUrls} : {}),
   sha256,
   size: fs.statSync(apk).size,
 };

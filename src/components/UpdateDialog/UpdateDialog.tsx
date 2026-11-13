@@ -39,7 +39,9 @@ export const UpdateDialog: React.FC = observer(() => {
         dismissable={!forced && !busy}
         onDismiss={() => updateService.dismiss()}
         testID="update-dialog">
-        <Dialog.Title>发现新版本 {m.versionName}</Dialog.Title>
+        <Dialog.Title>
+          发现新版本 {m.versionName}（{m.versionCode}）
+        </Dialog.Title>
         <Dialog.Content>
           <ScrollView style={styles.notes}>
             {(m.notes ?? []).map((n, i) => (
