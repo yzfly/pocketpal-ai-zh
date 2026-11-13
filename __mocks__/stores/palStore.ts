@@ -4,6 +4,7 @@ import {migrateLegacyPalToNew} from '../../src/utils/pal-migration';
 class MockPalStore {
   pals: Pal[] = [];
   ready: Promise<void> = Promise.resolve();
+  upgradeLookieDefaultModel = jest.fn();
 
   constructor() {
     // makeAutoObservable(this);

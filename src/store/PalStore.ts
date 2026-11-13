@@ -4,16 +4,20 @@
  * 口袋AI 只保留本地助手：创建、编辑、删除与内置助手种子。上游的 PalsHub
  * 市场、购买与同步已移除。
  */
-import {makeAutoObservable, runInAction} from 'mobx';
+import {makeAutoObservable, runInAction, when} from 'mobx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {palRepository} from '../repositories/PalRepository';
 
 import {registerDefaultTalents} from '../services/talents';
-import {LOOKIE_DEFAULT_MODEL} from './builtinPalModels';
+import {
+  LOOKIE_DEFAULT_MODEL,
+  LOOKIE_PREFERRED_MODEL_ID,
+} from './builtinPalModels';
 import {chinesePals} from './chinesePals';
 
 import type {Pal, PalUpdate} from '../types/pal';
+import type {Model} from '../utils/types';
 
 import {deletePalThumbnail} from '../utils/imageUtils';
 
@@ -219,7 +223,8 @@ class PalStore {
       if (!lookiePal) {
         console.log('Creating default video pal...');
 
-        // Offline constant — no network resolve at pal init.
+        // 先用离线常量建出来；模型列表就绪后由 upgradeLookieDefaultModel
+        // 换成“口袋助手 mini”（见该方法）。
         const defaultModel = LOOKIE_DEFAULT_MODEL;
 
         // Create the Lookie pal with all the original properties
@@ -255,6 +260,41 @@ class PalStore {
     } catch (error) {
       console.error('Error initializing Lookie pal:', error);
     }
+  }
+
+  /**
+   * 把仍指向旧默认模型（SmolVLM，只会英文）且还没下载它的摄像头助手，
+   * 换成“口袋助手 mini”：和默认聊天模型是同一个文件，能看懂并用中文回答。
+   * 用户已经下载了旧模型、或自己选过别的模型的不动。
+   * 预设模型列表和助手列表都是异步就绪的，所以等两边都有了再换。
+   * 模型列表由调用方传入（App 启动时传 modelStore），PalStore 不直接依赖 ModelStore。
+   */
+  upgradeLookieDefaultModel(source: {models: Model[]}): void {
+    when(
+      () =>
+        source.models.some(m => m.id === LOOKIE_PREFERRED_MODEL_ID) &&
+        this.pals.some(p => p.capabilities?.video === true),
+      () => {
+        const preferred = source.models.find(
+          m => m.id === LOOKIE_PREFERRED_MODEL_ID,
+        );
+        const oldDownloaded = source.models.some(
+          m => m.id === LOOKIE_DEFAULT_MODEL.id && m.isDownloaded,
+        );
+        if (!preferred || oldDownloaded) {
+          return;
+        }
+        this.pals
+          .filter(
+            p =>
+              p.capabilities?.video === true &&
+              p.defaultModel?.id === LOOKIE_DEFAULT_MODEL.id,
+          )
+          .forEach(p => {
+            this.updatePal(p.id, {defaultModel: preferred}).catch(() => {});
+          });
+      },
+    );
   }
 
   /**

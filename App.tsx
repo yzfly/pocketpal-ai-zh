@@ -20,7 +20,7 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 
-import {asrStore, ttsStore, uiStore} from './src/store';
+import {asrStore, modelStore, palStore, ttsStore, uiStore} from './src/store';
 import {accountService, updateService} from './src/services';
 import {UpdateDialog} from './src/components/UpdateDialog';
 import {useTheme} from './src/hooks';
@@ -122,6 +122,8 @@ const App = observer(() => {
     asrStore.init().catch(() => {
       // init() swallows its own errors; catch to satisfy no-floating-promises.
     });
+    // 看图助手的默认模型换成能说中文的“口袋助手 mini”（只动没改过的）
+    palStore.upgradeLookieDefaultModel(modelStore);
     // Restore the account session (no-op when not configured).
     accountService.init().catch(() => {});
     // Check for an in-app update (Android, throttled; no-op when unconfigured).

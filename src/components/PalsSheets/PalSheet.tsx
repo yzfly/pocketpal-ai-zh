@@ -394,13 +394,26 @@ export const PalSheet: React.FC<PalSheetProps> = observer(
                       }
                       error={!!error}
                       helperText={error?.message}
+                      // 摄像头助手只列能看图的模型，并把还没下载的也列出来，
+                      // 否则刚装好时这里几乎没有可选项
+                      filter={
+                        pal.capabilities?.video
+                          ? m => m.supportsMultimodal === true
+                          : undefined
+                      }
+                      includeUndownloaded={!!pal.capabilities?.video}
+                      undownloadedSuffix={
+                        l10n.components.assistantPalSheet
+                          ?.modelNotDownloadedSuffix ?? ''
+                      }
                       testID="pal-default-model-selector"
                     />
                   )}
                 />
 
                 <ModelNotAvailable
-                  model={pal.defaultModel}
+                  // 提示并下载“当前选中的”模型；没选时才看助手保存的默认模型
+                  model={currentDefaultModel ?? pal.defaultModel}
                   currentlySelectedModel={currentDefaultModel}
                   closeSheet={handleClose}
                 />

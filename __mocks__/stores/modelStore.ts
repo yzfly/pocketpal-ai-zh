@@ -68,6 +68,8 @@ class MockModelStore {
   setNGPULayers: jest.Mock;
   resetModels: jest.Mock;
   initContext: jest.Mock;
+  setVisionTokenBudget = jest.fn();
+  activeImageMaxTokens: number | undefined = undefined;
   selectModel: jest.Mock;
   setRemoteModel: jest.Mock;
   lastUsedModelId: any;

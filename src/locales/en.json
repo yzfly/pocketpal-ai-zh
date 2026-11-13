@@ -804,7 +804,8 @@
         "thinkingDisabled": "Thinking mode disabled",
         "thinkText": "Think",
         "cycleEffort": "Reasoning effort: {{level}}. Double tap to cycle effort level"
-      }
+      },
+      "activePalLabel": "Pal: "
     },
     "contentReportSheet": {
       "title": "Report Content",
@@ -1075,7 +1076,8 @@
         "generatingPromptRequired": "Generating prompt is required",
         "promptModelRequired": "Prompt generation model is required"
       },
-      "create": "Create"
+      "create": "Create",
+      "modelNotDownloadedSuffix": " (not downloaded)"
     },
     "modelNotAvailable": {
       "noModelsDownloaded": "You do not have any models downloaded yet. Please download a model first.",
@@ -1425,7 +1427,18 @@
       "openLinkError": "Couldn't open this link."
     },
     "routerLoading": "Loading model…",
-    "routerLoadingPercent": "Loading model · {{percent}}%"
+    "routerLoadingPercent": "Loading model · {{percent}}%",
+    "videoPalDefaultPrompt": "Describe what you see in one sentence.",
+    "visionNotReadyTitle": "This model cannot see images yet",
+    "visionNotReadyMessage": "Download its vision component first, or pick a vision-capable model for this assistant.",
+    "visionDownloadButton": "Download vision component",
+    "visionCheckFailed": "Could not check the model. Please try again.",
+    "visionFrameFailed": "Could not read this frame: ",
+    "visionLooking": "Looking…",
+    "visionDefaultModelTitle": "Download the default model first",
+    "visionDefaultModelMessage": "This assistant uses the default model “{{model}}”, the same one the chat assistant uses. Download it once and both chat and camera will work.",
+    "visionDefaultModelDownload": "Download",
+    "visionDefaultModelDownloading": "“{{model}}” is downloading ({{percent}}%). Tap start again when it finishes."
   },
   "htmlPreview": {
     "defaultTitle": "Preview",

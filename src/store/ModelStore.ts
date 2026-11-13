@@ -225,6 +225,14 @@ class ModelStore {
 
   // Flag to track if multimodal is currently active
   isMultimodalActive: boolean = false;
+
+  /**
+   * 临时的图片 token 预算：设了之后，下一次加载模型时看图组件按它初始化。
+   * 摄像头实时描述用小预算换速度（一帧从分钟级降到秒级），普通聊天发图不设。
+   */
+  visionTokenBudget: number | undefined = undefined;
+  /** 当前已加载的看图组件实际使用的图片 token 上限 */
+  activeImageMaxTokens: number | undefined = undefined;
   /** 本机 NPU 加载失败或崩溃过，已改用 CPU（设置页提示用，不持久化，启动时从 npuAutoSelect 读） */
   npuBlocked: boolean = false;
   /** 上次加载模型时 App 被杀，已自动调低上下文/批大小（设置页提示用，不持久化） */
@@ -2517,19 +2525,27 @@ class ModelStore {
 
           // Initialize multimodal with the new API format
           // Apply effective value: clamp image_max_tokens to n_ctx
+          // 摄像头实时描述时用更小的图片预算（见 setVisionTokenBudget），
+          // 否则用设置里的上限
+          const imageMaxTokens = Math.min(
+            this.visionTokenBudget ??
+              this.contextInitParams.image_max_tokens ??
+              512,
+            this.contextInitParams.n_ctx,
+          );
           const success = await ctx.initMultimodal({
             path: mmProjPath,
             use_gpu: !this.contextInitParams.no_gpu_devices,
-            image_max_tokens: Math.min(
-              this.contextInitParams.image_max_tokens ?? 512,
-              this.contextInitParams.n_ctx,
-            ),
+            image_max_tokens: imageMaxTokens,
           });
 
           if (!success) {
             console.error('Failed to initialize multimodal support');
           } else {
             console.log('Multimodal support initialized successfully');
+            runInAction(() => {
+              this.activeImageMaxTokens = imageMaxTokens;
+            });
             // Verify that multimodal is now enabled
             const isEnabled = await ctx.isMultimodalEnabled();
             console.log('Multimodal enabled status:', isEnabled);
@@ -4124,11 +4140,18 @@ class ModelStore {
    * @param params - Completion parameters including image paths
    * @returns Promise<void>
    */
+  /** 设置或清除（传 undefined）临时的图片 token 预算，下次加载模型时生效 */
+  setVisionTokenBudget = (tokens: number | undefined) => {
+    this.visionTokenBudget = tokens;
+  };
+
   startImageCompletion = async (params: {
     prompt: string;
     image_path?: string; // For backward compatibility
     image_paths?: string[]; // New parameter for multiple images
     systemMessage?: string;
+    /** 限制回复长度并关闭思考（摄像头实时描述用），不传则沿用全局生成设置 */
+    maxTokens?: number;
     onToken?: (token: string) => void;
     onComplete?: (text: string) => void;
     onError?: (error: Error) => void;
@@ -4221,6 +4244,17 @@ class ModelStore {
         : [userMessage];
       const completionParamsWithAppProps = {
         ...completionParams,
+        ...(params.maxTokens
+          ? {
+              n_predict: Math.min(
+                params.maxTokens,
+                completionParams.n_predict && completionParams.n_predict > 0
+                  ? completionParams.n_predict
+                  : params.maxTokens,
+              ),
+              enable_thinking: false,
+            }
+          : {}),
         messages: messages,
         stop: stopWords,
       } as CompletionParams;

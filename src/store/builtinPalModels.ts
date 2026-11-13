@@ -30,6 +30,13 @@ const LOOKIE_HF_MODEL = {
   ],
 } as unknown as HuggingFaceModel;
 
+/**
+ * 看图助手首选的默认模型：口袋助手 mini（Qwen3.5 0.8B，见 chineseModelPresets）。
+ * 它在预设列表里，随设备规则解析出来；下面的 SmolVLM 常量只作离线兜底。
+ */
+export const LOOKIE_PREFERRED_MODEL_ID =
+  'unsloth/Qwen3.5-0.8B-MTP-GGUF/Qwen3.5-0.8B-Q4_K_M.gguf';
+
 // Default model for the built-in Lookie pal. It is a vision model outside the
 // device-rule tiers, so it ships as a self-contained offline constant rather
 // than being resolved over the network at pal init.

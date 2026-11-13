@@ -748,9 +748,15 @@ export const ChatView = observer(
 
     // 新对话的起手提示：助手自带的优先；没选助手时给一组通用提示，
     // 让第一次用的人不必自己想问什么。选了助手但它没配提示时不显示。
+    // 摄像头助手的界面（输入框是“提示词 + 启动摄像头”）不显示通用提示。
+    const isCameraComposer = !!(
+      unwrap(inputProps) as ChatInputAdditionalProps | undefined
+    )?.onStartCamera;
     const starterPrompts: string[] = activePal
       ? (activePal.greeting?.suggestedPrompts ?? [])
-      : (l10n.components.chatEmptyPlaceholder.starterPrompts ?? []);
+      : isCameraComposer
+        ? []
+        : (l10n.components.chatEmptyPlaceholder.starterPrompts ?? []);
 
     // ============ CONTEXT MENU CONFIGURATION ============
     const {

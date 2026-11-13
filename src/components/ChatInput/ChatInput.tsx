@@ -626,7 +626,7 @@ export const ChatInput = observer(
                           color: onSurfaceColor,
                         },
                       ]}>
-                      Pal:{' '}
+                      {l10n.components.chatInput.activePalLabel}
                       <Text
                         style={[
                           styles.palNameValueCompact,

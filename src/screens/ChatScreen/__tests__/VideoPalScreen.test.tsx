@@ -10,6 +10,7 @@ import {
 } from '../../../../jest/test-utils';
 
 import {VideoPalScreen} from '../VideoPalScreen';
+import {l10n} from '../../../locales';
 import {palStore, chatSessionStore, modelStore} from '../../../store';
 import type {Pal} from '../../../types/pal';
 import {LlamaContext} from '../../../services/llm';
@@ -87,7 +88,7 @@ describe('VideoPalScreen', () => {
     expect(getByLabelText('Start video analysis')).toBeTruthy();
 
     // Prompt text is controlled by VideoPalScreen and shown in the input
-    expect(getByDisplayValue('What do you see?')).toBeTruthy();
+    expect(getByDisplayValue(l10n.en.chat.videoPalDefaultPrompt)).toBeTruthy();
   });
 
   it('shows an alert when model is not loaded and start is pressed', async () => {
@@ -141,11 +142,54 @@ describe('VideoPalScreen', () => {
 
     // Check the call arguments
     const callArgs = alertSpy.mock.calls[0];
-    expect(callArgs[0]).toBe('Multimodal Not Enabled');
-    expect(callArgs[1]).toBe(
-      'This model does not support image analysis. Please load a multimodal model.',
-    );
+    expect(callArgs[0]).toBe(l10n.en.chat.visionNotReadyTitle);
+    expect(callArgs[1]).toBe(l10n.en.chat.visionNotReadyMessage);
     expect(callArgs[2]).toEqual(expect.any(Array));
+  });
+
+  it('guides to download the default model when it is not downloaded yet', async () => {
+    const defaultModel = {
+      id: 'default-vision',
+      name: 'Pocket mini',
+      origin: ModelOrigin.PRESET,
+      supportsMultimodal: true,
+      isDownloaded: false,
+      downloadUrl: 'https://example.com/default.gguf',
+      progress: 0,
+    } as any;
+    const videoPal = makeVideoPal({defaultModel});
+    (palStore as any).pals.push(videoPal);
+    Object.defineProperty(chatSessionStore, 'activePalId', {
+      get: jest.fn(() => videoPal.id),
+      configurable: true,
+    });
+    runInAction(() => {
+      modelStore.models = [defaultModel] as any;
+      modelStore.activeModelId = undefined;
+    });
+
+    const alertSpy = jest.spyOn(Alert, 'alert');
+
+    const {getByLabelText, queryByTestId} = render(
+      <VideoPalScreen activePal={videoPal} />,
+    );
+
+    fireEvent.press(getByLabelText('Start video analysis'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalled();
+    });
+
+    const callArgs = alertSpy.mock.calls[0] as any[];
+    expect(callArgs[0]).toBe(l10n.en.chat.visionDefaultModelTitle);
+    expect(callArgs[1]).toContain('Pocket mini');
+    expect(queryByTestId('embedded-video-view')).toBeNull();
+
+    // The download button starts the default model download
+    callArgs[2][1].onPress();
+    expect(modelStore.checkSpaceAndDownload).toHaveBeenCalledWith(
+      'default-vision',
+    );
   });
 
   it('starts camera when multimodal is enabled, allows interval change, and closes back to chat', async () => {

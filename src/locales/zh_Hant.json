@@ -225,7 +225,18 @@
     "contextFullRemote": "對話空間不足。請開始新對話。",
     "speculativeInitFailed": "此裝置無法為此模型啟動推測解碼（Speculative Decoding）——最可能的原因是記憶體不足以容納草稿內容。請在「設定」→「進階設定」中關閉「推測解碼」，然後再試一次。",
     "routerLoading": "載入模型中…",
-    "routerLoadingPercent": "載入模型中 · {{percent}}%"
+    "routerLoadingPercent": "載入模型中 · {{percent}}%",
+    "videoPalDefaultPrompt": "用一句話描述你看到的畫面。",
+    "visionNotReadyTitle": "這個模型還不能看圖",
+    "visionNotReadyMessage": "請先下載它的「看圖元件」，或為看圖助手換一個能看圖的模型。",
+    "visionDownloadButton": "下載看圖元件",
+    "visionCheckFailed": "檢查模型時出錯，請重試。",
+    "visionFrameFailed": "這一幀沒看成：",
+    "visionLooking": "正在看…",
+    "visionDefaultModelTitle": "先下載預設模型",
+    "visionDefaultModelMessage": "看圖助手預設使用「{{model}}」，和聊天助手是同一個模型。下載一次，聊天和看圖都能用。",
+    "visionDefaultModelDownload": "下載",
+    "visionDefaultModelDownloading": "「{{model}}」正在下載（{{percent}}%），下載完成後再點開始。"
   },
   "common": {
     "cancel": "取消",
@@ -340,7 +351,8 @@
         "thinkingDisabled": "思考模式已停用",
         "thinkText": "思考",
         "cycleEffort": "推理強度：{{level}}。連按兩次可切換強度層級"
-      }
+      },
+      "activePalLabel": "助手："
     },
     "chatGenerationSettingsSheet": {
       "invalidValues": "無效值",
@@ -525,7 +537,8 @@
         "generatingPromptRequired": "需要生成提示詞",
         "promptModelRequired": "必須指定提示詞生成模型"
       },
-      "create": "新建"
+      "create": "新建",
+      "modelNotDownloadedSuffix": "（未下載）"
     },
     "modelNotAvailable": {
       "noModelsDownloaded": "您尚未下載任何模型。請先下載一個模型。",

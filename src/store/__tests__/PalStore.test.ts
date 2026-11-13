@@ -493,3 +493,50 @@ describe('PalStore', () => {
     });
   });
 });
+
+describe('upgradeLookieDefaultModel', () => {
+  const {LOOKIE_PREFERRED_MODEL_ID} = require('../builtinPalModels');
+  const {observable} = require('mobx');
+  const preferred = {id: LOOKIE_PREFERRED_MODEL_ID, name: '口袋助手 mini'};
+  const videoPal = (defaultModel: any) =>
+    ({id: 'v1', capabilities: {video: true}, defaultModel}) as any;
+
+  const setup = (pal: any, models: any[]) => {
+    const update = jest
+      .spyOn(palRepository, 'updatePal')
+      .mockImplementation(
+        async (id: string, updates: any) => ({...pal, id, ...updates}) as any,
+      );
+    runInAction(() => {
+      palStore.pals = [pal];
+    });
+    const source = observable({models: [] as any[]});
+    palStore.upgradeLookieDefaultModel(source);
+    // 预设模型列表稍后才就绪
+    expect(update).not.toHaveBeenCalled();
+    runInAction(() => {
+      source.models = models;
+    });
+    return update;
+  };
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('moves an untouched camera assistant to the Chinese-capable default once presets are ready', () => {
+    const update = setup(videoPal(LOOKIE_DEFAULT_MODEL), [preferred]);
+    expect(update).toHaveBeenCalledWith('v1', {defaultModel: preferred});
+  });
+
+  it('keeps the old model when the user already downloaded it', () => {
+    const update = setup(videoPal(LOOKIE_DEFAULT_MODEL), [
+      preferred,
+      {...LOOKIE_DEFAULT_MODEL, isDownloaded: true},
+    ]);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('leaves an assistant alone when the user picked another model', () => {
+    const update = setup(videoPal({id: 'someone/else.gguf'}), [preferred]);
+    expect(update).not.toHaveBeenCalled();
+  });
+});

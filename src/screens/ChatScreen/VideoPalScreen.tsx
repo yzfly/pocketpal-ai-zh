@@ -15,6 +15,15 @@ interface VideoPalScreenProps {
   activePal: Pal;
 }
 
+/**
+ * 摄像头实时描述时每张图最多占的 token 数。设置里的上限（几百）适合聊天里
+ * 认真看一张照片，但在手机 CPU 上编码一帧要一两分钟；实时描述只需要看个大概。
+ */
+const VIDEO_PAL_IMAGE_TOKENS = 96;
+
+/** 摄像头实时描述每一帧最多生成的 token 数（约两三句中文） */
+const VIDEO_PAL_MAX_TOKENS = 96;
+
 export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
   const l10n = useContext(L10nContext);
 
@@ -23,7 +32,9 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [responseText, setResponseText] = useState('');
-  const [promptText, setPromptText] = useState('What do you see?');
+  const [promptText, setPromptText] = useState<string>(
+    l10n.chat.videoPalDefaultPrompt,
+  );
   const [captureInterval, setCaptureInterval] = useState(1000); // Default to 1 second
   const [lastAnalysisTime, setLastAnalysisTime] = useState(0);
   const [isStoppingCamera, setIsStoppingCamera] = useState(false);
@@ -108,26 +119,105 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
 
   // Handle starting the camera
   const handleStartCamera = useCallback(async () => {
-    if (!modelStore.context) {
-      safeAlert(l10n.chat.modelNotLoaded, l10n.chat.pleaseLoadModel, [
-        {
-          text: l10n.common.ok,
-        },
-      ]);
-      return;
-    }
-
-    // Check if multimodal is enabled
     try {
-      if (!modelStore.activeModelCaps.visionActive) {
+      // 看图助手指定的模型（已下载时）优先；否则用当前已加载的模型
+      const palModel = activeVideoPal?.defaultModel
+        ? modelStore.availableModels.find(
+            m => m.id === activeVideoPal.defaultModel?.id,
+          )
+        : undefined;
+      const target = palModel ?? modelStore.activeModel;
+
+      // 默认模型（和聊天助手是同一个）还没下载，手头也没有别的能看图的模型：
+      // 直接引导去下载默认模型，而不是让用户自己去找该用哪个。
+      const palModelEntry = activeVideoPal?.defaultModel
+        ? modelStore.models.find(m => m.id === activeVideoPal.defaultModel?.id)
+        : undefined;
+      if (
+        !palModel &&
+        palModelEntry?.downloadUrl &&
+        !modelStore.activeModel?.supportsMultimodal
+      ) {
+        const name = palModelEntry.name;
+        if (modelStore.isDownloading(palModelEntry.id)) {
+          safeAlert(
+            l10n.chat.visionDefaultModelTitle,
+            l10n.chat.visionDefaultModelDownloading
+              .replace('{{model}}', name)
+              .replace(
+                '{{percent}}',
+                String(Math.round(palModelEntry.progress ?? 0)),
+              ),
+            [{text: l10n.common.ok}],
+          );
+          return;
+        }
         safeAlert(
-          'Multimodal Not Enabled',
-          'This model does not support image analysis. Please load a multimodal model.',
+          l10n.chat.visionDefaultModelTitle,
+          l10n.chat.visionDefaultModelMessage.replace('{{model}}', name),
           [
+            {text: l10n.common.cancel, style: 'cancel'},
             {
-              text: l10n.common.ok,
+              text: l10n.chat.visionDefaultModelDownload,
+              onPress: () => {
+                modelStore
+                  .checkSpaceAndDownload(palModelEntry.id)
+                  .catch(() => {});
+              },
             },
           ],
+        );
+        return;
+      }
+
+      if (!target && !modelStore.context) {
+        safeAlert(l10n.chat.modelNotLoaded, l10n.chat.pleaseLoadModel, [
+          {text: l10n.common.ok},
+        ]);
+        return;
+      }
+
+      // 当前加载的不是它，或加载时没带上看图组件：带看图组件重新加载。
+      // initContext 会自动找到已下载的看图组件。
+      // 实时描述用小的图片预算；预算和当前加载的不一样时也要重新加载
+      modelStore.setVisionTokenBudget(VIDEO_PAL_IMAGE_TOKENS);
+      const needsLoad =
+        !!target &&
+        (!modelStore.context ||
+          modelStore.activeModelId !== target.id ||
+          !modelStore.activeModelCaps.visionActive ||
+          modelStore.activeImageMaxTokens !== VIDEO_PAL_IMAGE_TOKENS);
+      if (target && needsLoad) {
+        const projection = modelStore.getProjectionModelStatus(target);
+        if (target.supportsMultimodal && projection.state === 'downloaded') {
+          await modelStore.initContext(target);
+        }
+      }
+
+      if (!modelStore.context || !modelStore.activeModelCaps.visionActive) {
+        const projection = target
+          ? modelStore.getProjectionModelStatus(target)
+          : undefined;
+        const missing =
+          target?.supportsMultimodal && projection?.state === 'missing'
+            ? projection.projectionModel
+            : undefined;
+        safeAlert(
+          l10n.chat.visionNotReadyTitle,
+          l10n.chat.visionNotReadyMessage,
+          missing
+            ? [
+                {text: l10n.common.cancel, style: 'cancel'},
+                {
+                  text: l10n.chat.visionDownloadButton,
+                  onPress: () => {
+                    modelStore
+                      .checkSpaceAndDownload(missing.id)
+                      .catch(() => {});
+                  },
+                },
+              ]
+            : [{text: l10n.common.ok}],
         );
         return;
       }
@@ -135,13 +225,27 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
       setIsCameraActive(true);
     } catch (error) {
       console.error('Error checking multimodal capability:', error);
-      safeAlert('Error', 'Failed to check if model supports images.', [
-        {
-          text: l10n.common.ok,
-        },
+      safeAlert(l10n.common.error ?? 'Error', l10n.chat.visionCheckFailed, [
+        {text: l10n.common.ok},
       ]);
     }
-  }, [l10n]);
+  }, [l10n, activeVideoPal]);
+
+  // 离开看图助手时：清掉小预算；如果当前模型是按小预算加载的，
+  // 在后台按正常设置重新加载，免得之后在聊天里发图片看不清细节。
+  useEffect(() => {
+    return () => {
+      modelStore.setVisionTokenBudget(undefined);
+      const active = modelStore.activeModel;
+      if (
+        active &&
+        modelStore.activeImageMaxTokens === VIDEO_PAL_IMAGE_TOKENS &&
+        !modelStore.isGenerationBusy
+      ) {
+        modelStore.initContext(active).catch(() => {});
+      }
+    };
+  }, []);
 
   // Handle stopping the camera
   const handleStopCamera = useCallback(() => {
@@ -203,8 +307,10 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
 
       setLastAnalysisTime(now);
 
-      // Clear the previous response text before starting a new analysis
-      setResponseText('');
+      // 新一帧开始：先显示“正在看…”，第一个字出来后换成回答，
+      // 这样等待时画面上不是一片空白
+      setResponseText(l10n.chat.visionLooking);
+      let gotFirstToken = false;
 
       // Get the system prompt from the active VideoPal
       const systemPrompt = activeVideoPal?.systemPrompt || '';
@@ -215,10 +321,17 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
           prompt: promptText,
           image_path: imageBase64, // Now passing base64 data URL instead of file path
           systemMessage: systemPrompt,
+          // 实时画面要的是一两句话：限制长度、不思考，下一帧才能尽快开始
+          maxTokens: VIDEO_PAL_MAX_TOKENS,
           onToken: token => {
             // Only update response text if we're not stopping the camera
             if (!isStoppingCamera) {
-              setResponseText(prev => prev + token);
+              if (!gotFirstToken) {
+                gotFirstToken = true;
+                setResponseText(token);
+              } else {
+                setResponseText(prev => prev + token);
+              }
             }
           },
           onComplete: () => {
@@ -227,10 +340,23 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
           },
           onError: error => {
             console.error('Error processing image:', error);
+            // 出错时把原因显示在画面上，不让用户对着空白画面干等
+            if (!isStoppingCamera) {
+              setResponseText(
+                `${l10n.chat.visionFrameFailed}${error?.message ?? ''}`,
+              );
+            }
           },
         });
       } catch (error) {
         console.error('Error processing image:', error);
+        if (!isStoppingCamera) {
+          setResponseText(
+            `${l10n.chat.visionFrameFailed}${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     },
     [
@@ -239,6 +365,7 @@ export const VideoPalScreen = observer(({activePal}: VideoPalScreenProps) => {
       lastAnalysisTime,
       activeVideoPal,
       isStoppingCamera,
+      l10n,
     ],
   );
 

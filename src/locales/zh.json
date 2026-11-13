@@ -783,7 +783,8 @@
         "thinkingDisabled": "思考模式已禁用",
         "thinkText": "思考",
         "cycleEffort": "推理强度：{{level}}。双击可切换强度级别"
-      }
+      },
+      "activePalLabel": "助手："
     },
     "contentReportSheet": {
       "title": "举报内容",
@@ -1047,7 +1048,8 @@
         "generatingPromptRequired": "需要生成提示词",
         "promptModelRequired": "需要提示词生成模型"
       },
-      "create": "创建"
+      "create": "创建",
+      "modelNotDownloadedSuffix": "（未下载）"
     },
     "modelNotAvailable": {
       "noModelsDownloaded": "您还没有下载任何模型，请先下载一个模型。",
@@ -1425,7 +1427,18 @@
     "contextFullRemote": "对话空间已满，请新建聊天。",
     "speculativeInitFailed": "此设备无法为该模型启动推测解码 — 很可能是草稿上下文的内存不足。请在“设置 → 高级设置”中关闭推测解码后重试。",
     "routerLoading": "正在加载模型…",
-    "routerLoadingPercent": "正在加载模型 · {{percent}}%"
+    "routerLoadingPercent": "正在加载模型 · {{percent}}%",
+    "videoPalDefaultPrompt": "用一句话描述你看到的画面。",
+    "visionNotReadyTitle": "这个模型还不能看图",
+    "visionNotReadyMessage": "请先下载它的“看图组件”，或给看图助手换一个能看图的模型。",
+    "visionDownloadButton": "下载看图组件",
+    "visionCheckFailed": "检查模型时出错，请重试。",
+    "visionFrameFailed": "这一帧没看成：",
+    "visionLooking": "正在看…",
+    "visionDefaultModelTitle": "先下载默认模型",
+    "visionDefaultModelMessage": "看图助手默认使用「{{model}}」，和聊天助手是同一个模型。下载一次，聊天和看图都能用。",
+    "visionDefaultModelDownload": "下载",
+    "visionDefaultModelDownloading": "「{{model}}」正在下载（{{percent}}%），下载完成后再点开始。"
   },
   "benchmark": {
     "title": "性能",
