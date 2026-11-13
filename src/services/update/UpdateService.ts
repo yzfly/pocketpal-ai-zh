@@ -1,8 +1,10 @@
 // 应用内更新（仅 Android）。
 //
-// 更新清单 update.json 的地址按顺序尝试，用第一个能取到的：
-//   1. .env 的 UPDATE_MANIFEST_URL（可选，多个用英文逗号分隔），放国内可直连的地址；
-//   2. 内置的 GitHub Releases 地址（每次发版把 update.json 作为附件上传）。
+// 更新清单 update.json 同时向下面所有地址取，谁先回来用谁（版本更高的优先）：
+//   1. .env 的 UPDATE_MANIFEST_URL（可选，多个用英文逗号分隔）；
+//   2. 内置的 GitCode 发行版地址（国内快）和 GitHub Releases 地址（海外快）。
+//      每次发版把 update.json 和 APK 作为附件传到这两处。
+// 下载安装包前先探测清单里的各个地址，从最快的开始下，其余作备用。
 // 清单格式：
 //   {
 //     "versionCode": 160,              // 必填，大于当前 versionCode 才提示
@@ -52,20 +54,29 @@ const LAST_CHECK_KEY = 'update.lastCheckAt';
 const AUTO_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10 * 1000;
 
-/** 每次发版随 APK 一起上传到 GitHub Releases 的清单 */
+/** GitHub Releases 上最新一版的清单（海外快，国内慢且不稳定） */
 export const DEFAULT_MANIFEST_URL =
   'https://github.com/yzfly/pocketpal-ai-zh/releases/latest/download/update.json';
 
-/** 清单地址：.env 配置的在前，内置 GitHub 地址兜底 */
+/** GitCode 发行版上最新一版的清单（国内快）。GitCode 的 latest 写在 tag 的位置上 */
+export const GITCODE_MANIFEST_URL =
+  'https://gitcode.com/langgpt/pocketpal-ai-zh/releases/download/latest/update.json';
+
+/** 内置清单地址 */
+export const BUILTIN_MANIFEST_URLS = [
+  GITCODE_MANIFEST_URL,
+  DEFAULT_MANIFEST_URL,
+];
+
+/** 清单地址：.env 配置的在前，其后是内置的 GitCode 与 GitHub（去重） */
 export function manifestUrls(configured: string | undefined): string[] {
   const urls = (configured ?? '')
     .split(',')
     .map(u => u.trim())
     .filter(Boolean);
-  if (!urls.includes(DEFAULT_MANIFEST_URL)) {
-    urls.push(DEFAULT_MANIFEST_URL);
-  }
-  return urls;
+  return [...urls, ...BUILTIN_MANIFEST_URLS].filter(
+    (u, i, all) => all.indexOf(u) === i,
+  );
 }
 
 /** 安装包下载地址：apkUrl 在前，其后是 https 的备用地址（去重） */
@@ -110,6 +121,101 @@ export function isValidManifest(m: any): m is UpdateManifest {
     typeof m.apkUrl === 'string' &&
     /^https:\/\//.test(m.apkUrl)
   );
+}
+
+/** 第一个清单到手后，再等其他地址这么久，好挑出版本更新的那份 */
+const MANIFEST_GRACE_MS = 1500;
+
+/**
+ * 同时向所有地址取清单，不排队等超时：谁先回来就用谁；
+ * 短暂多等一下其余地址，若有版本更高的（某个源还没同步时）用更高的。
+ */
+export async function fetchBestManifest(
+  urls: string[],
+  fetchOne: (url: string) => Promise<UpdateManifest> = fetchManifest,
+  graceMs: number = MANIFEST_GRACE_MS,
+): Promise<UpdateManifest> {
+  const arrived: UpdateManifest[] = [];
+  const attempts = urls.map(url =>
+    fetchOne(url).then(m => {
+      arrived.push(m);
+      return m;
+    }),
+  );
+  // 第一个成功的；全部失败时抛错
+  await new Promise<void>((resolve, reject) => {
+    let failed = 0;
+    attempts.forEach(p =>
+      p.then(
+        () => resolve(),
+        () => {
+          failed += 1;
+          if (failed === attempts.length) {
+            reject(new Error('no manifest'));
+          }
+        },
+      ),
+    );
+  });
+  if (arrived.length < urls.length) {
+    await Promise.race([
+      Promise.allSettled(attempts),
+      new Promise(resolve => setTimeout(resolve, graceMs)),
+    ]);
+  }
+  return arrived.reduce((best, m) =>
+    Number(m.versionCode) > Number(best.versionCode) ? m : best,
+  );
+}
+
+const PROBE_BYTES = 64 * 1024;
+const PROBE_TIMEOUT_MS = 6 * 1000;
+
+/** 取安装包开头一小段，成功即返回；用来比较各下载地址谁先连上、谁快 */
+async function probeUrl(url: string): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      headers: {Range: `bytes=0-${PROBE_BYTES - 1}`},
+      signal: controller.signal,
+    });
+    // 只认 206：不支持分段的地址会把整个安装包发回来，不能当作探测
+    if (res.status !== 206) {
+      throw new Error('http ' + res.status);
+    }
+    await res.arrayBuffer();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * 把下载地址按“谁先取完开头一小段”重排：最快的排第一，其余保持原顺序作备用。
+ * 只有一个地址或全部探测失败时，原样返回。
+ */
+export async function fastestFirst(
+  urls: string[],
+  probe: (url: string) => Promise<void> = probeUrl,
+): Promise<string[]> {
+  if (urls.length < 2) {
+    return urls;
+  }
+  const winner = await new Promise<string | null>(resolve => {
+    let failed = 0;
+    urls.forEach(url =>
+      probe(url).then(
+        () => resolve(url),
+        () => {
+          failed += 1;
+          if (failed === urls.length) {
+            resolve(null);
+          }
+        },
+      ),
+    );
+  });
+  return winner ? [winner, ...urls.filter(u => u !== winner)] : urls;
 }
 
 export class UpdateService {
@@ -179,17 +285,7 @@ export class UpdateService {
       this.error = null;
     });
     try {
-      let m: UpdateManifest | null = null;
-      for (const url of manifestUrls(UPDATE_MANIFEST_URL)) {
-        try {
-          m = await fetchManifest(url);
-          break;
-        } catch {}
-      }
-      if (!m) {
-        throw new Error('no manifest');
-      }
-      const found = m;
+      const found = await fetchBestManifest(manifestUrls(UPDATE_MANIFEST_URL));
       const newer = isNewer(found, this.currentVersionCode);
       runInAction(() => {
         this.manifest = found;
@@ -235,7 +331,8 @@ export class UpdateService {
       this.error = null;
     });
     try {
-      const sources = apkSources(m);
+      // 先探测各下载地址，最快的排第一，其余作备用
+      const sources = await fastestFirst(apkSources(m));
       for (let i = 0; i < sources.length; i++) {
         try {
           const id = await NativeAppUpdate.download(

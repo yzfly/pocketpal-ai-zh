@@ -31,17 +31,91 @@ describe('update sources', () => {
     manifestUrls,
     apkSources,
     DEFAULT_MANIFEST_URL,
+    GITCODE_MANIFEST_URL,
   } = require('../UpdateService');
 
-  it('tries configured manifest urls first, GitHub last', () => {
-    expect(manifestUrls('')).toEqual([DEFAULT_MANIFEST_URL]);
-    expect(manifestUrls(undefined)).toEqual([DEFAULT_MANIFEST_URL]);
+  it('lists configured manifest urls first, then GitCode and GitHub', () => {
+    expect(manifestUrls('')).toEqual([
+      GITCODE_MANIFEST_URL,
+      DEFAULT_MANIFEST_URL,
+    ]);
+    expect(manifestUrls(undefined)).toEqual([
+      GITCODE_MANIFEST_URL,
+      DEFAULT_MANIFEST_URL,
+    ]);
     expect(manifestUrls(' https://a/u.json , https://b/u.json ')).toEqual([
       'https://a/u.json',
       'https://b/u.json',
+      GITCODE_MANIFEST_URL,
       DEFAULT_MANIFEST_URL,
     ]);
-    expect(manifestUrls(DEFAULT_MANIFEST_URL)).toEqual([DEFAULT_MANIFEST_URL]);
+    expect(manifestUrls(DEFAULT_MANIFEST_URL)).toEqual([
+      DEFAULT_MANIFEST_URL,
+      GITCODE_MANIFEST_URL,
+    ]);
+  });
+
+  it('takes the first manifest to arrive, without waiting for slow sources', async () => {
+    const {fetchBestManifest} = require('../UpdateService');
+    const m = (versionCode: number) => ({
+      versionCode,
+      versionName: 'x',
+      apkUrl: 'https://a/x.apk',
+    });
+    const never = new Promise<any>(() => {});
+    const fetchOne = jest.fn((url: string) =>
+      url === 'fast' ? Promise.resolve(m(5)) : never,
+    );
+    await expect(
+      fetchBestManifest(['slow', 'fast'], fetchOne, 10),
+    ).resolves.toEqual(m(5));
+    expect(fetchOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('prefers the newer manifest when two sources answer close together', async () => {
+    const {fetchBestManifest} = require('../UpdateService');
+    const m = (versionCode: number) => ({
+      versionCode,
+      versionName: 'x',
+      apkUrl: 'https://a/x.apk',
+    });
+    const fetchOne = (url: string) =>
+      url === 'stale'
+        ? Promise.resolve(m(5))
+        : new Promise<any>(r => setTimeout(() => r(m(6)), 5));
+    await expect(
+      fetchBestManifest(['stale', 'fresh'], fetchOne, 200),
+    ).resolves.toEqual(m(6));
+  });
+
+  it('fails only when every manifest source fails', async () => {
+    const {fetchBestManifest} = require('../UpdateService');
+    await expect(
+      fetchBestManifest(['a', 'b'], () => Promise.reject(new Error('x')), 10),
+    ).rejects.toThrow('no manifest');
+  });
+
+  it('puts the fastest download link first and keeps the rest as fallbacks', async () => {
+    const {fastestFirst} = require('../UpdateService');
+    const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+    const probe = (url: string) =>
+      url === 'b'
+        ? delay(1)
+        : url === 'c'
+          ? delay(30)
+          : Promise.reject(new Error('x'));
+    await expect(fastestFirst(['a', 'b', 'c'], probe)).resolves.toEqual([
+      'b',
+      'a',
+      'c',
+    ]);
+    // 全部探测失败或只有一个地址：保持原样
+    await expect(
+      fastestFirst(['a', 'b'], () => Promise.reject(new Error('x'))),
+    ).resolves.toEqual(['a', 'b']);
+    const single = jest.fn();
+    await expect(fastestFirst(['a'], single)).resolves.toEqual(['a']);
+    expect(single).not.toHaveBeenCalled();
   });
 
   it('lists apk mirrors after apkUrl, https only, de-duplicated', () => {
@@ -87,6 +161,8 @@ describe('UpdateService with fallbacks', () => {
       __esModule: true,
       default: native,
     }));
+    // 默认断网：下载前的测速探测全部失败，下载地址保持清单里的顺序
+    (global as any).fetch = jest.fn().mockRejectedValue(new Error('offline'));
     const {UpdateService} = require('../UpdateService');
     service = new UpdateService();
   });
@@ -95,17 +171,20 @@ describe('UpdateService with fallbacks', () => {
     jest.dontMock('../../../specs/NativeAppUpdate');
   });
 
-  it('falls back to the next manifest url when the first fails', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce({ok: true, json: async () => manifest});
+  it('asks every manifest source at once and uses one that answers', async () => {
+    const fetchMock = jest.fn((url: string) =>
+      url.includes('example.com')
+        ? Promise.reject(new Error('network'))
+        : Promise.resolve({ok: true, json: async () => manifest}),
+    );
     (global as any).fetch = fetchMock;
 
     await expect(service.check()).resolves.toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][0]).toContain('example.com/update.json');
-    expect(fetchMock.mock.calls[1][0]).toContain('github.com/yzfly');
+    const asked = fetchMock.mock.calls.map(c => c[0]);
+    expect(asked).toHaveLength(3);
+    expect(asked[0]).toContain('example.com/update.json');
+    expect(asked[1]).toContain('gitcode.com/langgpt');
+    expect(asked[2]).toContain('github.com/yzfly');
     expect(service.status).toBe('available');
     expect(service.manifest.versionCode).toBe(999);
   });
@@ -138,6 +217,32 @@ describe('UpdateService with fallbacks', () => {
     ]);
     expect(native.verify).toHaveBeenCalledWith('https://b/x.apk', 'abc');
     expect(native.install).toHaveBeenCalledWith('https://b/x.apk');
+    expect(service.status).toBe('readyToInstall');
+  });
+
+  it('starts with the download link that answers the speed probe first', async () => {
+    jest.useFakeTimers();
+    (global as any).fetch = jest.fn((url: string) =>
+      url === 'https://b/x.apk'
+        ? Promise.resolve({
+            status: 206,
+            arrayBuffer: async () => new ArrayBuffer(8),
+          })
+        : new Promise(() => {}),
+    );
+    native.getProgress.mockResolvedValue({
+      status: 'successful',
+      downloaded: 10,
+      total: 10,
+    });
+    service.manifest = manifest;
+    const done = service.startDownload();
+    await jest.runAllTimersAsync();
+    await done;
+    jest.useRealTimers();
+
+    expect(native.download).toHaveBeenCalledTimes(1);
+    expect(native.download.mock.calls[0][0]).toBe('https://b/x.apk');
     expect(service.status).toBe('readyToInstall');
   });
 

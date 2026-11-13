@@ -100,7 +100,7 @@ App 里显示的是右侧的中文名。
 
 ## 📲 安装
 
-- **Android**：在 [Releases](https://github.com/yzfly/pocketpal-ai-zh/releases/latest) 下载最新 APK 安装（包名 `com.pocketwisdom`，可与上游 PocketPal 同时安装）。从 1.6.9 及更早版本升级需先卸载旧版（签名密钥已更换）
+- **Android**：在 [GitCode 发行版](https://gitcode.com/langgpt/pocketpal-ai-zh/releases)（国内快）或 [GitHub Releases](https://github.com/yzfly/pocketpal-ai-zh/releases/latest) 下载最新 APK 安装（包名 `com.pocketwisdom`，可与上游 PocketPal 同时安装）。从 1.6.9 及更早版本升级需先卸载旧版（签名密钥已更换）
 - **iOS**：需自行使用 Xcode 构建（欢迎有开发者账号的朋友协助上架）
 
 > 旧版（v1.6.9）APK 与 DeepSeek 模型文件仍可通过百度网盘获取（提取码 xtbf）：
@@ -131,9 +131,12 @@ App 里显示的是右侧的中文名。
 ## 🔄 发布更新（维护者）
 
 1. 提高 `android/app/build.gradle` 的 `versionCode`，用**同一个发布密钥**签名构建 APK（签名不同无法覆盖安装）：构建前在环境变量或 `.env` 中设置 `APP_RELEASE_STORE_FILE`（仓库外的绝对路径）、`APP_RELEASE_KEY_ALIAS`、`APP_RELEASE_STORE_PASSWORD`、`APP_RELEASE_KEY_PASSWORD`。
-2. 生成更新清单：`node scripts/make-update-manifest.js <apk> <apk 的 https 下载地址> notes.txt > update.json`（`--min <versionCode>` 可强制旧版本更新；下载地址可用英文逗号给多个，第一个优先，其余作备用）。
-3. 把 APK 和 `update.json` 一起作为附件上传到 GitHub Release，并设为 Latest。App 会读取 `releases/latest/download/update.json`（Android 启动时每 6 小时最多检查一次，也可在「关于」页手动检查），下载后校验 SHA-256 再调起系统安装。
-4. （可选）GitHub 在国内不稳定时，把 APK 和 `update.json` 另放一份到国内可直连的地址，构建前在 `.env` 的 `UPDATE_MANIFEST_URL` 填这份 `update.json` 的地址：App 先试它，失败再试 GitHub。
+2. 生成更新清单，下载地址写 GitCode 和 GitHub 两处（英文逗号分隔）：`node scripts/make-update-manifest.js <apk> <GitCode 下载地址>,<GitHub 下载地址> notes.txt > update.json`（`--min <versionCode>` 可强制旧版本更新）。
+3. 把 APK 和 `update.json` 作为附件分别上传到两处的发行版，并都设为最新版本：
+   - GitHub：[yzfly/pocketpal-ai-zh](https://github.com/yzfly/pocketpal-ai-zh/releases)（海外快）
+   - GitCode：[langgpt/pocketpal-ai-zh](https://gitcode.com/langgpt/pocketpal-ai-zh/releases)（国内快，实测上海约 12 MB/s，同一时间 GitHub 约 18 KB/s）
+4. App 同时向两处取 `update.json`（Android 启动时每 6 小时最多检查一次，也可在「关于」页手动检查），谁先回来用谁；下载前探测清单里的各个地址，从最快的开始下，失败自动换下一个；下载后校验 SHA-256 再调起系统安装。
+5. （可选）另有下载源时，构建前在 `.env` 的 `UPDATE_MANIFEST_URL` 填它的 `update.json` 地址，会和内置的两处一起使用。
 
 ## 🛠️ 本地开发
 

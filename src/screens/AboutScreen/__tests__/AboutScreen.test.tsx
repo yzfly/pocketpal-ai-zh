@@ -122,7 +122,7 @@ describe('AboutScreen', () => {
 
     expect(share).toHaveBeenCalledTimes(1);
     expect((share.mock.calls[0][0] as {message: string}).message).toContain(
-      'https://github.com/yzfly/pocketpal-ai-zh/releases/latest',
+      'https://gitcode.com/langgpt/pocketpal-ai-zh/releases',
     );
     share.mockRestore();
   });

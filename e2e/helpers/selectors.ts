@@ -163,7 +163,7 @@ export const Selectors = {
       return byTestId('drawer-item-pals');
     },
     get benchmarkTab(): string {
-      return drawerItem('benchmark', 'Benchmark');
+      return drawerItem('benchmark', 'Performance');
     },
     get settingsTab(): string {
       return drawerItem('settings', 'Settings');

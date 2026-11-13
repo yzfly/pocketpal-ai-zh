@@ -1175,7 +1175,7 @@
         "chat": "Chat",
         "models": "Models",
         "pals": "Pals",
-        "benchmark": "Benchmark",
+        "benchmark": "Performance",
         "settings": "Settings",
         "appInfo": "App Info",
         "testCompletion": "Test Completion"
@@ -1354,7 +1354,7 @@
     "chat": "Chat",
     "models": "Models",
     "pals": "Pals (experimental)",
-    "benchmark": "Benchmark",
+    "benchmark": "Performance",
     "settings": "Settings",
     "appInfo": "App Info",
     "testCompletion": "Test Completion"
@@ -1436,7 +1436,7 @@
     "openFullscreen": "Open fullscreen: {{title}}"
   },
   "benchmark": {
-    "title": "Benchmark",
+    "title": "Performance",
     "modelSelector": {
       "prompt": "Select Model",
       "noModels": "No models downloaded"
